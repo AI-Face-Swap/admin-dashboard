@@ -19,13 +19,14 @@ use Illuminate\Support\Carbon;
  * @property string|null $auth_provider
  * @property string|null $auth_provider_id
  * @property string $customer_type
+ * @property int $coins
  * @property Carbon|null $email_verified_at
  * @property Carbon|null $last_active_at
  * @property string|null $remember_token
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'email', 'password', 'avatar', 'auth_provider', 'auth_provider_id', 'customer_type', 'email_verified_at', 'last_active_at'])]
+#[Fillable(['name', 'email', 'password', 'avatar', 'auth_provider', 'auth_provider_id', 'customer_type', 'coins', 'email_verified_at', 'last_active_at'])]
 #[Hidden(['password', 'remember_token'])]
 class Customer extends Authenticatable
 {

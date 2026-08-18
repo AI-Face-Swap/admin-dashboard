@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AIController;
 use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\TemplateCategoryController;
@@ -35,6 +36,8 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::delete('roles/{role}', [RoleController::class, 'destroy'])->middleware('permission:roles.manage')->name('roles.destroy');
 
     Route::get('permissions', [PermissionController::class, 'index'])->middleware('permission:roles.view')->name('permissions.index');
+
+    Route::get('ai', [AIController::class, 'index'])->middleware('permission:ai.view')->name('ai.index');
 
     Route::get('templates', [TemplateController::class, 'index'])->middleware('permission:templates.view')->name('templates.index');
     Route::get('templates/create', [TemplateController::class, 'create'])->middleware('permission:templates.manage')->name('templates.create');

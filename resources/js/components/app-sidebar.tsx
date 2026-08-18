@@ -34,8 +34,9 @@ const mainNavItems: NavItem[] = [
     },
     {
         title: 'AI Generation',
-        href: '/ai',
+        href: '/admin/ai',
         icon: Sparkles,
+        permission: 'ai.view',
     },
     {
         title: 'Templates',

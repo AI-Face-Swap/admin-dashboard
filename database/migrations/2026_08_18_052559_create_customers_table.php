@@ -20,6 +20,7 @@ return new class extends Migration
             $table->string('auth_provider')->nullable();
             $table->string('auth_provider_id')->nullable();
             $table->string('customer_type')->default('free');
+            $table->unsignedInteger('coins')->default(100); // free customers start with 100 coins
             $table->timestamp('email_verified_at')->nullable();
             $table->timestamp('last_active_at')->nullable();
             $table->rememberToken();

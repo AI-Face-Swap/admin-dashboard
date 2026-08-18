@@ -21,6 +21,7 @@ return new class extends Migration
             $table->string('file_path');
             $table->string('thumbnail_path')->nullable();
             $table->string('model')->nullable(); // segmind model for this template
+            $table->unsignedInteger('cost')->default(0); // coins charged per generation using this template
             $table->boolean('is_active')->default(true);
             $table->timestamps();
 

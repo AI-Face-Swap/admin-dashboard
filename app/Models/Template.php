@@ -20,11 +20,12 @@ use Illuminate\Support\Facades\Storage;
  * @property string $file_path
  * @property string|null $thumbnail_path
  * @property string|null $model
+ * @property int $cost
  * @property bool $is_active
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['category_id', 'slug', 'name', 'description', 'type', 'file_path', 'thumbnail_path', 'model', 'is_active'])]
+#[Fillable(['category_id', 'slug', 'name', 'description', 'type', 'file_path', 'thumbnail_path', 'model', 'cost', 'is_active'])]
 class Template extends Model
 {
     use HasAutoSlug;
