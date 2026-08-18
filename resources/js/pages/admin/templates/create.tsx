@@ -35,6 +35,7 @@ export default function Create({
     const [type, setType] = useState<'image' | 'video'>('image');
     const [file, setFile] = useState<File | null>(null);
     const [thumbnail, setThumbnail] = useState<File | null>(null);
+    const [cost, setCost] = useState('0');
     const [model, setModel] = useState('');
     const [isActive, setIsActive] = useState(true);
     const [selectedTags, setSelectedTags] = useState<number[]>([]);
@@ -58,6 +59,7 @@ export default function Create({
                 description,
                 category_id: categoryId || undefined,
                 type,
+                cost: parseInt(cost, 10) || 0,
                 file,
                 thumbnail,
                 model,
@@ -110,68 +112,114 @@ export default function Create({
                                 <Textarea
                                     id="description"
                                     value={description}
-                                    onChange={(e) => setDescription(e.target.value)}
+                                    onChange={(e) =>
+                                        setDescription(e.target.value)
+                                    }
                                     placeholder="What customers will see"
                                     rows={2}
                                 />
                             </div>
 
-                            <div className="grid gap-4 sm:grid-cols-2">
+                            <div className="grid gap-4 sm:grid-cols-3">
                                 <div className="grid gap-2">
                                     <Label>Type</Label>
-                                    <Select value={type} onValueChange={(v) => setType(v as 'image' | 'video')}>
+                                    <Select
+                                        value={type}
+                                        onValueChange={(v) =>
+                                            setType(v as 'image' | 'video')
+                                        }
+                                    >
                                         <SelectTrigger>
                                             <SelectValue placeholder="Type" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="image">Image</SelectItem>
-                                            <SelectItem value="video">Video</SelectItem>
+                                            <SelectItem value="image">
+                                                Image
+                                            </SelectItem>
+                                            <SelectItem value="video">
+                                                Video
+                                            </SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
 
                                 <div className="grid gap-2">
                                     <Label htmlFor="category">Category</Label>
-                                    <Select value={categoryId} onValueChange={setCategoryId}>
+                                    <Select
+                                        value={categoryId}
+                                        onValueChange={setCategoryId}
+                                    >
                                         <SelectTrigger id="category">
                                             <SelectValue placeholder="None" />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {categories.map((cat) => (
-                                                <SelectItem key={cat.id} value={String(cat.id)}>
+                                                <SelectItem
+                                                    key={cat.id}
+                                                    value={String(cat.id)}
+                                                >
                                                     {cat.name}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
                                 </div>
+
+                                <div className="grid gap-2">
+                                    <Label htmlFor="cost">Cost (coins)</Label>
+                                    <Input
+                                        id="cost"
+                                        type="number"
+                                        min={0}
+                                        value={cost}
+                                        onChange={(e) =>
+                                            setCost(e.target.value)
+                                        }
+                                    />
+                                    <InputError message={errors.cost} />
+                                </div>
                             </div>
 
                             <div className="grid gap-2">
-                                <Label htmlFor="file">File ({type === 'image' ? 'image' : 'video'}, max 50 MB)</Label>
+                                <Label htmlFor="file">
+                                    File ({type === 'image' ? 'image' : 'video'}
+                                    , max 50 MB)
+                                </Label>
                                 <Input
                                     id="file"
                                     type="file"
-                                    accept={type === 'image' ? 'image/*' : 'video/*'}
-                                    onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                                    accept={
+                                        type === 'image' ? 'image/*' : 'video/*'
+                                    }
+                                    onChange={(e) =>
+                                        setFile(e.target.files?.[0] ?? null)
+                                    }
                                     required
                                 />
                                 <InputError message={errors.file} />
                             </div>
 
                             <div className="grid gap-2">
-                                <Label htmlFor="thumbnail">Thumbnail (optional, max 5 MB)</Label>
+                                <Label htmlFor="thumbnail">
+                                    Thumbnail (optional, max 5 MB)
+                                </Label>
                                 <Input
                                     id="thumbnail"
                                     type="file"
                                     accept="image/*"
-                                    onChange={(e) => setThumbnail(e.target.files?.[0] ?? null)}
+                                    onChange={(e) =>
+                                        setThumbnail(
+                                            e.target.files?.[0] ?? null,
+                                        )
+                                    }
                                 />
                                 <InputError message={errors.thumbnail} />
                             </div>
 
                             <div className="grid gap-2">
-                                <Label htmlFor="model">Segmind model (optional)</Label>
+                                <Label htmlFor="model">
+                                    Segmind model (optional)
+                                </Label>
                                 <Input
                                     id="model"
                                     value={model}
@@ -186,7 +234,10 @@ export default function Create({
                                 {tags.length === 0 && (
                                     <p className="text-sm text-muted-foreground">
                                         No tags yet —{' '}
-                                        <Link href="/admin/template-tags" className="underline">
+                                        <Link
+                                            href="/admin/template-tags"
+                                            className="underline"
+                                        >
                                             create some first
                                         </Link>
                                         .
@@ -199,8 +250,12 @@ export default function Create({
                                             className="flex cursor-pointer items-center gap-2 rounded border px-3 py-1.5 text-sm"
                                         >
                                             <Checkbox
-                                                checked={selectedTags.includes(tag.id)}
-                                                onCheckedChange={() => toggleTag(tag.id)}
+                                                checked={selectedTags.includes(
+                                                    tag.id,
+                                                )}
+                                                onCheckedChange={() =>
+                                                    toggleTag(tag.id)
+                                                }
                                             />
                                             <span>{tag.name}</span>
                                         </label>
@@ -212,7 +267,8 @@ export default function Create({
                                 <div>
                                     <Label htmlFor="is-active">Active</Label>
                                     <p className="text-sm text-muted-foreground">
-                                        Hidden templates are not offered to customers.
+                                        Hidden templates are not offered to
+                                        customers.
                                     </p>
                                 </div>
                                 <Switch
@@ -223,7 +279,9 @@ export default function Create({
                             </div>
 
                             <AnimatedButton type="submit" disabled={processing}>
-                                {processing ? 'Uploading...' : 'Upload Template'}
+                                {processing
+                                    ? 'Uploading...'
+                                    : 'Upload Template'}
                             </AnimatedButton>
                         </form>
                     </CardContent>

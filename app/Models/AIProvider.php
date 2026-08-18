@@ -39,7 +39,7 @@ class AIProvider extends Model
      */
     public function generations(): HasMany
     {
-        return $this->hasMany(AIGeneration::class);
+        return $this->hasMany(AIGeneration::class, 'provider_id');
     }
 
     /**

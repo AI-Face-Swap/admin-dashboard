@@ -70,6 +70,7 @@ class TemplateController extends Controller
             'type' => ['required', Rule::in([Template::TYPE_IMAGE, Template::TYPE_VIDEO])],
             'file' => ['required', 'file', 'max:51200'], // 50 MB
             'thumbnail' => ['nullable', 'image', 'max:5120'],
+            'cost' => ['sometimes', 'integer', 'min:0'],
             'model' => ['nullable', 'string', 'max:255'],
             'is_active' => ['sometimes', 'boolean'],
             'tags' => ['nullable', 'array'],
@@ -85,6 +86,7 @@ class TemplateController extends Controller
             'description' => $validated['description'] ?? null,
             'category_id' => $validated['category_id'] ?? null,
             'type' => $validated['type'],
+            'cost' => $validated['cost'] ?? 0,
             'file_path' => $filePath,
             'thumbnail_path' => $thumbnailPath,
             'model' => $validated['model'] ?? null,
@@ -121,6 +123,7 @@ class TemplateController extends Controller
             'type' => ['required', Rule::in([Template::TYPE_IMAGE, Template::TYPE_VIDEO])],
             'file' => ['nullable', 'file', 'max:51200'],
             'thumbnail' => ['nullable', 'image', 'max:5120'],
+            'cost' => ['sometimes', 'integer', 'min:0'],
             'model' => ['nullable', 'string', 'max:255'],
             'is_active' => ['sometimes', 'boolean'],
             'tags' => ['nullable', 'array'],
@@ -134,6 +137,7 @@ class TemplateController extends Controller
             'description' => $validated['description'] ?? null,
             'category_id' => $validated['category_id'] ?? null,
             'type' => $validated['type'],
+            'cost' => $validated['cost'] ?? $template->cost,
             'model' => $validated['model'] ?? null,
             'is_active' => $validated['is_active'] ?? true,
         ];

@@ -30,6 +30,7 @@ type Template = {
     type: 'image' | 'video';
     file_path: string;
     thumbnail_path: string | null;
+    cost: number;
     model: string | null;
     is_active: boolean;
     category: { id: number; name: string } | null;
@@ -53,6 +54,7 @@ export default function Edit({
     const [type, setType] = useState<'image' | 'video'>(template.type);
     const [file, setFile] = useState<File | null>(null);
     const [thumbnail, setThumbnail] = useState<File | null>(null);
+    const [cost, setCost] = useState(String(template.cost ?? 0));
     const [model, setModel] = useState(template.model ?? '');
     const [isActive, setIsActive] = useState(template.is_active);
     const [selectedTags, setSelectedTags] = useState<number[]>(
@@ -78,6 +80,7 @@ export default function Edit({
                 description,
                 category_id: categoryId || undefined,
                 type,
+                cost: parseInt(cost, 10) || 0,
                 file,
                 thumbnail,
                 model,
@@ -101,7 +104,10 @@ export default function Edit({
 
             <div className="flex flex-1 flex-col gap-6 p-4 md:p-6">
                 <div className="flex items-center justify-between">
-                    <Heading title={`Edit ${template.name}`} description={template.slug} />
+                    <Heading
+                        title={`Edit ${template.name}`}
+                        description={template.slug}
+                    />
                     <Link href="/admin/templates">
                         <AnimatedButton variant="outline">Back</AnimatedButton>
                     </Link>
@@ -126,39 +132,70 @@ export default function Edit({
                                 <Textarea
                                     id="description"
                                     value={description}
-                                    onChange={(e) => setDescription(e.target.value)}
+                                    onChange={(e) =>
+                                        setDescription(e.target.value)
+                                    }
                                     rows={2}
                                 />
                             </div>
 
-                            <div className="grid gap-4 sm:grid-cols-2">
+                            <div className="grid gap-4 sm:grid-cols-3">
                                 <div className="grid gap-2">
                                     <Label>Type</Label>
-                                    <Select value={type} onValueChange={(v) => setType(v as 'image' | 'video')}>
+                                    <Select
+                                        value={type}
+                                        onValueChange={(v) =>
+                                            setType(v as 'image' | 'video')
+                                        }
+                                    >
                                         <SelectTrigger>
                                             <SelectValue placeholder="Type" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="image">Image</SelectItem>
-                                            <SelectItem value="video">Video</SelectItem>
+                                            <SelectItem value="image">
+                                                Image
+                                            </SelectItem>
+                                            <SelectItem value="video">
+                                                Video
+                                            </SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
 
                                 <div className="grid gap-2">
                                     <Label htmlFor="category">Category</Label>
-                                    <Select value={categoryId} onValueChange={setCategoryId}>
+                                    <Select
+                                        value={categoryId}
+                                        onValueChange={setCategoryId}
+                                    >
                                         <SelectTrigger id="category">
                                             <SelectValue placeholder="None" />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {categories.map((cat) => (
-                                                <SelectItem key={cat.id} value={String(cat.id)}>
+                                                <SelectItem
+                                                    key={cat.id}
+                                                    value={String(cat.id)}
+                                                >
                                                     {cat.name}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
+                                </div>
+
+                                <div className="grid gap-2">
+                                    <Label htmlFor="cost">Cost (coins)</Label>
+                                    <Input
+                                        id="cost"
+                                        type="number"
+                                        min={0}
+                                        value={cost}
+                                        onChange={(e) =>
+                                            setCost(e.target.value)
+                                        }
+                                    />
+                                    <InputError message={errors.cost} />
                                 </div>
                             </div>
 
@@ -169,8 +206,12 @@ export default function Edit({
                                 <Input
                                     id="file"
                                     type="file"
-                                    accept={type === 'image' ? 'image/*' : 'video/*'}
-                                    onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                                    accept={
+                                        type === 'image' ? 'image/*' : 'video/*'
+                                    }
+                                    onChange={(e) =>
+                                        setFile(e.target.files?.[0] ?? null)
+                                    }
                                 />
                                 <p className="text-xs text-muted-foreground">
                                     Current: {template.file_path}
@@ -186,13 +227,19 @@ export default function Edit({
                                     id="thumbnail"
                                     type="file"
                                     accept="image/*"
-                                    onChange={(e) => setThumbnail(e.target.files?.[0] ?? null)}
+                                    onChange={(e) =>
+                                        setThumbnail(
+                                            e.target.files?.[0] ?? null,
+                                        )
+                                    }
                                 />
                                 <InputError message={errors.thumbnail} />
                             </div>
 
                             <div className="grid gap-2">
-                                <Label htmlFor="model">Segmind model (optional)</Label>
+                                <Label htmlFor="model">
+                                    Segmind model (optional)
+                                </Label>
                                 <Input
                                     id="model"
                                     value={model}
@@ -210,8 +257,12 @@ export default function Edit({
                                             className="flex cursor-pointer items-center gap-2 rounded border px-3 py-1.5 text-sm"
                                         >
                                             <Checkbox
-                                                checked={selectedTags.includes(tag.id)}
-                                                onCheckedChange={() => toggleTag(tag.id)}
+                                                checked={selectedTags.includes(
+                                                    tag.id,
+                                                )}
+                                                onCheckedChange={() =>
+                                                    toggleTag(tag.id)
+                                                }
                                             />
                                             <span>{tag.name}</span>
                                         </label>
@@ -223,7 +274,8 @@ export default function Edit({
                                 <div>
                                     <Label htmlFor="is-active">Active</Label>
                                     <p className="text-sm text-muted-foreground">
-                                        Hidden templates are not offered to customers.
+                                        Hidden templates are not offered to
+                                        customers.
                                     </p>
                                 </div>
                                 <Switch

@@ -25,6 +25,8 @@ Laravel admin dashboard + mobile-facing API for AI media generation (image gener
 | 3 | AI provider architecture: contract, factory, service, SegmindProvider (face-swap end-to-end, live-tested) | ✅ |
 | 4 | Shared face-swap API endpoint (`/api/v1/ai/face-swap`) + request logging + admin AI page | ✅ |
 | 5 | Customer auth (Sanctum): register/login/logout/me, coin system (100 coins default, per-template cost) | ✅ |
+| 5 | Template cost input (create/edit/list in admin dashboard) | ✅ |
+| 5 | Admin providers page (`/admin/providers` — list, toggle active/inactive, stats) | ✅ |
 
 ### Pending phases
 
@@ -32,7 +34,6 @@ Laravel admin dashboard + mobile-facing API for AI media generation (image gener
 |---|---|
 | 5 | Social login (Google/Apple) — needs client credentials |
 | 5 | Customer email verification + password reset |
-| 5 | Template cost input on admin create/edit forms |
 | 6 | Video face swap (queued job, 5+ min) |
 | 6 | Replicate provider |
 | 7 | Admin API playground |
@@ -63,6 +64,13 @@ Laravel admin dashboard + mobile-facing API for AI media generation (image gener
 | `POST /api/v1/auth/logout` | sanctum | Revoke token |
 | `GET /api/v1/auth/me` | sanctum | Authenticated customer profile |
 | `POST /api/v1/ai/face-swap` | sanctum (session + token) | Shared face-swap endpoint |
+
+**Admin web routes:**
+
+| Route | Permission | Purpose |
+|---|---|---|
+| `GET /admin/providers` | `providers.view` | List all providers with stats |
+| `PATCH /admin/providers/{provider}/toggle` | `providers.manage` | Toggle provider active/inactive |
 
 ### Middleware setup (`bootstrap/app.php`)
 

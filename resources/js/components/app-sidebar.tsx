@@ -46,8 +46,9 @@ const mainNavItems: NavItem[] = [
     },
     {
         title: 'Providers',
-        href: '/providers',
+        href: '/admin/providers',
         icon: Server,
+        permission: 'providers.view',
     },
     {
         title: 'Users',

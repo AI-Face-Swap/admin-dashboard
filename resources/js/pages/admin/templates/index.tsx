@@ -26,6 +26,7 @@ type Template = {
     type: 'image' | 'video';
     file_url: string;
     thumbnail_url: string | null;
+    cost: number;
     is_active: boolean;
     category: { id: number; name: string } | null;
     tags: { id: number; name: string }[];
@@ -49,7 +50,10 @@ export default function Index({ templates, categories, filters }: Props) {
             '/admin/templates',
             {
                 search: next.search ?? search,
-                category: next.category && next.category !== 'all' ? next.category : undefined,
+                category:
+                    next.category && next.category !== 'all'
+                        ? next.category
+                        : undefined,
             },
             { preserveState: true, replace: true },
         );
@@ -68,10 +72,14 @@ export default function Index({ templates, categories, filters }: Props) {
                     {can('templates.manage') && (
                         <div className="flex gap-2">
                             <Link href="/admin/template-categories">
-                                <AnimatedButton variant="outline">Categories</AnimatedButton>
+                                <AnimatedButton variant="outline">
+                                    Categories
+                                </AnimatedButton>
                             </Link>
                             <Link href="/admin/template-tags">
-                                <AnimatedButton variant="outline">Tags</AnimatedButton>
+                                <AnimatedButton variant="outline">
+                                    Tags
+                                </AnimatedButton>
                             </Link>
                             <Link href="/admin/templates/create">
                                 <AnimatedButton>Upload Template</AnimatedButton>
@@ -131,11 +139,18 @@ export default function Index({ templates, categories, filters }: Props) {
 
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                     {templates.data.map((template) => (
-                        <AnimatedCard key={template.id} className="overflow-hidden">
+                        <AnimatedCard
+                            key={template.id}
+                            className="overflow-hidden"
+                        >
                             <div className="aspect-video bg-muted">
-                                {template.thumbnail_url || template.type === 'image' ? (
+                                {template.thumbnail_url ||
+                                template.type === 'image' ? (
                                     <img
-                                        src={template.thumbnail_url ?? template.file_url}
+                                        src={
+                                            template.thumbnail_url ??
+                                            template.file_url
+                                        }
                                         alt={template.name}
                                         className="size-full object-cover"
                                     />
@@ -148,17 +163,32 @@ export default function Index({ templates, categories, filters }: Props) {
                             <CardContent className="space-y-2">
                                 <div className="flex items-start justify-between gap-2">
                                     <div>
-                                        <p className="font-medium">{template.name}</p>
+                                        <p className="font-medium">
+                                            {template.name}
+                                        </p>
                                         <p className="font-mono text-xs text-muted-foreground">
                                             {template.slug}
                                         </p>
                                     </div>
-                                    <Badge variant={template.is_active ? 'default' : 'secondary'}>
-                                        {template.is_active ? 'active' : 'hidden'}
+                                    <Badge
+                                        variant={
+                                            template.is_active
+                                                ? 'default'
+                                                : 'secondary'
+                                        }
+                                    >
+                                        {template.is_active
+                                            ? 'active'
+                                            : 'hidden'}
                                     </Badge>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <Badge variant="outline">{template.type}</Badge>
+                                    <Badge variant="outline">
+                                        {template.type}
+                                    </Badge>
+                                    <Badge variant="outline">
+                                        🪙 {template.cost}
+                                    </Badge>
                                     {template.category && (
                                         <span className="text-xs text-muted-foreground">
                                             {template.category.name}
@@ -179,8 +209,13 @@ export default function Index({ templates, categories, filters }: Props) {
                                 )}
                                 {can('templates.manage') && (
                                     <div className="flex gap-2 pt-1">
-                                        <Link href={`/admin/templates/${template.id}/edit`}>
-                                            <AnimatedButton variant="outline" size="sm">
+                                        <Link
+                                            href={`/admin/templates/${template.id}/edit`}
+                                        >
+                                            <AnimatedButton
+                                                variant="outline"
+                                                size="sm"
+                                            >
                                                 Edit
                                             </AnimatedButton>
                                         </Link>
@@ -188,8 +223,14 @@ export default function Index({ templates, categories, filters }: Props) {
                                             variant="destructive"
                                             size="sm"
                                             onClick={() => {
-                                                if (confirm(`Delete template "${template.name}"?`)) {
-                                                    router.delete(`/admin/templates/${template.id}`);
+                                                if (
+                                                    confirm(
+                                                        `Delete template "${template.name}"?`,
+                                                    )
+                                                ) {
+                                                    router.delete(
+                                                        `/admin/templates/${template.id}`,
+                                                    );
                                                 }
                                             }}
                                         >
@@ -207,7 +248,5 @@ export default function Index({ templates, categories, filters }: Props) {
 }
 
 Index.layout = {
-    breadcrumbs: [
-        { title: 'Templates', href: admin.templates.index() },
-    ],
+    breadcrumbs: [{ title: 'Templates', href: admin.templates.index() }],
 };
