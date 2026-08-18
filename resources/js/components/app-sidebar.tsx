@@ -2,6 +2,7 @@ import { Link } from '@inertiajs/react';
 import {
     BookOpen,
     LayoutGrid,
+    LayoutTemplate,
     Server,
     Settings,
     ShieldCheck,
@@ -37,19 +38,27 @@ const mainNavItems: NavItem[] = [
         icon: Sparkles,
     },
     {
+        title: 'Templates',
+        href: '/admin/templates',
+        icon: LayoutTemplate,
+        permission: 'templates.view',
+    },
+    {
         title: 'Providers',
         href: '/providers',
         icon: Server,
     },
     {
         title: 'Users',
-        href: '/users',
+        href: '/admin/users',
         icon: Users,
+        permission: 'users.view',
     },
     {
         title: 'Roles & Permissions',
-        href: '/roles',
+        href: '/admin/roles',
         icon: ShieldCheck,
+        permission: 'roles.view',
     },
     {
         title: 'API Playground',
