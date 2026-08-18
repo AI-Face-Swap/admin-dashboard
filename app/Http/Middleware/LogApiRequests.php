@@ -3,6 +3,8 @@
 namespace App\Http\Middleware;
 
 use App\Models\ApiRequestLog;
+use App\Models\Customer;
+use App\Models\User;
 use Closure;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -34,8 +36,11 @@ class LogApiRequests
 
         $response = $next($request);
 
+        $authUser = $request->user();
+
         ApiRequestLog::create([
-            'user_id' => $request->user()?->id,
+            'user_id' => $authUser instanceof User ? $authUser->id : null,
+            'customer_id' => $authUser instanceof Customer ? $authUser->id : null,
             'method' => $request->method(),
             'path' => $request->path(),
             'request_headers' => $this->safeHeaders($request->headers->all()),

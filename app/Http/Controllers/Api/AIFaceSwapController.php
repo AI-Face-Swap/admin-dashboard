@@ -6,12 +6,14 @@ use App\AI\DTOs\GenerationRequest;
 use App\AI\Services\AIService;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\FaceSwapRequest;
+use App\Models\Customer;
 use App\Models\Template;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use RuntimeException;
 
 class AIFaceSwapController extends Controller
 {
@@ -22,14 +24,16 @@ class AIFaceSwapController extends Controller
     /**
      * Swap a face onto a target image or template.
      *
-     * This is the single shared endpoint — the admin dashboard and the
-     * mobile app both call this. No duplicate AI logic anywhere.
+     * This is the single shared endpoint — the admin dashboard (session)
+     * and the mobile app (Sanctum token) both call this. No duplicate AI
+     * logic anywhere.
      */
     public function store(FaceSwapRequest $request): JsonResponse
     {
         $faceUrl = $this->faceUrl($request);
 
         $template = null;
+        $templateCost = 0;
 
         if ($request->filled('template_slug')) {
             $template = Template::where('slug', $request->string('template_slug'))
@@ -38,8 +42,15 @@ class AIFaceSwapController extends Controller
                 ?? throw new ModelNotFoundException('Template not found.');
 
             $targetUrl = $template->file_url;
+            $templateCost = $template->cost;
         } else {
             $targetUrl = $request->string('target_image_url')->toString();
+        }
+
+        $requester = $request->user();
+
+        if ($requester instanceof Customer) {
+            $this->authorizeCustomerCoins($requester, $templateCost);
         }
 
         $generation = $this->aiService->faceSwap(
@@ -51,8 +62,12 @@ class AIFaceSwapController extends Controller
                 ],
                 templateId: $template?->id,
             ),
-            $request->user(),
+            $requester,
         );
+
+        if ($requester instanceof Customer && $generation->status === 'completed') {
+            $requester->spendCoins($templateCost);
+        }
 
         return response()->json([
             'status' => $generation->status,
@@ -65,8 +80,20 @@ class AIFaceSwapController extends Controller
                 'currency' => $generation->currency,
                 'duration_ms' => $generation->duration_ms,
                 'output' => $generation->output_metadata ?? [],
+                'coins_spent' => $requester instanceof Customer ? $templateCost : null,
+                'coins_remaining' => $requester instanceof Customer ? $requester->fresh()->coins : null,
             ],
         ]);
+    }
+
+    /**
+     * Reject the request when the customer cannot afford the coin cost.
+     */
+    private function authorizeCustomerCoins(Customer $customer, int $cost): void
+    {
+        if ($cost > 0 && ! $customer->hasEnoughCoins($cost)) {
+            abort(402, 'Not enough coins — top up to continue.');
+        }
     }
 
     /**
@@ -85,7 +112,7 @@ class AIFaceSwapController extends Controller
             );
 
             if ($path === false) {
-                throw new \RuntimeException('Failed to store the face image.');
+                throw new RuntimeException('Failed to store the face image.');
             }
 
             return Storage::disk('spaces')->url($path);

@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
+use Laravel\Sanctum\HasApiTokens;
 
 /**
  * @property int $id
@@ -31,7 +32,7 @@ use Illuminate\Support\Carbon;
 class Customer extends Authenticatable
 {
     /** @use HasFactory<CustomerFactory> */
-    use HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable;
 
     public const TYPE_FREE = 'free';
 
@@ -51,6 +52,22 @@ class Customer extends Authenticatable
     public function isPremium(): bool
     {
         return $this->customer_type === self::TYPE_PREMIUM;
+    }
+
+    /**
+     * Determine if the customer can afford a coin cost.
+     */
+    public function hasEnoughCoins(int $cost): bool
+    {
+        return $this->coins >= $cost;
+    }
+
+    /**
+     * Deduct coins. The caller is responsible for checking the balance.
+     */
+    public function spendCoins(int $cost): void
+    {
+        $this->decrement('coins', max(0, $cost));
     }
 
     /**

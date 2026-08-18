@@ -14,7 +14,64 @@
 
 Laravel admin dashboard + mobile-facing API for AI media generation (image generation, face swap, video face swap) via abstracted providers (Segmind, Replicate) with usage/cost tracking, an admin API testing playground, roles & permissions, and a theme system. Full product plan lives in `project-usecase.md` — read it before designing features.
 
-Current state: clean Laravel + Inertia + React foundation with auth (login, register, passkeys, 2FA), settings pages (profile, security, appearance), welcome page, and a placeholder dashboard. Demo CRUD (categories, sub-categories, templates, exports) was removed. The admin dashboard design will be rebuilt later — do not invest in the current shell's visual design.
+### Completed phases
+
+| Phase | Feature | Status |
+|---|---|---|
+| 1 | Laravel + Inertia + React + shadcn/ui + animated components | ✅ |
+| 2 | Admin core: users, roles, permissions (RBAC, 6 roles, 15 permissions), dashboard | ✅ |
+| 2 | Templates CRUD (categories, tags, DO Spaces uploads, auto-slug) | ✅ |
+| 2 | Admin dashboard layout (sidebar, animated shadcn wrappers) | ✅ |
+| 3 | AI provider architecture: contract, factory, service, SegmindProvider (face-swap end-to-end, live-tested) | ✅ |
+| 4 | Shared face-swap API endpoint (`/api/v1/ai/face-swap`) + request logging + admin AI page | ✅ |
+| 5 | Customer auth (Sanctum): register/login/logout/me, coin system (100 coins default, per-template cost) | ✅ |
+
+### Pending phases
+
+| Phase | Feature |
+|---|---|
+| 5 | Social login (Google/Apple) — needs client credentials |
+| 5 | Customer email verification + password reset |
+| 5 | Template cost input on admin create/edit forms |
+| 6 | Video face swap (queued job, 5+ min) |
+| 6 | Replicate provider |
+| 7 | Admin API playground |
+| 8 | Usage/cost analytics dashboard |
+| 9 | Animation polish, performance, tests |
+
+### Key architecture patterns
+
+- **Shared API rule**: Admin dashboard (session cookie) and mobile app (Bearer token) hit the **same** `/api/v1/ai/face-swap` endpoint — never duplicate AI logic.
+- **Provider abstraction**: `app/AI/` — `AIProviderInterface` → `AIProviderFactory` → `SegmindProvider`. Adding a new provider = 1 new class + 1 factory case.
+- **`AIService`** is the only class controllers call: resolves provider → persists generation → returns normalized response.
+- **`AIResponse` DTO**: provider, model, request_id, status, duration, usage, cost, currency, output, raw_response.
+- **Cost is nullable**: `null` when the provider doesn't report it (never fake `0`). Segmind v2 returns `metrics.cost`.
+- **`provider_id` is the source of truth**: no duplicated provider string column in `ai_generations`.
+- **Slugs are auto-suffixed**: duplicate names get `name-2`, `name-3` (shared `HasAutoSlug` trait). Slugs are stable on edit.
+- **Coin economy**: customers start with 100 coins; each generation deducts the template's cost; reject 402 on insufficient balance.
+
+### Current DB tables
+
+`users` (admin), `customers` (mobile/web users), `roles`, `permissions`, `role_user`, `permission_role`, `templates`, `template_categories`, `template_tags`, `template_tag`, `ai_providers`, `ai_generations`, `api_request_logs`, `personal_access_tokens`, `sessions`, `cache`, `jobs`, `failed_jobs`, `passkeys`, `password_reset_tokens`
+
+### Current API routes
+
+| Route | Auth | Purpose |
+|---|---|---|
+| `POST /api/v1/auth/register` | guest | Register customer (returns token + 100 coins) |
+| `POST /api/v1/auth/login` | guest | Login customer (returns token) |
+| `POST /api/v1/auth/logout` | sanctum | Revoke token |
+| `GET /api/v1/auth/me` | sanctum | Authenticated customer profile |
+| `POST /api/v1/ai/face-swap` | sanctum (session + token) | Shared face-swap endpoint |
+
+### Middleware setup (`bootstrap/app.php`)
+
+- `EnsureFrontendRequestsAreStateful` — **prepended** to the `api` group so Sanctum accepts session-cookie auth for admin dashboard API calls. **This is required** — without it, `/api/*` routes return 401 because the session is never started.
+- `LogApiRequests` — appended to the `api` group. Logs method, path, headers (sensitive excluded), body, response status, response headers (billing source), body, duration.
+
+### Dev DB note
+
+`SESSION_DRIVER=database` in `.env`. The `sessions` table is created by the first migration (`0001_01_01_000000_create_users_table.php`). After `migrate:fresh`, run seeders to restore admin + role data.
 
 ## Build approach
 
@@ -54,6 +111,10 @@ composer run types:check
 - Provider integrations go behind an interface + factory (`app/AI/`), never hardcoded in controllers.
 - Passwords / secrets come from `.env`, never committed.
 - Run Pint + typecheck + the relevant tests before finishing any change.
+- **Sanctum stateful middleware is mandatory on the `api` group** for session-cookie auth to work. Never remove `EnsureFrontendRequestsAreStateful` from `bootstrap/app.php`.
+- **Array session driver caveat**: the default test session driver (`array`) shares its store across the whole test run, so a login-then-API-call test passes even without `EnsureFrontendRequestsAreStateful`. For faithful API-auth tests, use `config(['session.driver' => 'database'])` + pass the real session cookie via `withUnencryptedCookies` + set `HTTP_REFERER` to trigger the stateful pipeline.
+- **Session cookie name** is `laravel-session` (dash) in Laravel 13 — not `laravel_session` (underscore). Use `config('session.cookie')` for portability.
+- **Slug uniqueness**: duplicate slugs are auto-suffixed (`testing` → `testing-2`) by the `HasAutoSlug` trait. Never add `unique` validation rules on slug fields — the trait handles it.
 
 ## Workflow — every feature request (approval gated)
 

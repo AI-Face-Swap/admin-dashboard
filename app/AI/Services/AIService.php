@@ -12,6 +12,7 @@ use App\AI\Exceptions\UnsupportedOperationException;
 use App\AI\Factories\AIProviderFactory;
 use App\Models\AIGeneration;
 use App\Models\AIProvider;
+use App\Models\Customer;
 use App\Models\User;
 use Throwable;
 
@@ -31,7 +32,7 @@ class AIService
     /**
      * Swap a face (face-swap operation, end-to-end).
      */
-    public function faceSwap(GenerationRequest $request, ?User $requester = null): AIGeneration
+    public function faceSwap(GenerationRequest $request, User|Customer|null $requester = null): AIGeneration
     {
         return $this->execute($request, $requester);
     }
@@ -45,14 +46,15 @@ class AIService
      * @throws AIGenerationFailedException
      * @throws AIGenerationTimeoutException
      */
-    public function execute(GenerationRequest $request, ?User $requester = null): AIGeneration
+    public function execute(GenerationRequest $request, User|Customer|null $requester = null): AIGeneration
     {
         $provider = $this->factory->make($request->provider);
 
         $providerModel = AIProvider::where('slug', $request->provider)->firstOrFail();
 
         $generation = AIGeneration::create([
-            'user_id' => $requester?->id,
+            'user_id' => $requester instanceof User ? $requester->id : null,
+            'customer_id' => $requester instanceof Customer ? $requester->id : null,
             'provider_id' => $providerModel->id,
             'template_id' => $request->templateId,
             'operation' => $request->operation,

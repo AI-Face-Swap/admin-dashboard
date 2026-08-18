@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AIFaceSwapController;
+use App\Http\Controllers\Api\CustomerAuthController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -9,11 +10,22 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 |
 | The shared API used by the mobile app and the admin dashboard.
-| Currently session-authenticated for admin use; customer token auth
-| (Sanctum) ships with the customer auth phase — endpoints unchanged.
+|
+| Auth model:
+|  - Customers (mobile app) authenticate with Sanctum Bearer tokens.
+|  - Admins (dashboard) authenticate with the session cookie via
+|    Sanctum's stateful handling — the face-swap endpoint accepts both.
 |
 */
 
-Route::prefix('v1')->middleware(['web', 'auth'])->group(function () {
+Route::prefix('v1')->middleware('guest:customer')->group(function () {
+    Route::post('auth/register', [CustomerAuthController::class, 'register'])->middleware('throttle:10,1');
+    Route::post('auth/login', [CustomerAuthController::class, 'login'])->middleware('throttle:10,1');
+});
+
+Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
+    Route::post('auth/logout', [CustomerAuthController::class, 'logout']);
+    Route::get('auth/me', [CustomerAuthController::class, 'me']);
+
     Route::post('ai/face-swap', [AIFaceSwapController::class, 'store'])->middleware('throttle:30,1');
 });

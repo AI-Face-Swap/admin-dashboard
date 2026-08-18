@@ -202,6 +202,7 @@ erDiagram
 |---|---|
 | `customers` | **End users** (mobile app + web app) who generate images / face swaps. Separate from admin `users` |
 | `customer_subscriptions` | Plan + payment records. **Payment integration (KBZ, RevenueCat, Stripe, Google Pay, Apple Pay) is deferred** — table is designed now, wired later |
+| `personal_access_tokens` | Sanctum tokens for the mobile app. Auth via `POST /api/v1/auth/*` (register / login / logout / me) |
 
 `customers` key columns:
 
@@ -271,7 +272,7 @@ This table powers the dashboard stat cards (Today's Cost, Total Generations, Fac
 
 | Table | Purpose |
 |---|---|
-| `api_request_logs` | Every request made to the shared `/api/*` endpoints (face swap now, API playground later): method, path, request headers (sensitive ones excluded), body, response status, **response headers (full — billing/cost source)**, response body, duration |
+| `api_request_logs` | Every request made to the shared `/api/*` endpoints (face swap now, API playground later): method, path, request headers (sensitive ones excluded), body, response status, **response headers (full — billing/cost source)**, response body, duration. `user_id` (admin session) **or** `customer_id` (Bearer token) records who called |
 
 ## Relationships in plain words
 
@@ -288,4 +289,5 @@ This table powers the dashboard stat cards (Today's Cost, Total Generations, Fac
 - API keys are environment variables (`SEGMIND_API_KEY`, `REPLICATE_API_TOKEN`), never stored in `ai_providers.config`.
 - `ai_generations` grows fast: index on `(user_id, created_at)`, `(customer_id, created_at)`, `status`.
 - `templates.slug` must be indexed (API lookups by slug).
-- Free-user quota: `customers.customer_type` + a counter on `ai_generations` (e.g. generations today per customer) enforced in the Laravel API.
+- Free-user quota: **coins** (`customers.coins`, default 100). Each generation deducts the **template's cost** (`templates.cost`); reject with 402 when the balance is insufficient.
+- Customer auth is **Sanctum** (stateful sessions for the admin dashboard + Bearer tokens for the mobile app) on a separate `customer` guard. Admin Fortify auth is untouched.
