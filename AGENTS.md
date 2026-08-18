@@ -89,8 +89,10 @@ composer run dev
 # Frontend build
 npm run build
 
-# Test (Pest)
-php artisan test --compact
+# Test — always run ONLY what's needed (see "Test discipline" below)
+php artisan test --compact --filter=TestName        # one feature test
+php artisan test --compact tests/Feature/SomeTest.php # one file
+php artisan test --compact                           # full suite (only at milestone gates)
 
 # PHP code style
 vendor/bin/pint --dirty --format agent
@@ -102,6 +104,22 @@ npm run types:check
 composer run types:check
 ```
 
+## Test discipline
+
+**Running the full test suite (`php artisan test --compact`) on every change is too slow and wasteful.** Follow these rules:
+
+| What changed | What to run |
+|---|---|
+| Markdown / docs files (`.md`) | **Skip tests entirely.** MD changes never affect test results. |
+| PHP files (model, controller, middleware, etc.) | Run the specific test file(s) that cover that code. Use `--filter=` or pass the file path. |
+| React / TypeScript files (pages, components) | Run `npm run build` + `npx eslint` on the changed files. No PHP tests needed for pure UI changes. |
+| Migration / seeder files | Run `php artisan test --compact --filter=SeederName` or the relevant feature test. |
+| Config / env files | Run only the tests that depend on that config. |
+| Multiple files across layers | Run only the test files that directly exercise the changed code. |
+| **Milestone gates** (end of a phase, before deploy, before commit) | Run the full suite **once** to catch regressions. |
+
+**Minimum rule:** always run at least the specific test file you wrote or updated. Never run the full suite just because a markdown file was edited.
+
 ## Rules
 
 - Follow Laravel conventions: `php artisan make:` for new files, Eloquent models with factories, named routes, feature tests.
@@ -110,7 +128,7 @@ composer run types:check
 - Keep the API clean and versioned (`/api/v1/...`); do not write separate logic for admin vs mobile — reuse the same services.
 - Provider integrations go behind an interface + factory (`app/AI/`), never hardcoded in controllers.
 - Passwords / secrets come from `.env`, never committed.
-- Run Pint + typecheck + the relevant tests before finishing any change.
+- **Test discipline**: run only the tests that cover your changes. Never run the full suite for markdown edits. See "Test discipline" section above.
 - **Sanctum stateful middleware is mandatory on the `api` group** for session-cookie auth to work. Never remove `EnsureFrontendRequestsAreStateful` from `bootstrap/app.php`.
 - **Array session driver caveat**: the default test session driver (`array`) shares its store across the whole test run, so a login-then-API-call test passes even without `EnsureFrontendRequestsAreStateful`. For faithful API-auth tests, use `config(['session.driver' => 'database'])` + pass the real session cookie via `withUnencryptedCookies` + set `HTTP_REFERER` to trigger the stateful pipeline.
 - **Session cookie name** is `laravel-session` (dash) in Laravel 13 — not `laravel_session` (underscore). Use `config('session.cookie')` for portability.
