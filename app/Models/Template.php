@@ -2,15 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasAutoSlug;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Casts\Attribute;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 
 /**
  * @property int $id
@@ -29,7 +27,7 @@ use Illuminate\Support\Str;
 #[Fillable(['category_id', 'slug', 'name', 'description', 'type', 'file_path', 'thumbnail_path', 'model', 'is_active'])]
 class Template extends Model
 {
-    use HasFactory;
+    use HasAutoSlug;
 
     public const TYPE_IMAGE = 'image';
 
@@ -70,31 +68,19 @@ class Template extends Model
     /**
      * The full public URL of the template file.
      */
-    protected function fileUrl(): Attribute
+    public function getFileUrlAttribute(): string
     {
-        return Attribute::get(fn () => Storage::disk(self::DISK)->url($this->file_path));
+        return Storage::disk(self::DISK)->url($this->file_path);
     }
 
     /**
      * The full public URL of the thumbnail, if one exists.
      */
-    protected function thumbnailUrl(): Attribute
+    public function getThumbnailUrlAttribute(): ?string
     {
-        return Attribute::get(fn () => $this->thumbnail_path
+        return $this->thumbnail_path
             ? Storage::disk(self::DISK)->url($this->thumbnail_path)
-            : null);
-    }
-
-    /**
-     * Boot the model and auto-generate a slug when one is not provided.
-     */
-    protected static function booted(): void
-    {
-        static::saving(function (Template $template) {
-            if (empty($template->slug)) {
-                $template->slug = Str::slug($template->name);
-            }
-        });
+            : null;
     }
 
     /**

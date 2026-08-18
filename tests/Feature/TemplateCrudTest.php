@@ -108,7 +108,7 @@ test('an admin can update a template and replace its file', function () {
 
     $template->refresh();
     expect($template->name)->toBe('New Template')
-        ->and($template->slug)->toBe('new-template')
+        ->and($template->slug)->toBe('old-template') // slugs stay stable on rename
         ->and($template->is_active)->toBeFalse()
         ->and($template->file_path)->not->toBe('templates/old.jpg');
 
@@ -197,6 +197,76 @@ test('template listing filters by category and search', function () {
         ->assertInertia(fn ($page) => $page
             ->component('admin/templates/index')
             ->has('templates.data', 1));
+});
+
+test('duplicate template names get auto-suffixed slugs', function () {
+    $this->actingAs($this->admin);
+
+    $this->post(route('admin.templates.store'), [
+        'name' => 'Testing',
+        'type' => Template::TYPE_IMAGE,
+        'file' => UploadedFile::fake()->image('testing-1.jpg'),
+    ]);
+
+    $this->post(route('admin.templates.store'), [
+        'name' => 'Testing',
+        'type' => Template::TYPE_IMAGE,
+        'file' => UploadedFile::fake()->image('testing-2.jpg'),
+    ]);
+
+    expect(Template::pluck('slug')->sort()->values()->all())->toBe(['testing', 'testing-2']);
+});
+
+test('duplicate category and tag names get auto-suffixed slugs', function () {
+    $this->actingAs($this->admin);
+
+    $this->post(route('admin.template-categories.store'), ['name' => 'Superhero']);
+    $this->post(route('admin.template-categories.store'), ['name' => 'Superhero']);
+    $this->post(route('admin.template-tags.store'), ['name' => 'hd']);
+    $this->post(route('admin.template-tags.store'), ['name' => 'hd']);
+
+    expect(TemplateCategory::pluck('slug')->sort()->values()->all())
+        ->toBe(['superhero', 'superhero-2'])
+        ->and(TemplateTag::pluck('slug')->sort()->values()->all())
+        ->toBe(['hd', 'hd-2']);
+});
+
+test('an explicitly provided duplicate slug is auto-suffixed', function () {
+    $this->actingAs($this->admin);
+
+    $this->post(route('admin.templates.store'), [
+        'name' => 'First',
+        'slug' => 'testing',
+        'type' => Template::TYPE_IMAGE,
+        'file' => UploadedFile::fake()->image('first.jpg'),
+    ]);
+
+    $this->post(route('admin.templates.store'), [
+        'name' => 'Second',
+        'slug' => 'testing',
+        'type' => Template::TYPE_IMAGE,
+        'file' => UploadedFile::fake()->image('second.jpg'),
+    ]);
+
+    expect(Template::where('name', 'First')->first()->slug)->toBe('testing')
+        ->and(Template::where('name', 'Second')->first()->slug)->toBe('testing-2');
+});
+
+test('editing a template keeps its slug stable', function () {
+    $this->actingAs($this->admin);
+
+    $template = Template::create([
+        'name' => 'Stable Slug',
+        'type' => Template::TYPE_IMAGE,
+        'file_path' => 'templates/stable.jpg',
+    ]);
+
+    $this->put(route('admin.templates.update', $template), [
+        'name' => 'Renamed Template',
+        'type' => Template::TYPE_IMAGE,
+    ]);
+
+    expect($template->fresh()->slug)->toBe('stable-slug');
 });
 
 test('templates routes require the templates permission', function () {

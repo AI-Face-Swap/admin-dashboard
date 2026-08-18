@@ -63,7 +63,8 @@ class TemplateController extends Controller
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'slug' => ['nullable', 'string', 'max:255', 'unique:templates,slug'],
+            // No unique rule: HasAutoSlug appends -2, -3... when the slug exists.
+            'slug' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:1000'],
             'category_id' => ['nullable', 'integer', 'exists:template_categories,id'],
             'type' => ['required', Rule::in([Template::TYPE_IMAGE, Template::TYPE_VIDEO])],
@@ -114,7 +115,7 @@ class TemplateController extends Controller
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'slug' => ['nullable', 'string', 'max:255', Rule::unique('templates', 'slug')->ignore($template->id)],
+            'slug' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:1000'],
             'category_id' => ['nullable', 'integer', 'exists:template_categories,id'],
             'type' => ['required', Rule::in([Template::TYPE_IMAGE, Template::TYPE_VIDEO])],
@@ -128,7 +129,8 @@ class TemplateController extends Controller
 
         $data = [
             'name' => $validated['name'],
-            'slug' => $validated['slug'] ?? Str::slug($validated['name']),
+            // Slugs stay stable once created — only change when explicitly provided.
+            'slug' => $validated['slug'] ?? $template->slug,
             'description' => $validated['description'] ?? null,
             'category_id' => $validated['category_id'] ?? null,
             'type' => $validated['type'],

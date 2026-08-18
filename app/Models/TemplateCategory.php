@@ -2,12 +2,11 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasAutoSlug;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Str;
 
 /**
  * @property int $id
@@ -21,7 +20,7 @@ use Illuminate\Support\Str;
 #[Fillable(['name', 'slug', 'description', 'is_active'])]
 class TemplateCategory extends Model
 {
-    use HasFactory;
+    use HasAutoSlug;
 
     /**
      * The templates in this category.
@@ -31,18 +30,6 @@ class TemplateCategory extends Model
     public function templates(): HasMany
     {
         return $this->hasMany(Template::class, 'category_id');
-    }
-
-    /**
-     * Boot the model and auto-generate a slug when one is not provided.
-     */
-    protected static function booted(): void
-    {
-        static::saving(function (TemplateCategory $category) {
-            if (empty($category->slug)) {
-                $category->slug = Str::slug($category->name);
-            }
-        });
     }
 
     /**

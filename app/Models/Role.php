@@ -2,12 +2,11 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasAutoSlug;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Str;
 
 /**
  * @property int $id
@@ -20,7 +19,7 @@ use Illuminate\Support\Str;
 #[Fillable(['name', 'slug', 'description'])]
 class Role extends Model
 {
-    use HasFactory;
+    use HasAutoSlug;
 
     /**
      * The permissions granted to this role.
@@ -40,17 +39,5 @@ class Role extends Model
     public function users(): BelongsToMany
     {
         return $this->belongsToMany(User::class);
-    }
-
-    /**
-     * Boot the model and auto-generate a slug when one is not provided.
-     */
-    protected static function booted(): void
-    {
-        static::saving(function (Role $role) {
-            if (empty($role->slug)) {
-                $role->slug = Str::slug($role->name);
-            }
-        });
     }
 }

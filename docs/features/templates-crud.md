@@ -19,8 +19,9 @@ Face swap needs a library of ready-made images/videos. Admins manage that librar
 
 ### 2. Models
 
-- `Template`, `TemplateCategory`, `TemplateTag`
-- Slugs auto-generated from names (`Str::slug`) and **stable once created** — the customer API looks templates up by slug, so renaming never breaks existing links
+- `Template`, `TemplateCategory`, `TemplateTag` all use a shared `HasAutoSlug` trait
+- Slugs auto-generated from names (`Str::slug`) and **auto-uniquified on creation** — if `testing` exists, the next one becomes `testing-2`, `testing-3`... so duplicate names never error
+- Slugs **stable once created** — the customer API looks templates up by slug, so renaming never breaks existing links
 - Pivot declared explicitly (`template_tag`) to match the migration
 
 ### 3. Controllers (3)
