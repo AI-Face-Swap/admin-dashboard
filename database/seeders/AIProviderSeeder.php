@@ -12,7 +12,7 @@ class AIProviderSeeder extends Seeder
      */
     public function run(): void
     {
-        AIProvider::firstOrCreate(
+        AIProvider::updateOrCreate(
             ['slug' => 'segmind'],
             [
                 'name' => 'Segmind',
@@ -20,6 +20,7 @@ class AIProviderSeeder extends Seeder
                     'base_url' => 'https://api.segmind.com/v2',
                     'operations' => [
                         'face-swap' => 'faceswap-v5',
+                        'video-face-swap' => 'video-faceswap-by-facefusion-labs',
                     ],
                 ],
             ],

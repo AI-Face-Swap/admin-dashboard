@@ -27,6 +27,7 @@ Laravel admin dashboard + mobile-facing API for AI media generation (image gener
 | 5 | Customer auth (Sanctum): register/login/logout/me, coin system (100 coins default, per-template cost) | ✅ |
 | 5 | Template cost input (create/edit/list in admin dashboard) | ✅ |
 | 5 | Admin providers page (`/admin/providers` — list, toggle active/inactive, stats) | ✅ |
+| 6 | Video face swap (queued job, 10 min timeout) — SegmindProvider, ProcessVideoFaceSwap job, admin AI page tabs | ✅ |
 | 7 | Admin API playground (`/admin/api-playground` — Postman-like endpoint tester, form-data, HTML preview) | ✅ |
 | 7 | API Playground: global Bearer token + `credentials: 'omit'` + auto-extract token from login | ✅ |
 | — | Dashboard links fixed (`/ai` → `/admin/ai`, etc.) | ✅ |
@@ -36,7 +37,6 @@ Laravel admin dashboard + mobile-facing API for AI media generation (image gener
 
 | Phase | Feature |
 |---|---|
-| 6 | Video face swap (queued job, 5+ min) |
 | 6 | Replicate provider |
 | 6 | Image generation API (`POST /api/v1/ai/images`) |
 | 7 | Social login (Google/Apple) — needs client credentials |
@@ -73,6 +73,8 @@ Laravel admin dashboard + mobile-facing API for AI media generation (image gener
 | `POST /api/v1/auth/logout` | sanctum | Revoke token |
 | `GET /api/v1/auth/me` | sanctum | Authenticated customer profile |
 | `POST /api/v1/ai/face-swap` | sanctum (session + token) | Shared face-swap endpoint |
+| `POST /api/v1/ai/video-face-swap` | sanctum (session + token) | Shared video face-swap endpoint (queued) |
+| `GET /api/v1/ai/generations/{id}` | sanctum | Poll generation status |
 
 **Admin web routes:**
 

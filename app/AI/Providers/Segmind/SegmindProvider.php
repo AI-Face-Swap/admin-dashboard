@@ -78,7 +78,51 @@ class SegmindProvider implements AIProviderInterface
      */
     public function videoFaceSwap(GenerationRequest $request): AIResponse
     {
-        throw new UnsupportedOperationException('Segmind video face swap is not implemented yet.');
+        $endpoint = $this->operations['video-face-swap']
+            ?? throw new UnsupportedOperationException('Segmind video face swap endpoint is not configured.');
+
+        $startedAt = hrtime(true);
+
+        $submit = $this->submit($endpoint, $request->payload);
+
+        $requestId = $submit['request_id'] ?? null;
+        $statusUrl = $submit['status_url'] ?? null;
+        $responseUrl = $submit['response_url'] ?? null;
+
+        if (! $requestId || ! $statusUrl || ! $responseUrl) {
+            throw new AIGenerationFailedException(
+                'Segmind v2 submit response was missing request_id/status_url/response_url.',
+                null,
+                $submit,
+            );
+        }
+
+        // Video generation takes 5+ minutes — use a longer poll timeout.
+        $this->pollUntilTerminal($requestId, $statusUrl, timeoutSeconds: 600);
+
+        $result = $this->fetchResult($requestId, $responseUrl);
+
+        $durationMs = isset($result['metrics']['inference_time'])
+            ? (int) round((float) $result['metrics']['inference_time'] * 1000)
+            : (int) round((hrtime(true) - $startedAt) / 1e6);
+
+        $cost = isset($result['metrics']['cost'])
+            ? (string) $result['metrics']['cost']
+            : null;
+
+        return new AIResponse(
+            provider: $this->name(),
+            operation: 'video-face-swap',
+            model: $request->model,
+            requestId: $requestId,
+            status: 'completed',
+            durationMs: $durationMs,
+            output: $this->normalizeOutput($result['output'] ?? null),
+            usage: is_array($result['metrics'] ?? null) ? $result['metrics'] : null,
+            cost: $cost,
+            currency: $cost !== null ? 'USD' : null,
+            rawResponse: $result,
+        );
     }
 
     /**
@@ -167,9 +211,10 @@ class SegmindProvider implements AIProviderInterface
      * @throws AIGenerationFailedException
      * @throws AIGenerationTimeoutException
      */
-    private function pollUntilTerminal(string $requestId, string $statusUrl): void
+    private function pollUntilTerminal(string $requestId, string $statusUrl, ?int $timeoutSeconds = null): void
     {
-        $deadline = microtime(true) + $this->pollTimeoutSeconds;
+        $timeout = $timeoutSeconds ?? $this->pollTimeoutSeconds;
+        $deadline = microtime(true) + $timeout;
 
         while (true) {
             $body = $this->getStatus($requestId, $statusUrl);
@@ -189,7 +234,7 @@ class SegmindProvider implements AIProviderInterface
 
             if (microtime(true) >= $deadline) {
                 throw new AIGenerationTimeoutException(
-                    "Segmind generation timed out after {$this->pollTimeoutSeconds}s.",
+                    "Segmind generation timed out after {$timeout}s.",
                     $requestId,
                 );
             }
