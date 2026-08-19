@@ -22,6 +22,10 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
 
+        // API routes use Bearer token auth (Sanctum), not session cookies.
+        // CSRF is not needed — skip it for all /api/* routes.
+        $middleware->validateCsrfTokens(except: ['api/*']);
+
         $middleware->alias([
             'permission' => EnsureUserHasPermission::class,
             'guest' => HandleGuestRedirect::class,

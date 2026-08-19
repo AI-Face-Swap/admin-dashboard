@@ -1,4 +1,5 @@
-import { Head } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
+import { X } from 'lucide-react';
 import { useRef, useState, useCallback, useEffect } from 'react';
 import { AnimatedButton } from '@/components/animated/AnimatedButton';
 import { AnimatedCard } from '@/components/animated/AnimatedCard';
@@ -80,6 +81,7 @@ export default function Index({
     generations: Generation[];
 }) {
     const [activeTab, setActiveTab] = useState<TabType>('image');
+    const [selectedGeneration, setSelectedGeneration] = useState<Generation | null>(null);
 
     return (
         <>
@@ -131,15 +133,17 @@ export default function Index({
                             </TableHeader>
                             <TableBody>
                                 {generations.map((generation) => (
-                                    <TableRow key={generation.id}>
+                                    <TableRow
+                                        key={generation.id}
+                                        className="cursor-pointer hover:bg-muted/50"
+                                        onClick={() => setSelectedGeneration(generation)}
+                                    >
                                         <TableCell>
                                             <Badge
                                                 variant={
-                                                    generation.status ===
-                                                    'completed'
+                                                    generation.status === 'completed'
                                                         ? 'default'
-                                                        : generation.status ===
-                                                            'failed'
+                                                        : generation.status === 'failed'
                                                           ? 'destructive'
                                                           : 'secondary'
                                                 }
@@ -147,35 +151,22 @@ export default function Index({
                                                 {generation.status}
                                             </Badge>
                                         </TableCell>
+                                        <TableCell>{generation.operation}</TableCell>
+                                        <TableCell>{generation.template?.name ?? '—'}</TableCell>
                                         <TableCell>
-                                            {generation.operation}
+                                            {generation.cost ? `${generation.cost} ${generation.currency ?? ''}` : '—'}
                                         </TableCell>
                                         <TableCell>
-                                            {generation.template?.name ?? '—'}
-                                        </TableCell>
-                                        <TableCell>
-                                            {generation.cost
-                                                ? `${generation.cost} ${generation.currency ?? ''}`
-                                                : '—'}
-                                        </TableCell>
-                                        <TableCell>
-                                            {generation.duration_ms
-                                                ? `${generation.duration_ms} ms`
-                                                : '—'}
+                                            {generation.duration_ms ? `${generation.duration_ms} ms` : '—'}
                                         </TableCell>
                                         <TableCell className="text-muted-foreground">
-                                            {new Date(
-                                                generation.created_at,
-                                            ).toLocaleString()}
+                                            {new Date(generation.created_at).toLocaleString()}
                                         </TableCell>
                                     </TableRow>
                                 ))}
                                 {generations.length === 0 && (
                                     <TableRow>
-                                        <TableCell
-                                            colSpan={6}
-                                            className="text-center text-muted-foreground"
-                                        >
+                                        <TableCell colSpan={6} className="text-center text-muted-foreground">
                                             No generations yet.
                                         </TableCell>
                                     </TableRow>
@@ -185,7 +176,102 @@ export default function Index({
                     </CardContent>
                 </AnimatedCard>
             </div>
+
+            {/* Generation Detail Modal */}
+            {selectedGeneration && (
+                <GenerationDetailModal
+                    generation={selectedGeneration}
+                    onClose={() => setSelectedGeneration(null)}
+                />
+            )}
         </>
+    );
+}
+
+function GenerationDetailModal({
+    generation,
+    onClose,
+}: {
+    generation: Generation;
+    onClose: () => void;
+}) {
+    const outputUrls = generation.output_metadata ?? [];
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
+            <div
+                className="relative max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-background p-6 shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <button onClick={onClose} className="absolute right-4 top-4 text-muted-foreground hover:text-foreground">
+                    <X className="h-5 w-5" />
+                </button>
+
+                <h2 className="text-lg font-semibold mb-4">Generation Detail</h2>
+
+                {/* Status + Badges */}
+                <div className="flex flex-wrap gap-2 mb-4">
+                    <Badge variant={generation.status === 'completed' ? 'default' : generation.status === 'failed' ? 'destructive' : 'secondary'}>
+                        {generation.status}
+                    </Badge>
+                    <Badge variant="outline">{generation.operation}</Badge>
+                    <Badge variant="outline">{generation.template?.name ?? 'No template'}</Badge>
+                    {generation.cost && (
+                        <Badge variant="outline">cost: {generation.cost} {generation.currency ?? ''}</Badge>
+                    )}
+                    {generation.duration_ms && (
+                        <Badge variant="outline">{generation.duration_ms} ms</Badge>
+                    )}
+                </div>
+
+                {/* Request ID */}
+                {generation.request_id && (
+                    <div className="mb-4">
+                        <p className="text-xs font-medium text-muted-foreground mb-1">Request ID</p>
+                        <code className="text-xs bg-muted px-2 py-1 rounded font-mono">{generation.request_id}</code>
+                    </div>
+                )}
+
+                {/* Output Files */}
+                {outputUrls.length > 0 && (
+                    <div className="mb-4">
+                        <p className="text-xs font-medium text-muted-foreground mb-2">Output Files</p>
+                        <div className="grid gap-3">
+                            {outputUrls.map((url, index) => {
+                                const isVideo = url.endsWith('.mp4') || url.endsWith('.webm') || url.endsWith('.mov');
+
+                                return isVideo ? (
+                                    <video
+                                        key={url}
+                                        src={url}
+                                        controls
+                                        className="w-full rounded-lg border"
+                                    />
+                                ) : (
+                                    <img
+                                        key={url}
+                                        src={url}
+                                        alt={`Output ${index + 1}`}
+                                        className="w-full rounded-lg border object-contain max-h-[400px]"
+                                    />
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
+
+                {outputUrls.length === 0 && (
+                    <div className="mb-4 p-8 rounded-lg bg-muted/50 text-center text-sm text-muted-foreground">
+                        No output files
+                    </div>
+                )}
+
+                {/* Timestamps */}
+                <div className="text-xs text-muted-foreground">
+                    Created: {new Date(generation.created_at).toLocaleString()}
+                </div>
+            </div>
+        </div>
     );
 }
 
@@ -463,8 +549,38 @@ function VideoFaceSwap({ templates }: { templates: Template[] }) {
             });
 
             if (!response.ok) {
-return;
-}
+                const contentType = response.headers.get('content-type') ?? '';
+
+                if (contentType.includes('text/html')) {
+                    setError('Polling failed — received HTML instead of JSON. Check authentication.');
+                    setProcessing(false);
+                    setPolling(false);
+                    setGenerationId(null);
+
+                    if (pollRef.current) {
+                        clearInterval(pollRef.current);
+                        pollRef.current = null;
+                    }
+                }
+
+                return;
+            }
+
+            const contentType = response.headers.get('content-type') ?? '';
+
+            if (!contentType.includes('application/json')) {
+                setError('Polling failed — server returned non-JSON response.');
+                setProcessing(false);
+                setPolling(false);
+                setGenerationId(null);
+
+                if (pollRef.current) {
+                    clearInterval(pollRef.current);
+                    pollRef.current = null;
+                }
+
+                return;
+            }
 
             const data = await response.json();
 
@@ -490,9 +606,20 @@ return;
                     clearInterval(pollRef.current);
                     pollRef.current = null;
                 }
+
+                // Refresh the generations table from the server
+                router.reload({ only: ['generations'] });
             }
         } catch {
-            // Ignore polling errors — retry on next interval
+            setError('Polling failed — network error or invalid response.');
+            setProcessing(false);
+            setPolling(false);
+            setGenerationId(null);
+
+            if (pollRef.current) {
+                clearInterval(pollRef.current);
+                pollRef.current = null;
+            }
         }
     }, []);
 

@@ -38,8 +38,9 @@ class AIFaceSwapController extends Controller
         if ($request->filled('template_slug')) {
             $template = Template::where('slug', $request->string('template_slug'))
                 ->where('is_active', true)
+                ->where('type', 'image')
                 ->first()
-                ?? throw new ModelNotFoundException('Template not found.');
+                ?? throw new ModelNotFoundException('Image template not found.');
 
             $targetUrl = $template->file_url;
             $templateCost = $template->cost;

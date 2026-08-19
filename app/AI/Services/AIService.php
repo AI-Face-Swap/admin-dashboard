@@ -46,13 +46,16 @@ class AIService
      * @throws AIGenerationFailedException
      * @throws AIGenerationTimeoutException
      */
-    public function execute(GenerationRequest $request, User|Customer|null $requester = null): AIGeneration
-    {
+    public function execute(
+        GenerationRequest $request,
+        User|Customer|null $requester = null,
+        ?AIGeneration $existingGeneration = null,
+    ): AIGeneration {
         $provider = $this->factory->make($request->provider);
 
         $providerModel = AIProvider::where('slug', $request->provider)->firstOrFail();
 
-        $generation = AIGeneration::create([
+        $generation = $existingGeneration ?? AIGeneration::create([
             'user_id' => $requester instanceof User ? $requester->id : null,
             'customer_id' => $requester instanceof Customer ? $requester->id : null,
             'provider_id' => $providerModel->id,

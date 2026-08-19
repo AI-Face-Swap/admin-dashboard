@@ -146,6 +146,33 @@ const ENDPOINT_TEMPLATES: {
         headers: [{ key: 'Accept', value: 'application/json' }],
     },
     {
+        label: 'Video Face Swap (URL)',
+        method: 'POST',
+        url: '/api/v1/ai/video-face-swap',
+        bodyType: 'json',
+        body: '{\n  "template_slug": "your-video-template-slug",\n  "face_image_url": "https://example.com/face.jpg"\n}',
+        headers: [
+            { key: 'Content-Type', value: 'application/json' },
+            { key: 'Accept', value: 'application/json' },
+        ],
+    },
+    {
+        label: 'Video Face Swap (Upload)',
+        method: 'POST',
+        url: '/api/v1/ai/video-face-swap',
+        bodyType: 'form-data',
+        body: '',
+        headers: [{ key: 'Accept', value: 'application/json' }],
+    },
+    {
+        label: 'Check Generation Status',
+        method: 'GET',
+        url: '/api/v1/ai/generations/1',
+        bodyType: 'none',
+        body: '',
+        headers: [{ key: 'Accept', value: 'application/json' }],
+    },
+    {
         label: 'Logout',
         method: 'POST',
         url: '/api/v1/auth/logout',
@@ -322,8 +349,14 @@ export default function APIPlayground() {
             setShowRawBody(false);
 
             if (template.bodyType === 'form-data') {
+                const isVideo = template.url.includes('video-face-swap');
                 setFormDataFields([
-                    { key: 'template_slug', value: 'superman' },
+                    {
+                        key: 'template_slug',
+                        value: isVideo
+                            ? 'your-video-template-slug'
+                            : 'superman',
+                    },
                 ]);
                 setFormFileFields([{ key: 'face_image', file: null }]);
             } else {
@@ -431,6 +464,9 @@ export default function APIPlayground() {
                 headersObj['Authorization'] = `Bearer ${bearerToken}`;
             }
 
+            // Remove XSRF-TOKEN — not needed without session cookies
+            delete headersObj['X-XSRF-TOKEN'];
+
             if (!headersObj['Accept']) {
                 headersObj['Accept'] = 'application/json';
             }
@@ -438,7 +474,7 @@ export default function APIPlayground() {
             const fetchOptions: RequestInit = {
                 method,
                 headers: headersObj,
-                credentials: 'omit', // Never send session cookie — use Bearer token only
+                credentials: 'omit', // Never send session cookie — mobile-app behavior. Bearer token is the only auth.
             };
 
             if (['POST', 'PUT', 'PATCH'].includes(method)) {

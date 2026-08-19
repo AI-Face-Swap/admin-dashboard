@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\AIController;
 use App\Http\Controllers\Admin\APIPlaygroundController;
+use App\Http\Controllers\Admin\APIRequestLogController;
 use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\ProviderController;
 use App\Http\Controllers\Admin\RoleController;
@@ -43,6 +44,9 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::get('ai', [AIController::class, 'index'])->middleware('permission:ai.view')->name('ai.index');
 
     Route::get('api-playground', [APIPlaygroundController::class, 'index'])->middleware('permission:api.playground')->name('api-playground.index');
+
+    Route::get('api-logs', [APIRequestLogController::class, 'index'])->middleware('permission:settings.manage')->name('api-logs.index');
+    Route::get('api-logs/{log}', [APIRequestLogController::class, 'show'])->middleware('permission:settings.manage')->name('api-logs.show');
 
     Route::get('templates', [TemplateController::class, 'index'])->middleware('permission:templates.view')->name('templates.index');
     Route::get('templates/create', [TemplateController::class, 'create'])->middleware('permission:templates.manage')->name('templates.create');

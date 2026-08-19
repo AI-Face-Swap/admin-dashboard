@@ -73,6 +73,7 @@ class ProcessVideoFaceSwap implements ShouldQueue
                     templateId: $this->templateId,
                 ),
                 $requester,
+                $generation,
             );
 
             // Deduct coins on successful completion.

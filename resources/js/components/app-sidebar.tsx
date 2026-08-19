@@ -7,6 +7,7 @@ import {
     Settings,
     ShieldCheck,
     Sparkles,
+    ScrollText,
     TerminalSquare,
     Users,
 } from 'lucide-react';
@@ -67,6 +68,12 @@ const mainNavItems: NavItem[] = [
         href: '/admin/api-playground',
         icon: TerminalSquare,
         permission: 'api.playground',
+    },
+    {
+        title: 'API Logs',
+        href: '/admin/api-logs',
+        icon: ScrollText,
+        permission: 'settings.manage',
     },
     {
         title: 'Settings',
