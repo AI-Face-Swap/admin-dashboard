@@ -85,7 +85,7 @@ export default function Dashboard() {
                             Overview of your AI generation usage and costs.
                         </p>
                     </div>
-                    <Link href="/ai">
+                    <Link href="/admin/ai">
                         <AnimatedButton>
                             <Sparkles className="size-4" />
                             New Generation
@@ -142,7 +142,7 @@ export default function Dashboard() {
                             ))}
 
                             <Link
-                                href="/ai"
+                                href="/admin/ai"
                                 className="flex items-center gap-1 px-1 pt-1 text-sm font-medium text-primary hover:underline"
                             >
                                 View all generations
@@ -156,12 +156,12 @@ export default function Dashboard() {
                             <CardTitle>Quick actions</CardTitle>
                         </CardHeader>
                         <CardContent className="flex flex-col gap-2">
-                            <Link href="/ai">
+                            <Link href="/admin/ai">
                                 <AnimatedButton className="w-full">
                                     Generate image
                                 </AnimatedButton>
                             </Link>
-                            <Link href="/providers">
+                            <Link href="/admin/providers">
                                 <AnimatedButton
                                     variant="outline"
                                     className="w-full"
@@ -169,7 +169,7 @@ export default function Dashboard() {
                                     Manage providers
                                 </AnimatedButton>
                             </Link>
-                            <Link href="/api-playground">
+                            <Link href="/admin/api-playground">
                                 <AnimatedButton
                                     variant="outline"
                                     className="w-full"

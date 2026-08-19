@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Storage;
  * @property string $name
  * @property string|null $description
  * @property string $type
- * @property string $file_path
+ * @property string|null $file_path
  * @property string|null $thumbnail_path
  * @property string|null $model
  * @property int $cost
@@ -69,9 +69,11 @@ class Template extends Model
     /**
      * The full public URL of the template file.
      */
-    public function getFileUrlAttribute(): string
+    public function getFileUrlAttribute(): ?string
     {
-        return Storage::disk(self::DISK)->url($this->file_path);
+        return $this->file_path
+            ? Storage::disk(self::DISK)->url($this->file_path)
+            : null;
     }
 
     /**

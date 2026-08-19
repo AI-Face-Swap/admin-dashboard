@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AIController;
+use App\Http\Controllers\Admin\APIPlaygroundController;
 use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\ProviderController;
 use App\Http\Controllers\Admin\RoleController;
@@ -17,8 +18,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Placeholder sections — real pages land in later phases.
     Route::inertia('ai', 'coming-soon', ['title' => 'AI Generation'])->name('ai');
-    // Providers page moved to admin/providers group below.
-    Route::inertia('api-playground', 'coming-soon', ['title' => 'API Playground'])->name('api-playground');
 });
 
 Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(function () {
@@ -42,6 +41,8 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::patch('providers/{provider}/toggle', [ProviderController::class, 'toggle'])->middleware('permission:providers.manage')->name('providers.toggle');
 
     Route::get('ai', [AIController::class, 'index'])->middleware('permission:ai.view')->name('ai.index');
+
+    Route::get('api-playground', [APIPlaygroundController::class, 'index'])->middleware('permission:api.playground')->name('api-playground.index');
 
     Route::get('templates', [TemplateController::class, 'index'])->middleware('permission:templates.view')->name('templates.index');
     Route::get('templates/create', [TemplateController::class, 'create'])->middleware('permission:templates.manage')->name('templates.create');

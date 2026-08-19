@@ -27,17 +27,23 @@ Laravel admin dashboard + mobile-facing API for AI media generation (image gener
 | 5 | Customer auth (Sanctum): register/login/logout/me, coin system (100 coins default, per-template cost) | ✅ |
 | 5 | Template cost input (create/edit/list in admin dashboard) | ✅ |
 | 5 | Admin providers page (`/admin/providers` — list, toggle active/inactive, stats) | ✅ |
+| 7 | Admin API playground (`/admin/api-playground` — Postman-like endpoint tester, form-data, HTML preview) | ✅ |
+| 7 | API Playground: global Bearer token + `credentials: 'omit'` + auto-extract token from login | ✅ |
+| — | Dashboard links fixed (`/ai` → `/admin/ai`, etc.) | ✅ |
+| — | Template `file_url` null guard (prevents crash on templates without files) | ✅ |
 
 ### Pending phases
 
 | Phase | Feature |
 |---|---|
-| 5 | Social login (Google/Apple) — needs client credentials |
-| 5 | Customer email verification + password reset |
 | 6 | Video face swap (queued job, 5+ min) |
 | 6 | Replicate provider |
-| 7 | Admin API playground |
+| 6 | Image generation API (`POST /api/v1/ai/images`) |
+| 7 | Social login (Google/Apple) — needs client credentials |
+| 7 | Customer email verification + password reset |
 | 8 | Usage/cost analytics dashboard |
+| 8 | API request logs admin page |
+| 9 | Payment integration (KBZ, RevenueCat, Stripe) |
 | 9 | Animation polish, performance, tests |
 
 ### Key architecture patterns
@@ -50,6 +56,9 @@ Laravel admin dashboard + mobile-facing API for AI media generation (image gener
 - **`provider_id` is the source of truth**: no duplicated provider string column in `ai_generations`.
 - **Slugs are auto-suffixed**: duplicate names get `name-2`, `name-3` (shared `HasAutoSlug` trait). Slugs are stable on edit.
 - **Coin economy**: customers start with 100 coins; each generation deducts the template's cost; reject 402 on insufficient balance.
+- **API Playground auth model**: global Bearer token (localStorage) + `credentials: 'omit'` — no session cookie sent, so guest endpoints (register/login) work while admin is logged in. Token auto-extracted from login responses.
+- **`HandleGuestRedirect` middleware**: replaces built-in `guest` alias — returns JSON 403 instead of redirect when API requests hit guest routes from an authenticated session.
+- **Template accessors return nullable**: `file_url` and `thumbnail_url` return `?string` — always null-check before calling `Storage::url()`.
 
 ### Current DB tables
 
@@ -71,6 +80,7 @@ Laravel admin dashboard + mobile-facing API for AI media generation (image gener
 |---|---|---|
 | `GET /admin/providers` | `providers.view` | List all providers with stats |
 | `PATCH /admin/providers/{provider}/toggle` | `providers.manage` | Toggle provider active/inactive |
+| `GET /admin/api-playground` | `api.playground` | API endpoint tester (Postman-like) |
 
 ### Middleware setup (`bootstrap/app.php`)
 
@@ -141,6 +151,7 @@ composer run types:check
 - **Array session driver caveat**: the default test session driver (`array`) shares its store across the whole test run, so a login-then-API-call test passes even without `EnsureFrontendRequestsAreStateful`. For faithful API-auth tests, use `config(['session.driver' => 'database'])` + pass the real session cookie via `withUnencryptedCookies` + set `HTTP_REFERER` to trigger the stateful pipeline.
 - **Session cookie name** is `laravel-session` (dash) in Laravel 13 — not `laravel_session` (underscore). Use `config('session.cookie')` for portability.
 - **Slug uniqueness**: duplicate slugs are auto-suffixed (`testing` → `testing-2`) by the `HasAutoSlug` trait. Never add `unique` validation rules on slug fields — the trait handles it.
+- **API Playground uses `credentials: 'omit'`**: never send session cookie from the playground — Bearer token only. This prevents admin session from interfering with guest endpoints (register/login).
 
 ## Workflow — every feature request (approval gated)
 

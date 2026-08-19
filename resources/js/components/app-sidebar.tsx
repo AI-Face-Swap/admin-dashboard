@@ -64,8 +64,9 @@ const mainNavItems: NavItem[] = [
     },
     {
         title: 'API Playground',
-        href: '/api-playground',
+        href: '/admin/api-playground',
         icon: TerminalSquare,
+        permission: 'api.playground',
     },
     {
         title: 'Settings',
