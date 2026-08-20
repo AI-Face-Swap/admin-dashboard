@@ -23,6 +23,7 @@ return new class extends Migration
             $table->unsignedInteger('coins')->default(100); // free customers start with 100 coins
             $table->timestamp('email_verified_at')->nullable();
             $table->timestamp('last_active_at')->nullable();
+            $table->boolean('is_banned')->default(false);
             $table->rememberToken();
             $table->timestamps();
 

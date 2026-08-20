@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\AIController;
 use App\Http\Controllers\Admin\APIPlaygroundController;
 use App\Http\Controllers\Admin\APIRequestLogController;
+use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\ProviderController;
 use App\Http\Controllers\Admin\RoleController;
@@ -68,6 +69,14 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::get('template-tags/{tag}/edit', [TemplateTagController::class, 'edit'])->middleware('permission:templates.manage')->name('template-tags.edit');
     Route::put('template-tags/{tag}', [TemplateTagController::class, 'update'])->middleware('permission:templates.manage')->name('template-tags.update');
     Route::delete('template-tags/{tag}', [TemplateTagController::class, 'destroy'])->middleware('permission:templates.manage')->name('template-tags.destroy');
+
+    // Customers
+    Route::get('customers', [CustomerController::class, 'index'])->middleware('permission:customers.view')->name('customers.index');
+    Route::get('customers/{customer}', [CustomerController::class, 'show'])->middleware('permission:customers.view')->name('customers.show');
+    Route::patch('customers/{customer}/ban', [CustomerController::class, 'ban'])->middleware('permission:customers.manage')->name('customers.ban');
+    Route::patch('customers/{customer}/unban', [CustomerController::class, 'unban'])->middleware('permission:customers.manage')->name('customers.unban');
+    Route::post('customers/{customer}/add-coins', [CustomerController::class, 'addCoins'])->middleware('permission:customers.manage')->name('customers.add-coins');
+    Route::delete('customers/{customer}', [CustomerController::class, 'destroy'])->middleware('permission:customers.manage')->name('customers.destroy');
 });
 
 require __DIR__.'/settings.php';

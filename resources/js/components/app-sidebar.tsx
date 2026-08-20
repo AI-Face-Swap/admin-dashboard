@@ -9,6 +9,7 @@ import {
     Sparkles,
     ScrollText,
     TerminalSquare,
+    UserCheck,
     Users,
 } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
@@ -56,6 +57,12 @@ const mainNavItems: NavItem[] = [
         href: '/admin/users',
         icon: Users,
         permission: 'users.view',
+    },
+    {
+        title: 'Customers',
+        href: '/admin/customers',
+        icon: UserCheck,
+        permission: 'customers.view',
     },
     {
         title: 'Roles & Permissions',

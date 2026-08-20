@@ -25,7 +25,7 @@ Route::prefix('v1')->middleware('guest:customer')->group(function () {
     Route::post('auth/login', [CustomerAuthController::class, 'login'])->middleware('throttle:10,1');
 });
 
-Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
+Route::prefix('v1')->middleware(['auth:sanctum', 'customer.not-banned'])->group(function () {
     Route::post('auth/logout', [CustomerAuthController::class, 'logout']);
     Route::get('auth/me', [CustomerAuthController::class, 'me']);
 

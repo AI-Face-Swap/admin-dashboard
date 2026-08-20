@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureCustomerNotBanned;
 use App\Http\Middleware\EnsureUserHasPermission;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleGuestRedirect;
@@ -29,6 +30,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'permission' => EnsureUserHasPermission::class,
             'guest' => HandleGuestRedirect::class,
+            'customer.not-banned' => EnsureCustomerNotBanned::class,
         ]);
 
         $middleware->web(append: [
