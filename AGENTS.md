@@ -6,7 +6,7 @@
 - **Framework**: Laravel 13 (Fortify for authentication, Passkeys, 2FA)
 - **Frontend**: Inertia v3 + React 19 + TypeScript, Tailwind CSS v4, shadcn/ui components
 - **Package managers**: Composer (PHP) + npm / pnpm (JS)
-- **Database**: SQLite (dev, `database/database.sqlite`), MySQL (production)
+- **Database**: MySQL (local + production), configured in `.env` as `DB_CONNECTION=mysql`
 - **Testing**: Pest 4
 - **Tooling**: Pint (PHP style), PHPStan/Larastan (static analysis), ESLint + Prettier (JS), Wayfinder (typed routes), Vite
 
@@ -34,6 +34,8 @@ Laravel admin dashboard + mobile-facing API for AI media generation (image gener
 | — | Template `file_url` null guard (prevents crash on templates without files) | ✅ |
 | 8 | API request logs page (`/admin/api-logs` — paginated, filters, expandable rows) | ✅ |
 | — | Generation detail modal (click recent generations → output images/videos + metadata) | ✅ |
+| — | Customer Management: list (type/coin/status filters), detail (generations + stats), ban/unban, add coins (developer only) | ✅ |
+| — | Example data seeder (`ExampleDataSeeder` — customers, templates, categories, tags, generations) | ✅ |
 | — | API Playground: form-data file upload, HTML preview, global Bearer token, `credentials: 'same-origin'` | ✅ |
 | — | Bug fix: `AIService::execute()` accepts optional `$existingGeneration` to prevent duplicate generation rows | ✅ |
 | — | Bug fix: image face-swap validates template type = `image` (prevents video templates in image swap) | ✅ |
@@ -41,16 +43,16 @@ Laravel admin dashboard + mobile-facing API for AI media generation (image gener
 
 ### Pending phases
 
-| Phase | Feature |
-|---|---|
-| 6 | Replicate provider |
-| 6 | Image generation API (`POST /api/v1/ai/images`) |
-| 7 | Social login (Google/Apple) — needs client credentials |
-| 7 | Customer email verification + password reset |
-| 8 | Usage/cost analytics dashboard |
-
-| 9 | Payment integration (KBZ, RevenueCat, Stripe) |
-| 9 | Animation polish, performance, tests |
+| # | Feature | Effort |
+|---|---|---|
+| 1 | Replicate provider (new class + factory case) | Medium |
+| 2 | Image generation API (`POST /api/v1/ai/images` — Segmind seedream) | Medium |
+| 3 | Social login (Google/Apple) — needs your OAuth client credentials | Medium |
+| 4 | Customer email verification + password reset | Small |
+| 5 | Usage/cost analytics dashboard (charts: generations/day, cost/day) | Medium |
+| 6 | Payment integration (KBZ, RevenueCat, Stripe, Google Pay, Apple Pay) | Large |
+| 7 | Animation polish (page transitions, card entrances, loading states) | Medium |
+| 8 | Full test suite coverage (comprehensive Pest tests) | Large |
 
 ### Key architecture patterns
 
@@ -64,6 +66,8 @@ Laravel admin dashboard + mobile-facing API for AI media generation (image gener
 - **Coin economy**: customers start with 100 coins; each generation deducts the template's cost; reject 402 on insufficient balance.
 - **API Playground auth model**: global Bearer token (localStorage) + `credentials: 'same-origin'` — session cookie sent for CSRF verification, Bearer token takes precedence when set. Token auto-extracted from login responses. Guest routes (register/login) use `HandleGuestRedirect` to return JSON 403 instead of redirecting.
 - **`HandleGuestRedirect` middleware**: replaces built-in `guest` alias — returns JSON 403 instead of redirect when API requests hit guest routes from an authenticated session.
+- **`EnsureCustomerNotBanned` middleware**: checks `is_banned` on the `customer` guard — banned customers get 403 on all `/api/v1/*` routes.
+- **Filter queries use `$request->input()` not `$request->filled()`**: Laravel's `when()` passes the condition value to the callback. Using `filled()` passes `true`/`false` instead of the actual value. Always use `input()` as the `when()` condition.
 - **Template accessors return nullable**: `file_url` and `thumbnail_url` return `?string` — always null-check before calling `Storage::url()`.
 
 ### Current DB tables
@@ -91,6 +95,12 @@ Laravel admin dashboard + mobile-facing API for AI media generation (image gener
 | `GET /admin/api-playground` | `api.playground` | API endpoint tester (Postman-like) |
 | `GET /admin/api-logs` | `settings.manage` | Browse/search logged API requests |
 | `GET /admin/api-logs/{log}` | `settings.manage` | Get full log details |
+| `GET /admin/customers` | `customers.view` | List customers (type/coin/status filters, stats) |
+| `GET /admin/customers/{customer}` | `customers.view` | Customer detail (info, generations, stats) |
+| `PATCH /admin/customers/{customer}/ban` | `customers.manage` | Ban customer |
+| `PATCH /admin/customers/{customer}/unban` | `customers.manage` | Unban customer |
+| `POST /admin/customers/{customer}/coins` | `customers.manage` | Add coins (developer role only) |
+| `DELETE /admin/customers/{customer}` | `customers.manage` | Delete customer |
 
 ### Middleware setup (`bootstrap/app.php`)
 
@@ -161,7 +171,7 @@ composer run types:check
 - **Array session driver caveat**: the default test session driver (`array`) shares its store across the whole test run, so a login-then-API-call test passes even without `EnsureFrontendRequestsAreStateful`. For faithful API-auth tests, use `config(['session.driver' => 'database'])` + pass the real session cookie via `withUnencryptedCookies` + set `HTTP_REFERER` to trigger the stateful pipeline.
 - **Session cookie name** is `laravel-session` (dash) in Laravel 13 — not `laravel_session` (underscore). Use `config('session.cookie')` for portability.
 - **Slug uniqueness**: duplicate slugs are auto-suffixed (`testing` → `testing-2`) by the `HasAutoSlug` trait. Never add `unique` validation rules on slug fields — the trait handles it.
-- **API Playground uses `credentials: 'same-origin'`**: session cookie is sent for CSRF verification, Bearer token takes precedence when set. Guest routes handled by `HandleGuestRedirect`.
+- **API Playground uses `credentials: 'omit'`**: never sends session cookies — Bearer token is the only auth. CSRF is skipped for `api/*` routes in `bootstrap/app.php`. This prevents the admin session from interfering with customer API testing.
 
 ## Workflow — every feature request (approval gated)
 
