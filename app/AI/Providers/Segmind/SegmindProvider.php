@@ -70,7 +70,50 @@ class SegmindProvider implements AIProviderInterface
      */
     public function generateImage(GenerationRequest $request): AIResponse
     {
-        throw new UnsupportedOperationException('Segmind image generation is not implemented yet.');
+        $endpoint = $this->operations['image-generation']
+            ?? throw new UnsupportedOperationException('Segmind image generation endpoint is not configured.');
+
+        $startedAt = hrtime(true);
+
+        $submit = $this->submit($endpoint, $request->payload);
+
+        $requestId = $submit['request_id'] ?? null;
+        $statusUrl = $submit['status_url'] ?? null;
+        $responseUrl = $submit['response_url'] ?? null;
+
+        if (! $requestId || ! $statusUrl || ! $responseUrl) {
+            throw new AIGenerationFailedException(
+                'Segmind v2 submit response was missing request_id/status_url/response_url.',
+                null,
+                $submit,
+            );
+        }
+
+        $this->pollUntilTerminal($requestId, $statusUrl);
+
+        $result = $this->fetchResult($requestId, $responseUrl);
+
+        $durationMs = isset($result['metrics']['inference_time'])
+            ? (int) round((float) $result['metrics']['inference_time'] * 1000)
+            : (int) round((hrtime(true) - $startedAt) / 1e6);
+
+        $cost = isset($result['metrics']['cost'])
+            ? (string) $result['metrics']['cost']
+            : null;
+
+        return new AIResponse(
+            provider: $this->name(),
+            operation: 'image-generation',
+            model: $request->model,
+            requestId: $requestId,
+            status: 'completed',
+            durationMs: $durationMs,
+            output: $this->normalizeOutput($result['output'] ?? null),
+            usage: is_array($result['metrics'] ?? null) ? $result['metrics'] : null,
+            cost: $cost,
+            currency: $cost !== null ? 'USD' : null,
+            rawResponse: $result,
+        );
     }
 
     /**

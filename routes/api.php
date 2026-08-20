@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AIFaceSwapController;
 use App\Http\Controllers\Api\AIGenerationStatusController;
+use App\Http\Controllers\Api\AIImageGenerationController;
 use App\Http\Controllers\Api\AIVideoFaceSwapController;
 use App\Http\Controllers\Api\CustomerAuthController;
 use Illuminate\Support\Facades\Route;
@@ -31,5 +32,6 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'customer.not-banned'])->group(
 
     Route::post('ai/face-swap', [AIFaceSwapController::class, 'store'])->middleware('throttle:30,1');
     Route::post('ai/video-face-swap', [AIVideoFaceSwapController::class, 'store'])->middleware('throttle:10,1');
+    Route::post('ai/images', [AIImageGenerationController::class, 'store'])->middleware('throttle:20,1');
     Route::get('ai/generations/{generation}', [AIGenerationStatusController::class, 'show']);
 });

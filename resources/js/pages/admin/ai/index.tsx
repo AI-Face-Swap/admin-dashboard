@@ -71,7 +71,7 @@ function csrfToken(): string {
     return cookie ? decodeURIComponent(cookie.split('=')[1]) : '';
 }
 
-type TabType = 'image' | 'video';
+type TabType = 'image' | 'video' | 'generate';
 
 export default function Index({
     templates,
@@ -81,7 +81,8 @@ export default function Index({
     generations: Generation[];
 }) {
     const [activeTab, setActiveTab] = useState<TabType>('image');
-    const [selectedGeneration, setSelectedGeneration] = useState<Generation | null>(null);
+    const [selectedGeneration, setSelectedGeneration] =
+        useState<Generation | null>(null);
 
     return (
         <>
@@ -107,6 +108,14 @@ export default function Index({
                     >
                         Video Face Swap
                     </Button>
+                    <Button
+                        variant={
+                            activeTab === 'generate' ? 'default' : 'outline'
+                        }
+                        onClick={() => setActiveTab('generate')}
+                    >
+                        Image Generation
+                    </Button>
                 </div>
 
                 {activeTab === 'image' && (
@@ -116,6 +125,8 @@ export default function Index({
                 {activeTab === 'video' && (
                     <VideoFaceSwap templates={templates} />
                 )}
+
+                {activeTab === 'generate' && <ImageGeneration />}
 
                 <AnimatedCard>
                     <CardContent>
@@ -136,14 +147,18 @@ export default function Index({
                                     <TableRow
                                         key={generation.id}
                                         className="cursor-pointer hover:bg-muted/50"
-                                        onClick={() => setSelectedGeneration(generation)}
+                                        onClick={() =>
+                                            setSelectedGeneration(generation)
+                                        }
                                     >
                                         <TableCell>
                                             <Badge
                                                 variant={
-                                                    generation.status === 'completed'
+                                                    generation.status ===
+                                                    'completed'
                                                         ? 'default'
-                                                        : generation.status === 'failed'
+                                                        : generation.status ===
+                                                            'failed'
                                                           ? 'destructive'
                                                           : 'secondary'
                                                 }
@@ -151,22 +166,35 @@ export default function Index({
                                                 {generation.status}
                                             </Badge>
                                         </TableCell>
-                                        <TableCell>{generation.operation}</TableCell>
-                                        <TableCell>{generation.template?.name ?? '—'}</TableCell>
                                         <TableCell>
-                                            {generation.cost ? `${generation.cost} ${generation.currency ?? ''}` : '—'}
+                                            {generation.operation}
                                         </TableCell>
                                         <TableCell>
-                                            {generation.duration_ms ? `${generation.duration_ms} ms` : '—'}
+                                            {generation.template?.name ?? '—'}
+                                        </TableCell>
+                                        <TableCell>
+                                            {generation.cost
+                                                ? `${generation.cost} ${generation.currency ?? ''}`
+                                                : '—'}
+                                        </TableCell>
+                                        <TableCell>
+                                            {generation.duration_ms
+                                                ? `${generation.duration_ms} ms`
+                                                : '—'}
                                         </TableCell>
                                         <TableCell className="text-muted-foreground">
-                                            {new Date(generation.created_at).toLocaleString()}
+                                            {new Date(
+                                                generation.created_at,
+                                            ).toLocaleString()}
                                         </TableCell>
                                     </TableRow>
                                 ))}
                                 {generations.length === 0 && (
                                     <TableRow>
-                                        <TableCell colSpan={6} className="text-center text-muted-foreground">
+                                        <TableCell
+                                            colSpan={6}
+                                            className="text-center text-muted-foreground"
+                                        >
                                             No generations yet.
                                         </TableCell>
                                     </TableRow>
@@ -198,47 +226,78 @@ function GenerationDetailModal({
     const outputUrls = generation.output_metadata ?? [];
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+            onClick={onClose}
+        >
             <div
                 className="relative max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-background p-6 shadow-2xl"
                 onClick={(e) => e.stopPropagation()}
             >
-                <button onClick={onClose} className="absolute right-4 top-4 text-muted-foreground hover:text-foreground">
+                <button
+                    onClick={onClose}
+                    className="absolute top-4 right-4 text-muted-foreground hover:text-foreground"
+                >
                     <X className="h-5 w-5" />
                 </button>
 
-                <h2 className="text-lg font-semibold mb-4">Generation Detail</h2>
+                <h2 className="mb-4 text-lg font-semibold">
+                    Generation Detail
+                </h2>
 
                 {/* Status + Badges */}
-                <div className="flex flex-wrap gap-2 mb-4">
-                    <Badge variant={generation.status === 'completed' ? 'default' : generation.status === 'failed' ? 'destructive' : 'secondary'}>
+                <div className="mb-4 flex flex-wrap gap-2">
+                    <Badge
+                        variant={
+                            generation.status === 'completed'
+                                ? 'default'
+                                : generation.status === 'failed'
+                                  ? 'destructive'
+                                  : 'secondary'
+                        }
+                    >
                         {generation.status}
                     </Badge>
                     <Badge variant="outline">{generation.operation}</Badge>
-                    <Badge variant="outline">{generation.template?.name ?? 'No template'}</Badge>
+                    <Badge variant="outline">
+                        {generation.template?.name ?? 'No template'}
+                    </Badge>
                     {generation.cost && (
-                        <Badge variant="outline">cost: {generation.cost} {generation.currency ?? ''}</Badge>
+                        <Badge variant="outline">
+                            cost: {generation.cost} {generation.currency ?? ''}
+                        </Badge>
                     )}
                     {generation.duration_ms && (
-                        <Badge variant="outline">{generation.duration_ms} ms</Badge>
+                        <Badge variant="outline">
+                            {generation.duration_ms} ms
+                        </Badge>
                     )}
                 </div>
 
                 {/* Request ID */}
                 {generation.request_id && (
                     <div className="mb-4">
-                        <p className="text-xs font-medium text-muted-foreground mb-1">Request ID</p>
-                        <code className="text-xs bg-muted px-2 py-1 rounded font-mono">{generation.request_id}</code>
+                        <p className="mb-1 text-xs font-medium text-muted-foreground">
+                            Request ID
+                        </p>
+                        <code className="rounded bg-muted px-2 py-1 font-mono text-xs">
+                            {generation.request_id}
+                        </code>
                     </div>
                 )}
 
                 {/* Output Files */}
                 {outputUrls.length > 0 && (
                     <div className="mb-4">
-                        <p className="text-xs font-medium text-muted-foreground mb-2">Output Files</p>
+                        <p className="mb-2 text-xs font-medium text-muted-foreground">
+                            Output Files
+                        </p>
                         <div className="grid gap-3">
                             {outputUrls.map((url, index) => {
-                                const isVideo = url.endsWith('.mp4') || url.endsWith('.webm') || url.endsWith('.mov');
+                                const isVideo =
+                                    url.endsWith('.mp4') ||
+                                    url.endsWith('.webm') ||
+                                    url.endsWith('.mov');
 
                                 return isVideo ? (
                                     <video
@@ -252,7 +311,7 @@ function GenerationDetailModal({
                                         key={url}
                                         src={url}
                                         alt={`Output ${index + 1}`}
-                                        className="w-full rounded-lg border object-contain max-h-[400px]"
+                                        className="max-h-[400px] w-full rounded-lg border object-contain"
                                     />
                                 );
                             })}
@@ -261,7 +320,7 @@ function GenerationDetailModal({
                 )}
 
                 {outputUrls.length === 0 && (
-                    <div className="mb-4 p-8 rounded-lg bg-muted/50 text-center text-sm text-muted-foreground">
+                    <div className="mb-4 rounded-lg bg-muted/50 p-8 text-center text-sm text-muted-foreground">
                         No output files
                     </div>
                 )}
@@ -371,7 +430,11 @@ function ImageFaceSwap({ templates }: { templates: Template[] }) {
                             <div className="flex gap-1">
                                 <Button
                                     type="button"
-                                    variant={faceMode === 'upload' ? 'default' : 'outline'}
+                                    variant={
+                                        faceMode === 'upload'
+                                            ? 'default'
+                                            : 'outline'
+                                    }
                                     size="sm"
                                     onClick={() => setFaceMode('upload')}
                                 >
@@ -379,7 +442,11 @@ function ImageFaceSwap({ templates }: { templates: Template[] }) {
                                 </Button>
                                 <Button
                                     type="button"
-                                    variant={faceMode === 'url' ? 'default' : 'outline'}
+                                    variant={
+                                        faceMode === 'url'
+                                            ? 'default'
+                                            : 'outline'
+                                    }
                                     size="sm"
                                     onClick={() => setFaceMode('url')}
                                 >
@@ -395,14 +462,24 @@ function ImageFaceSwap({ templates }: { templates: Template[] }) {
                                     type="file"
                                     accept="image/*"
                                     className="hidden"
-                                    onChange={(e) => onFaceFileChange(e.target.files?.[0] ?? null)}
+                                    onChange={(e) =>
+                                        onFaceFileChange(
+                                            e.target.files?.[0] ?? null,
+                                        )
+                                    }
                                 />
                                 <div
                                     className="flex h-40 cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed text-sm text-muted-foreground"
-                                    onClick={() => fileInputRef.current?.click()}
+                                    onClick={() =>
+                                        fileInputRef.current?.click()
+                                    }
                                 >
                                     {facePreview ? (
-                                        <img src={facePreview} alt="Face preview" className="size-full object-contain" />
+                                        <img
+                                            src={facePreview}
+                                            alt="Face preview"
+                                            className="size-full object-contain"
+                                        />
                                     ) : (
                                         'Click to upload the face image'
                                     )}
@@ -423,7 +500,11 @@ function ImageFaceSwap({ templates }: { templates: Template[] }) {
                             <div className="flex gap-1">
                                 <Button
                                     type="button"
-                                    variant={targetMode === 'template' ? 'default' : 'outline'}
+                                    variant={
+                                        targetMode === 'template'
+                                            ? 'default'
+                                            : 'outline'
+                                    }
                                     size="sm"
                                     onClick={() => setTargetMode('template')}
                                 >
@@ -431,7 +512,11 @@ function ImageFaceSwap({ templates }: { templates: Template[] }) {
                                 </Button>
                                 <Button
                                     type="button"
-                                    variant={targetMode === 'url' ? 'default' : 'outline'}
+                                    variant={
+                                        targetMode === 'url'
+                                            ? 'default'
+                                            : 'outline'
+                                    }
                                     size="sm"
                                     onClick={() => setTargetMode('url')}
                                 >
@@ -441,13 +526,19 @@ function ImageFaceSwap({ templates }: { templates: Template[] }) {
                         </div>
 
                         {targetMode === 'template' ? (
-                            <Select value={templateSlug} onValueChange={setTemplateSlug}>
+                            <Select
+                                value={templateSlug}
+                                onValueChange={setTemplateSlug}
+                            >
                                 <SelectTrigger>
                                     <SelectValue placeholder="Pick a template" />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {imageTemplates.map((template) => (
-                                        <SelectItem key={template.id} value={template.slug}>
+                                        <SelectItem
+                                            key={template.id}
+                                            value={template.slug}
+                                        >
                                             {template.name} ({template.type})
                                         </SelectItem>
                                     ))}
@@ -468,7 +559,11 @@ function ImageFaceSwap({ templates }: { templates: Template[] }) {
                         </p>
                     )}
 
-                    <AnimatedButton onClick={generate} disabled={processing} className="w-full">
+                    <AnimatedButton
+                        onClick={generate}
+                        disabled={processing}
+                        className="w-full"
+                    >
                         {processing ? 'Generating...' : 'Generate Face Swap'}
                     </AnimatedButton>
                 </CardContent>
@@ -500,10 +595,20 @@ function ImageFaceSwap({ templates }: { templates: Template[] }) {
                                 ))}
                             </div>
                             <div className="flex flex-wrap gap-2 text-sm">
-                                <Badge variant="outline">status: {result.generation.status}</Badge>
-                                <Badge variant="outline">cost: {result.generation.cost ?? '—'} {result.generation.currency ?? ''}</Badge>
-                                <Badge variant="outline">duration: {result.generation.duration_ms ?? '—'} ms</Badge>
-                                <Badge variant="outline" className="font-mono">{result.generation.request_id ?? '—'}</Badge>
+                                <Badge variant="outline">
+                                    status: {result.generation.status}
+                                </Badge>
+                                <Badge variant="outline">
+                                    cost: {result.generation.cost ?? '—'}{' '}
+                                    {result.generation.currency ?? ''}
+                                </Badge>
+                                <Badge variant="outline">
+                                    duration:{' '}
+                                    {result.generation.duration_ms ?? '—'} ms
+                                </Badge>
+                                <Badge variant="outline" className="font-mono">
+                                    {result.generation.request_id ?? '—'}
+                                </Badge>
                             </div>
                         </div>
                     )}
@@ -521,7 +626,9 @@ function VideoFaceSwap({ templates }: { templates: Template[] }) {
     const [facePreview, setFacePreview] = useState<string | null>(null);
     const [faceUrl, setFaceUrl] = useState('');
 
-    const [targetMode, setTargetMode] = useState<'template' | 'url'>('template');
+    const [targetMode, setTargetMode] = useState<'template' | 'url'>(
+        'template',
+    );
     const [templateSlug, setTemplateSlug] = useState<string>('');
     const [targetVideoUrl, setTargetVideoUrl] = useState('');
 
@@ -552,7 +659,9 @@ function VideoFaceSwap({ templates }: { templates: Template[] }) {
                 const contentType = response.headers.get('content-type') ?? '';
 
                 if (contentType.includes('text/html')) {
-                    setError('Polling failed — received HTML instead of JSON. Check authentication.');
+                    setError(
+                        'Polling failed — received HTML instead of JSON. Check authentication.',
+                    );
                     setProcessing(false);
                     setPolling(false);
                     setGenerationId(null);
@@ -714,7 +823,11 @@ function VideoFaceSwap({ templates }: { templates: Template[] }) {
                             <div className="flex gap-1">
                                 <Button
                                     type="button"
-                                    variant={faceMode === 'upload' ? 'default' : 'outline'}
+                                    variant={
+                                        faceMode === 'upload'
+                                            ? 'default'
+                                            : 'outline'
+                                    }
                                     size="sm"
                                     onClick={() => setFaceMode('upload')}
                                 >
@@ -722,7 +835,11 @@ function VideoFaceSwap({ templates }: { templates: Template[] }) {
                                 </Button>
                                 <Button
                                     type="button"
-                                    variant={faceMode === 'url' ? 'default' : 'outline'}
+                                    variant={
+                                        faceMode === 'url'
+                                            ? 'default'
+                                            : 'outline'
+                                    }
                                     size="sm"
                                     onClick={() => setFaceMode('url')}
                                 >
@@ -738,14 +855,24 @@ function VideoFaceSwap({ templates }: { templates: Template[] }) {
                                     type="file"
                                     accept="image/*"
                                     className="hidden"
-                                    onChange={(e) => onFaceFileChange(e.target.files?.[0] ?? null)}
+                                    onChange={(e) =>
+                                        onFaceFileChange(
+                                            e.target.files?.[0] ?? null,
+                                        )
+                                    }
                                 />
                                 <div
                                     className="flex h-40 cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed text-sm text-muted-foreground"
-                                    onClick={() => fileInputRef.current?.click()}
+                                    onClick={() =>
+                                        fileInputRef.current?.click()
+                                    }
                                 >
                                     {facePreview ? (
-                                        <img src={facePreview} alt="Face preview" className="size-full object-contain" />
+                                        <img
+                                            src={facePreview}
+                                            alt="Face preview"
+                                            className="size-full object-contain"
+                                        />
                                     ) : (
                                         'Click to upload the face image'
                                     )}
@@ -766,7 +893,11 @@ function VideoFaceSwap({ templates }: { templates: Template[] }) {
                             <div className="flex gap-1">
                                 <Button
                                     type="button"
-                                    variant={targetMode === 'template' ? 'default' : 'outline'}
+                                    variant={
+                                        targetMode === 'template'
+                                            ? 'default'
+                                            : 'outline'
+                                    }
                                     size="sm"
                                     onClick={() => setTargetMode('template')}
                                 >
@@ -774,7 +905,11 @@ function VideoFaceSwap({ templates }: { templates: Template[] }) {
                                 </Button>
                                 <Button
                                     type="button"
-                                    variant={targetMode === 'url' ? 'default' : 'outline'}
+                                    variant={
+                                        targetMode === 'url'
+                                            ? 'default'
+                                            : 'outline'
+                                    }
                                     size="sm"
                                     onClick={() => setTargetMode('url')}
                                 >
@@ -784,14 +919,20 @@ function VideoFaceSwap({ templates }: { templates: Template[] }) {
                         </div>
 
                         {targetMode === 'template' ? (
-                            <Select value={templateSlug} onValueChange={setTemplateSlug}>
+                            <Select
+                                value={templateSlug}
+                                onValueChange={setTemplateSlug}
+                            >
                                 <SelectTrigger>
                                     <SelectValue placeholder="Pick a video template" />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {videoTemplates.length > 0 ? (
                                         videoTemplates.map((template) => (
-                                            <SelectItem key={template.id} value={template.slug}>
+                                            <SelectItem
+                                                key={template.id}
+                                                value={template.slug}
+                                            >
                                                 {template.name}
                                             </SelectItem>
                                         ))
@@ -805,7 +946,9 @@ function VideoFaceSwap({ templates }: { templates: Template[] }) {
                         ) : (
                             <Input
                                 value={targetVideoUrl}
-                                onChange={(e) => setTargetVideoUrl(e.target.value)}
+                                onChange={(e) =>
+                                    setTargetVideoUrl(e.target.value)
+                                }
                                 placeholder="https://.../target.mp4"
                             />
                         )}
@@ -817,8 +960,14 @@ function VideoFaceSwap({ templates }: { templates: Template[] }) {
                         </p>
                     )}
 
-                    <AnimatedButton onClick={generate} disabled={processing} className="w-full">
-                        {processing ? 'Generating...' : 'Generate Video Face Swap'}
+                    <AnimatedButton
+                        onClick={generate}
+                        disabled={processing}
+                        className="w-full"
+                    >
+                        {processing
+                            ? 'Generating...'
+                            : 'Generate Video Face Swap'}
                     </AnimatedButton>
                 </CardContent>
             </AnimatedCard>
@@ -834,23 +983,30 @@ function VideoFaceSwap({ templates }: { templates: Template[] }) {
                     {processing && !result && (
                         <div className="flex h-64 flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
                             <div className="h-6 w-6 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                            <p>Video processing — this usually takes 5+ minutes...</p>
-                            <p className="text-xs">Polling every 5 seconds for status updates.</p>
+                            <p>
+                                Video processing — this usually takes 5+
+                                minutes...
+                            </p>
+                            <p className="text-xs">
+                                Polling every 5 seconds for status updates.
+                            </p>
                         </div>
                     )}
                     {result && (
                         <div className="space-y-4">
                             {result.generation.output.length > 0 ? (
                                 <div className="grid gap-4">
-                                    {result.generation.output.map((url, index) => (
-                                        <video
-                                            key={url}
-                                            src={url}
-                                            controls
-                                            className="w-full rounded-lg border"
-                                            alt={`Result ${index + 1}`}
-                                        />
-                                    ))}
+                                    {result.generation.output.map(
+                                        (url, index) => (
+                                            <video
+                                                key={url}
+                                                src={url}
+                                                controls
+                                                className="w-full rounded-lg border"
+                                                alt={`Result ${index + 1}`}
+                                            />
+                                        ),
+                                    )}
                                 </div>
                             ) : (
                                 <div className="flex h-40 items-center justify-center rounded-lg bg-muted/50 text-sm text-muted-foreground">
@@ -858,10 +1014,221 @@ function VideoFaceSwap({ templates }: { templates: Template[] }) {
                                 </div>
                             )}
                             <div className="flex flex-wrap gap-2 text-sm">
-                                <Badge variant="outline">status: {result.generation.status}</Badge>
-                                <Badge variant="outline">cost: {result.generation.cost ?? '—'} {result.generation.currency ?? ''}</Badge>
-                                <Badge variant="outline">duration: {result.generation.duration_ms ?? '—'} ms</Badge>
-                                <Badge variant="outline" className="font-mono">{result.generation.request_id ?? '—'}</Badge>
+                                <Badge variant="outline">
+                                    status: {result.generation.status}
+                                </Badge>
+                                <Badge variant="outline">
+                                    cost: {result.generation.cost ?? '—'}{' '}
+                                    {result.generation.currency ?? ''}
+                                </Badge>
+                                <Badge variant="outline">
+                                    duration:{' '}
+                                    {result.generation.duration_ms ?? '—'} ms
+                                </Badge>
+                                <Badge variant="outline" className="font-mono">
+                                    {result.generation.request_id ?? '—'}
+                                </Badge>
+                            </div>
+                        </div>
+                    )}
+                </CardContent>
+            </AnimatedCard>
+        </div>
+    );
+}
+
+function ImageGeneration() {
+    const [prompt, setPrompt] = useState('');
+    const [negativePrompt, setNegativePrompt] = useState('');
+    const [model, setModel] = useState('seedream-v5-lite-text-to-image');
+    const [width, setWidth] = useState('1024');
+    const [height, setHeight] = useState('1024');
+    const [processing, setProcessing] = useState(false);
+    const [result, setResult] = useState<GenerationResult | null>(null);
+    const [error, setError] = useState('');
+
+    const generate = async () => {
+        if (!prompt.trim()) {
+            return;
+        }
+
+        setProcessing(true);
+        setError('');
+        setResult(null);
+
+        try {
+            const response = await fetch('/api/v1/ai/images', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json',
+                    'X-XSRF-TOKEN': csrfToken(),
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({
+                    prompt: prompt.trim(),
+                    negative_prompt: negativePrompt.trim() || undefined,
+                    model,
+                    width: parseInt(width),
+                    height: parseInt(height),
+                }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                setError(data.message || 'Generation failed.');
+
+                return;
+            }
+
+            setResult(data);
+        } catch {
+            setError('Network error — please try again.');
+        } finally {
+            setProcessing(false);
+        }
+    };
+
+    return (
+        <div className="grid gap-6 xl:grid-cols-3">
+            <AnimatedCard className="xl:col-span-2">
+                <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                        <Label>Prompt</Label>
+                        <textarea
+                            value={prompt}
+                            onChange={(e) => setPrompt(e.target.value)}
+                            placeholder="A superhero flying over a city at sunset, cinematic lighting, detailed"
+                            className="flex min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
+                        />
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label>Negative Prompt (optional)</Label>
+                        <Input
+                            value={negativePrompt}
+                            onChange={(e) => setNegativePrompt(e.target.value)}
+                            placeholder="blurry, low quality, distorted"
+                        />
+                    </div>
+
+                    <div className="space-y-4">
+                        <div className="space-y-2">
+                            <Label>Model</Label>
+                            <Select value={model} onValueChange={setModel}>
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="seedream-v5-lite-text-to-image">
+                                        Seedream 5.0 Lite
+                                    </SelectItem>
+                                    <SelectItem value="nano-banana-2-lite">
+                                        Nano Banana 2 Lite
+                                    </SelectItem>
+                                    <SelectItem value="qwen-image-3">
+                                        Qwen Image 3
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label>Width</Label>
+                                <Select value={width} onValueChange={setWidth}>
+                                    <SelectTrigger>
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="512">512</SelectItem>
+                                        <SelectItem value="768">768</SelectItem>
+                                        <SelectItem value="1024">1024</SelectItem>
+                                        <SelectItem value="1536">1536</SelectItem>
+                                        <SelectItem value="2048">2048</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Height</Label>
+                                <Select value={height} onValueChange={setHeight}>
+                                    <SelectTrigger>
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="512">512</SelectItem>
+                                        <SelectItem value="768">768</SelectItem>
+                                        <SelectItem value="1024">1024</SelectItem>
+                                        <SelectItem value="1536">1536</SelectItem>
+                                        <SelectItem value="2048">2048</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                    </div>
+
+                    {error && (
+                        <p className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+                            {error}
+                        </p>
+                    )}
+
+                    <AnimatedButton
+                        onClick={generate}
+                        disabled={processing || !prompt.trim()}
+                        className="w-full"
+                    >
+                        {processing ? 'Generating...' : 'Generate Image'}
+                    </AnimatedButton>
+                </CardContent>
+            </AnimatedCard>
+
+            <AnimatedCard>
+                <CardContent>
+                    <p className="mb-3 font-medium">Result</p>
+                    {!result && !processing && (
+                        <div className="flex h-64 items-center justify-center rounded-lg bg-muted/50 text-sm text-muted-foreground">
+                            Run a generation to see the result here.
+                        </div>
+                    )}
+                    {processing && !result && (
+                        <div className="flex h-64 flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
+                            <div className="h-6 w-6 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                            <p>Generating image...</p>
+                        </div>
+                    )}
+                    {result && (
+                        <div className="space-y-4">
+                            {result.generation.output.length > 0 ? (
+                                <div className="grid gap-4">
+                                    {result.generation.output.map(
+                                        (url, index) => (
+                                            <img
+                                                key={url}
+                                                src={url}
+                                                alt={`Generated ${index + 1}`}
+                                                className="w-full rounded-lg border"
+                                            />
+                                        ),
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="flex h-40 items-center justify-center rounded-lg bg-muted/50 text-sm text-muted-foreground">
+                                    No output returned.
+                                </div>
+                            )}
+                            <div className="flex flex-wrap gap-2 text-sm">
+                                <Badge variant="outline">
+                                    status: {result.generation.status}
+                                </Badge>
+                                <Badge variant="outline">
+                                    cost: {result.generation.cost ?? '—'}{' '}
+                                    {result.generation.currency ?? ''}
+                                </Badge>
+                                <Badge variant="outline">
+                                    duration:{' '}
+                                    {result.generation.duration_ms ?? '—'} ms
+                                </Badge>
                             </div>
                         </div>
                     )}

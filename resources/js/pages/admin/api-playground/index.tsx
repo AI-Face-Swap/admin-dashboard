@@ -165,6 +165,17 @@ const ENDPOINT_TEMPLATES: {
         headers: [{ key: 'Accept', value: 'application/json' }],
     },
     {
+        label: 'Image Generation',
+        method: 'POST',
+        url: '/api/v1/ai/images',
+        bodyType: 'json',
+        body: '{\n  "prompt": "A superhero flying over a city at sunset",\n  "negative_prompt": "blurry, low quality",\n  "model": "seedream-v5-lite-text-to-image",\n  "width": 1024,\n  "height": 1024\n}',
+        headers: [
+            { key: 'Content-Type', value: 'application/json' },
+            { key: 'Accept', value: 'application/json' },
+        ],
+    },
+    {
         label: 'Check Generation Status',
         method: 'GET',
         url: '/api/v1/ai/generations/1',

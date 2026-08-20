@@ -58,8 +58,7 @@ test('toggle flips provider active state', function () {
     $provider = AIProvider::create(['name' => 'Segmind', 'slug' => 'segmind', 'is_active' => true]);
 
     $this->patchJson(route('admin.providers.toggle', $provider))
-        ->assertOk()
-        ->assertJson(['is_active' => false]);
+        ->assertRedirect();
 
     expect($provider->fresh()->is_active)->toBeFalse();
 });
@@ -72,8 +71,7 @@ test('toggle activates an inactive provider', function () {
     $provider = AIProvider::create(['name' => 'Segmind', 'slug' => 'segmind', 'is_active' => false]);
 
     $this->patchJson(route('admin.providers.toggle', $provider))
-        ->assertOk()
-        ->assertJson(['is_active' => true]);
+        ->assertRedirect();
 
     expect($provider->fresh()->is_active)->toBeTrue();
 });

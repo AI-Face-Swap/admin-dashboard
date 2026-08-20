@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\AIProvider;
-use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -44,10 +44,12 @@ class ProviderController extends Controller
     /**
      * Toggle a provider's active state.
      */
-    public function toggle(AIProvider $provider): JsonResponse
+    public function toggle(AIProvider $provider): RedirectResponse
     {
         $provider->update(['is_active' => ! $provider->is_active]);
 
-        return response()->json(['is_active' => $provider->fresh()->is_active]);
+        $state = $provider->fresh()->is_active ? 'enabled' : 'disabled';
+
+        return back()->with('success', "Provider \"{$provider->name}\" has been {$state}.");
     }
 }

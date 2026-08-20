@@ -36,6 +36,8 @@ Laravel admin dashboard + mobile-facing API for AI media generation (image gener
 | — | Generation detail modal (click recent generations → output images/videos + metadata) | ✅ |
 | — | Customer Management: list (type/coin/status filters), detail (generations + stats), ban/unban, add coins (developer only) | ✅ |
 | — | Example data seeder (`ExampleDataSeeder` — customers, templates, categories, tags, generations) | ✅ |
+| — | Provider toggle fix (returns Inertia response, not JSON) | ✅ |
+| — | Image Generation API (`POST /api/v1/ai/images` — Segmind seedream-v3, flux-schnell, sd-xl) | ✅ |
 | — | API Playground: form-data file upload, HTML preview, global Bearer token, `credentials: 'same-origin'` | ✅ |
 | — | Bug fix: `AIService::execute()` accepts optional `$existingGeneration` to prevent duplicate generation rows | ✅ |
 | — | Bug fix: image face-swap validates template type = `image` (prevents video templates in image swap) | ✅ |
@@ -45,14 +47,12 @@ Laravel admin dashboard + mobile-facing API for AI media generation (image gener
 
 | # | Feature | Effort |
 |---|---|---|
-| 1 | Replicate provider (new class + factory case) | Medium |
-| 2 | Image generation API (`POST /api/v1/ai/images` — Segmind seedream) | Medium |
-| 3 | Social login (Google/Apple) — needs your OAuth client credentials | Medium |
-| 4 | Customer email verification + password reset | Small |
-| 5 | Usage/cost analytics dashboard (charts: generations/day, cost/day) | Medium |
-| 6 | Payment integration (KBZ, RevenueCat, Stripe, Google Pay, Apple Pay) | Large |
-| 7 | Animation polish (page transitions, card entrances, loading states) | Medium |
-| 8 | Full test suite coverage (comprehensive Pest tests) | Large |
+| 1 | Social login (Google/Apple) — needs your OAuth client credentials | Medium |
+| 2 | Customer email verification + password reset | Small |
+| 3 | Usage/cost analytics dashboard (charts: generations/day, cost/day) | Medium |
+| 4 | Payment integration (KBZ, RevenueCat, Stripe, Google Pay, Apple Pay) | Large |
+| 5 | Animation polish (page transitions, card entrances, loading states) | Medium |
+| 6 | Full test suite coverage (comprehensive Pest tests) | Large |
 
 ### Key architecture patterns
 
@@ -84,6 +84,7 @@ Laravel admin dashboard + mobile-facing API for AI media generation (image gener
 | `GET /api/v1/auth/me` | sanctum | Authenticated customer profile |
 | `POST /api/v1/ai/face-swap` | sanctum (session + token) | Shared face-swap endpoint |
 | `POST /api/v1/ai/video-face-swap` | sanctum (session + token) | Shared video face-swap endpoint (queued) |
+| `POST /api/v1/ai/images` | sanctum (session + token) | Text-to-image generation endpoint |
 | `GET /api/v1/ai/generations/{id}` | sanctum | Poll generation status |
 
 **Admin web routes:**

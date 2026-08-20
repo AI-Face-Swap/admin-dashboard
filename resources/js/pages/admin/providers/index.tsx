@@ -1,6 +1,5 @@
 import { Head, router } from '@inertiajs/react';
 import { useState } from 'react';
-import { AnimatedButton } from '@/components/animated/AnimatedButton';
 import { AnimatedCard } from '@/components/animated/AnimatedCard';
 import Heading from '@/components/heading';
 import { Badge } from '@/components/ui/badge';
@@ -69,20 +68,21 @@ function ProviderCard({
 
     const toggle = () => {
         setProcessing(true);
+        setIsActive(!isActive); // optimistic update
 
         router.patch(
             `/admin/providers/${provider.id}/toggle`,
             {},
             {
                 preserveScroll: true,
-                onSuccess: (page) => {
-                    const data = page.props as Record<string, unknown>;
-                    // Inertia re-renders with the updated props; the
-                    // optimistic state below keeps the UI snappy.
-                    setIsActive((data.is_active as boolean) ?? !isActive);
+                onSuccess: () => {
+                    router.reload({ only: ['providers'] });
+                },
+                onError: () => {
+                    setIsActive(isActive); // rollback on error
                     setProcessing(false);
                 },
-                onError: () => setProcessing(false),
+                onFinish: () => setProcessing(false),
             },
         );
     };

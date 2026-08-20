@@ -54,7 +54,7 @@ class AIGeneration extends Model
      */
     protected $table = 'ai_generations';
 
-    public const OPERATION_IMAGE = 'image';
+    public const OPERATION_IMAGE = 'image-generation';
 
     public const OPERATION_FACE_SWAP = 'face-swap';
 

@@ -38,6 +38,14 @@ class AIService
     }
 
     /**
+     * Generate an image from a text prompt (image-generation operation).
+     */
+    public function generateImage(GenerationRequest $request, User|Customer|null $requester = null): AIGeneration
+    {
+        return $this->execute($request, $requester);
+    }
+
+    /**
      * Execute a generation end-to-end: create the row, call the provider,
      * persist the outcome, and rethrow failures as typed exceptions.
      *
