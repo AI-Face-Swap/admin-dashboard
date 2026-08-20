@@ -13,6 +13,21 @@ return [
     |
     */
 
+    /*
+    |--------------------------------------------------------------------------
+    | Coin Costs
+    |--------------------------------------------------------------------------
+    |
+    | Default coin costs per operation. Admin can override per-template.
+    |
+    */
+
+    'coin_costs' => [
+        'image_generation' => (int) env('AI_IMAGE_GENERATION_COST', 5),
+        'face_swap' => (int) env('AI_FACE_SWAP_COST', 5),
+        'video_face_swap' => (int) env('AI_VIDEO_FACE_SWAP_COST', 20),
+    ],
+
     'providers' => [
 
         'segmind' => [

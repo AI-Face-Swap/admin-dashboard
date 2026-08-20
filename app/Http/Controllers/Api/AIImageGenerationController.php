@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\AI\DTOs\GenerationRequest;
+use App\AI\Exceptions\AIGenerationFailedException;
+use App\AI\Exceptions\AIGenerationTimeoutException;
 use App\AI\Services\AIService;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\ImageGenerationRequest;
@@ -25,7 +27,7 @@ class AIImageGenerationController extends Controller
     public function store(ImageGenerationRequest $request): JsonResponse
     {
         $requester = $request->user();
-        $templateCost = 5; // default cost for image generation
+        $templateCost = (int) config('ai.coin_costs.image_generation', 5);
 
         if ($requester instanceof Customer) {
             $this->authorizeCustomerCoins($requester, $templateCost);
@@ -63,34 +65,46 @@ class AIImageGenerationController extends Controller
             $payload['quality'] = $request->integer('quality');
         }
 
-        $generation = $this->aiService->generateImage(
-            new GenerationRequest(
-                operation: 'image-generation',
-                payload: $payload,
-                model: $request->string('model', 'seedream-v5-lite-text-to-image')->toString(),
-            ),
-            $requester,
-        );
+        try {
+            $generation = $this->aiService->generateImage(
+                new GenerationRequest(
+                    operation: 'image-generation',
+                    payload: $payload,
+                    model: $request->string('model', 'seedream-v5-lite-text-to-image')->toString(),
+                ),
+                $requester,
+            );
 
-        if ($requester instanceof Customer && $generation->status === 'completed') {
-            $requester->spendCoins($templateCost);
-        }
+            if ($requester instanceof Customer && $generation->status === 'completed') {
+                $requester->spendCoins($templateCost);
+            }
 
-        return response()->json([
-            'status' => $generation->status,
-            'generation' => [
-                'id' => $generation->id,
-                'request_id' => $generation->request_id,
-                'operation' => $generation->operation,
+            return response()->json([
                 'status' => $generation->status,
-                'cost' => $generation->cost,
-                'currency' => $generation->currency,
-                'duration_ms' => $generation->duration_ms,
-                'output' => $generation->output_metadata ?? [],
-                'coins_spent' => $requester instanceof Customer ? $templateCost : null,
-                'coins_remaining' => $requester instanceof Customer ? $requester->fresh()->coins : null,
-            ],
-        ]);
+                'generation' => [
+                    'id' => $generation->id,
+                    'request_id' => $generation->request_id,
+                    'operation' => $generation->operation,
+                    'status' => $generation->status,
+                    'cost' => $generation->cost,
+                    'currency' => $generation->currency,
+                    'duration_ms' => $generation->duration_ms,
+                    'output' => $generation->output_metadata ?? [],
+                    'coins_spent' => $requester instanceof Customer ? $templateCost : null,
+                    'coins_remaining' => $requester instanceof Customer ? $requester->fresh()->coins : null,
+                ],
+            ]);
+        } catch (AIGenerationFailedException $e) {
+            return response()->json([
+                'status' => 'failed',
+                'message' => $e->getMessage(),
+            ], 422);
+        } catch (AIGenerationTimeoutException $e) {
+            return response()->json([
+                'status' => 'failed',
+                'message' => $e->getMessage(),
+            ], 408);
+        }
     }
 
     /**
