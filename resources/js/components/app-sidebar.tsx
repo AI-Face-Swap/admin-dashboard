@@ -3,6 +3,7 @@ import {
     BookOpen,
     LayoutGrid,
     LayoutTemplate,
+    SlidersHorizontal,
     Server,
     Settings,
     ShieldCheck,
@@ -44,6 +45,12 @@ const mainNavItems: NavItem[] = [
         title: 'Templates',
         href: '/admin/templates',
         icon: LayoutTemplate,
+        permission: 'templates.view',
+    },
+    {
+        title: 'Sliders',
+        href: '/admin/sliders',
+        icon: SlidersHorizontal,
         permission: 'templates.view',
     },
     {

@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\ProviderController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\SettingController;
+use App\Http\Controllers\Admin\SliderController;
 use App\Http\Controllers\Admin\TemplateCategoryController;
 use App\Http\Controllers\Admin\TemplateController;
 use App\Http\Controllers\Admin\TemplateTagController;
@@ -82,6 +83,14 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     // Settings
     Route::get('settings', [SettingController::class, 'index'])->middleware('permission:settings.manage')->name('settings.index');
     Route::put('settings', [SettingController::class, 'update'])->middleware('permission:settings.manage')->name('settings.update');
+
+    // Sliders
+    Route::get('sliders', [SliderController::class, 'index'])->middleware('permission:templates.view')->name('sliders.index');
+    Route::get('sliders/create', [SliderController::class, 'create'])->middleware('permission:templates.manage')->name('sliders.create');
+    Route::post('sliders', [SliderController::class, 'store'])->middleware('permission:templates.manage')->name('sliders.store');
+    Route::get('sliders/{slider}/edit', [SliderController::class, 'edit'])->middleware('permission:templates.manage')->name('sliders.edit');
+    Route::put('sliders/{slider}', [SliderController::class, 'update'])->middleware('permission:templates.manage')->name('sliders.update');
+    Route::delete('sliders/{slider}', [SliderController::class, 'destroy'])->middleware('permission:templates.manage')->name('sliders.destroy');
 });
 
 require __DIR__.'/settings.php';

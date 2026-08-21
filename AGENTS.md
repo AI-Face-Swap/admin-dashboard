@@ -45,13 +45,15 @@ Laravel admin dashboard + mobile-facing API for AI media generation (image gener
 | — | Coin cost configurable via `config('ai.php')` + `.env` | ✅ |
 | — | Error handling: JSON error responses instead of 500 crashes | ✅ |
 | — | Admin coin cost settings page (`/admin/settings` — UI to change coin costs) | ✅ |
+| — | API documentation with Scramble (`/docs/api` — OpenAPI 3.1.0, auto-generated from code) | ✅ |
+| — | Sliders CRUD (admin list/create/edit + mobile API `GET /api/v1/sliders`) | ✅ |
 
 ### Pending phases
 
 | # | Feature | Effort |
 |---|---|---|
-| 1 | Social login (Google/Apple) — needs your OAuth client credentials | Medium |
-| 2 | Customer email verification + password reset | Small |
+| 1 | Customer email verification + password reset | Small |
+| 2 | Social login (Google/Apple) — needs your OAuth client credentials | Medium |
 | 3 | Usage/cost analytics dashboard (charts: generations/day, cost/day) | Medium |
 | 4 | Payment integration (KBZ, RevenueCat, Stripe, Google Pay, Apple Pay) | Large |
 | 5 | Animation polish (page transitions, card entrances, loading states) | Medium |
@@ -75,7 +77,7 @@ Laravel admin dashboard + mobile-facing API for AI media generation (image gener
 
 ### Current DB tables
 
-`users` (admin), `customers` (mobile/web users), `roles`, `permissions`, `role_user`, `permission_role`, `templates`, `template_categories`, `template_tags`, `template_tag`, `ai_providers`, `ai_generations`, `api_request_logs`, `settings` (key-value config), `personal_access_tokens`, `sessions`, `cache`, `jobs`, `failed_jobs`, `passkeys`, `password_reset_tokens`
+`users` (admin), `customers` (mobile/web users), `roles`, `permissions`, `role_user`, `permission_role`, `templates`, `template_categories`, `template_tags`, `template_tag`, `ai_providers`, `ai_generations`, `api_request_logs`, `settings` (key-value config), `sliders` (hero banners), `personal_access_tokens`, `sessions`, `cache`, `jobs`, `failed_jobs`, `passkeys`, `password_reset_tokens`
 
 ### Current API routes
 
@@ -89,6 +91,7 @@ Laravel admin dashboard + mobile-facing API for AI media generation (image gener
 | `POST /api/v1/ai/video-face-swap` | sanctum (session + token) | Shared video face-swap endpoint (queued) |
 | `POST /api/v1/ai/images` | sanctum (session + token) | Text-to-image generation endpoint |
 | `GET /api/v1/ai/generations/{id}` | sanctum | Poll generation status |
+| `GET /api/v1/sliders` | public | Active sliders for mobile app |
 
 **Admin web routes:**
 
@@ -107,6 +110,13 @@ Laravel admin dashboard + mobile-facing API for AI media generation (image gener
 | `DELETE /admin/customers/{customer}` | `customers.manage` | Delete customer |
 | `GET /admin/settings` | `settings.manage` | Admin settings page (coin costs) |
 | `PUT /admin/settings` | `settings.manage` | Update coin costs |
+| `GET /admin/sliders` | `templates.view` | List sliders |
+| `GET /admin/sliders/create` | `templates.manage` | Create slider form |
+| `POST /admin/sliders` | `templates.manage` | Store slider |
+| `GET /admin/sliders/{slider}/edit` | `templates.manage` | Edit slider form |
+| `PUT /admin/sliders/{slider}` | `templates.manage` | Update slider |
+| `DELETE /admin/sliders/{slider}` | `templates.manage` | Delete slider |
+| `/docs/api` | `viewApiDocs` gate | API documentation (Scramble) |
 
 ### Middleware setup (`bootstrap/app.php`)
 

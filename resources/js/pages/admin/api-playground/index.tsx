@@ -191,6 +191,14 @@ const ENDPOINT_TEMPLATES: {
         body: '',
         headers: [{ key: 'Accept', value: 'application/json' }],
     },
+    {
+        label: 'Get Sliders (Public)',
+        method: 'GET',
+        url: '/api/v1/sliders',
+        bodyType: 'none',
+        body: '',
+        headers: [{ key: 'Accept', value: 'application/json' }],
+    },
 ];
 
 const HISTORY_KEY = 'api-playground-history';

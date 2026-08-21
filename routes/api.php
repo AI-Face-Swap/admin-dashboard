@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\AIGenerationStatusController;
 use App\Http\Controllers\Api\AIImageGenerationController;
 use App\Http\Controllers\Api\AIVideoFaceSwapController;
 use App\Http\Controllers\Api\CustomerAuthController;
+use App\Http\Controllers\Api\SliderController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -24,6 +25,10 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('v1')->middleware('guest:customer')->group(function () {
     Route::post('auth/register', [CustomerAuthController::class, 'register'])->middleware('throttle:10,1');
     Route::post('auth/login', [CustomerAuthController::class, 'login'])->middleware('throttle:10,1');
+});
+
+Route::prefix('v1')->group(function () {
+    Route::get('sliders', [SliderController::class, 'index']);
 });
 
 Route::prefix('v1')->middleware(['auth:sanctum', 'customer.not-banned'])->group(function () {
