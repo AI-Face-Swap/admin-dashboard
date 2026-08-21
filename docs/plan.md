@@ -33,6 +33,16 @@
 | 27 | Customer-facing frontend (`frontend/` — TanStack Router + React Query + shadcn) | Frontend |
 | 28 | Slider carousel on homepage | Frontend |
 | 29 | Frontend type/API alignment fixes (slider, generation, operation types) | Bug Fix |
+| 30 | Dark mode default + gold theme (matches Logo.png) | Frontend |
+| 31 | Glass navbar with backdrop blur | Frontend |
+| 32 | Slider carousel with left-to-right gradient (dark → transparent) | Frontend |
+| 33 | Text-to-image generation page (`/generate`) | Frontend |
+| 34 | Generation history page (`/history`) with real API data | Frontend |
+| 35 | Backend API: `GET /api/v1/customer/generations` (paginated, filtered, with stats) | Backend |
+| 36 | Generation output stored to our DigitalOcean Spaces (not Segmind URLs) | Backend |
+| 37 | `php artisan fix:segmind-urls` — migrate existing Segmind URLs to our Spaces | Dev Tooling |
+| 38 | Generation detail: back to history, template info, coin cost (not USD) | Frontend |
+| 39 | History page: shows actual result images/videos (not status icons) | Frontend |
 
 ---
 
@@ -86,8 +96,11 @@
 - Cost is nullable when provider doesn't report it — never fake `0`
 - `provider_id` is the source of truth — no duplicated provider string column
 - API Playground uses `credentials: 'omit'` — Bearer token only, no session interference
-- Theme colors controlled through global CSS variables
+- Theme colors controlled through global CSS variables (gold primary)
 - AI operations that take 5+ minutes use queues/jobs
+- **ALL generation outputs stored to OUR cloud** — never return provider URLs to frontend
+- **Template cost shown in coins** — USD cost is internal only, not shown to customers
+- **History page shows actual images/videos** — never show status icons for completed generations
 
 ---
 

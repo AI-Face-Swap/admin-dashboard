@@ -367,16 +367,18 @@ class SegmindProvider implements AIProviderInterface
     }
 
     /**
-     * Normalize a single output value into a persistent URL. URLs pass
-     * through; base64 payloads (data URIs or raw base64) are decoded and
-     * stored on the configured disk.
+     * Normalize a single output value into a persistent URL. All output
+     * (URLs and base64) are downloaded and stored to our own cloud.
+     * This ensures files never expire and we control the URLs.
      */
     private function persistOutput(string $value): ?string
     {
+        // HTTP URL — download and store to our cloud
         if (Str::startsWith($value, 'http://') || Str::startsWith($value, 'https://')) {
-            return $value;
+            return $this->downloadAndStore($value);
         }
 
+        // Data URI (data:image/png;base64,...)
         if (Str::startsWith($value, 'data:')) {
             $mime = Str::of($value)->after('data:')->before(';')->toString();
             $base64 = Str::of($value)->after(',')->toString();
@@ -388,12 +390,47 @@ class SegmindProvider implements AIProviderInterface
             return $this->storeBytes($base64, $mime);
         }
 
-        // Raw base64 (strict decode fails on URLs and other non-base64 text).
+        // Raw base64
         if (base64_decode($value, true) !== false) {
             return $this->storeBytes($value, null);
         }
 
         return null;
+    }
+
+    /**
+     * Download a file from a URL and store it to our cloud storage.
+     */
+    private function downloadAndStore(string $url): ?string
+    {
+        try {
+            $response = Http::timeout(60)->get($url);
+
+            if (! $response->successful()) {
+                return null;
+            }
+
+            $body = $response->body();
+            $contentType = $response->header('Content-Type') ?? '';
+
+            // Determine extension from content type or URL
+            $extension = match (true) {
+                str_contains($contentType, 'image/png') => 'png',
+                str_contains($contentType, 'image/jpeg') => 'jpg',
+                str_contains($contentType, 'image/webp') => 'webp',
+                str_contains($contentType, 'video/mp4') => 'mp4',
+                default => 'bin',
+            };
+
+            $path = 'generations/'.Str::uuid().'.'.$extension;
+
+            Storage::disk($this->storageDisk)->put($path, $body, 'public');
+
+            return Storage::disk($this->storageDisk)->url($path);
+        } catch (\Exception $e) {
+            // Fallback: return original URL if download fails
+            return $url;
+        }
     }
 
     /**
