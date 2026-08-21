@@ -7,7 +7,10 @@ use Illuminate\Foundation\Http\FormRequest;
 class ImageGenerationRequest extends FormRequest
 {
     /**
-     * Determine if the user is authorized to make this request.
+     * Image generation request.
+     *
+     * Generate an image from a text prompt using Segmind AI models.
+     * Cost: 5 coins per generation.
      */
     public function authorize(): bool
     {

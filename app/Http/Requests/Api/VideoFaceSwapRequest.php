@@ -7,7 +7,11 @@ use Illuminate\Foundation\Http\FormRequest;
 class VideoFaceSwapRequest extends FormRequest
 {
     /**
-     * Determine if the user is authorized to make this request.
+     * Video face swap request.
+     *
+     * Provide exactly ONE face source (face_image OR face_image_url)
+     * and exactly ONE target (template_slug OR target_video_url).
+     * Processing takes 30s to 5+ minutes (async/queued).
      */
     public function authorize(): bool
     {

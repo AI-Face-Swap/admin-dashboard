@@ -20,11 +20,18 @@ use RuntimeException;
 class AIVideoFaceSwapController extends Controller
 {
     /**
-     * Submit a video face-swap generation (queued, returns immediately).
+     * Submit a video face-swap generation (queued).
      *
-     * This is the single shared endpoint — the admin dashboard (session)
-     * and the mobile app (Sanctum token) both call this. No duplicate AI
-     * logic anywhere.
+     * Swaps a face in a video. This is an **async operation** — the request
+     * returns immediately with a generation ID. Poll `/ai/generations/{id}`
+     * to check status.
+     *
+     * **Cost:** Depends on the template (video templates typically cost more).
+     *
+     * **Processing time:** 30 seconds to 5+ minutes depending on video length.
+     *
+     * @response 202 {"status": "queued", "generation": {"id": 18, "operation": "video-face-swap", "message": "Video face-swap job dispatched. Poll /api/v1/ai/generations/18 for status."}}
+     * @response 402 {"message": "Not enough coins — top up to continue."}
      */
     public function store(VideoFaceSwapRequest $request): JsonResponse
     {

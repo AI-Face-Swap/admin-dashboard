@@ -8,7 +8,10 @@ use Illuminate\Validation\Validator;
 class FaceSwapRequest extends FormRequest
 {
     /**
-     * Determine if the user is authorized to make this request.
+     * Face swap request.
+     *
+     * Provide exactly ONE face source (face_image OR face_image_url)
+     * and exactly ONE target (template_slug OR target_image_url).
      */
     public function authorize(): bool
     {

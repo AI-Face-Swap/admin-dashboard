@@ -22,11 +22,20 @@ class AIFaceSwapController extends Controller
     ) {}
 
     /**
-     * Swap a face onto a target image or template.
+     * Swap a face onto a target image.
      *
-     * This is the single shared endpoint — the admin dashboard (session)
-     * and the mobile app (Sanctum token) both call this. No duplicate AI
-     * logic anywhere.
+     * Upload a face image (or provide a URL) and a target image (or template slug).
+     * The AI will swap the face onto the target.
+     *
+     * **Cost:** Depends on the template (free templates cost 0 coins).
+     *
+     * **How it works:**
+     * 1. Provide `face_image` (file) OR `face_image_url` (string)
+     * 2. Provide `template_slug` (string) OR `target_image_url` (string)
+     * 3. Get back a completed generation with the swapped image
+     *
+     * @response 200 {"status": "completed", "generation": {"id": 1, "operation": "face-swap", "output": ["https://..."], "coins_spent": 5, "coins_remaining": 95}}
+     * @response 402 {"message": "Not enough coins — top up to continue."}
      */
     public function store(FaceSwapRequest $request): JsonResponse
     {

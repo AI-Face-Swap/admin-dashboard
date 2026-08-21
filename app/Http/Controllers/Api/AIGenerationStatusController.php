@@ -11,8 +11,13 @@ class AIGenerationStatusController extends Controller
     /**
      * Get the current status of a generation.
      *
-     * Used by the admin page to poll for completion of queued jobs
-     * (e.g. video face-swap).
+     * Poll this endpoint to check if a queued generation (e.g. video face-swap)
+     * has completed. For synchronous operations (face-swap, image generation),
+     * the result is already in the initial response.
+     *
+     * **Status values:** `queued` → `processing` → `completed` | `failed`
+     *
+     * @response 200 {"id": 18, "operation": "video-face-swap", "status": "completed", "output": ["https://..."], "cost": "0.0650", "duration_ms": 52529}
      */
     public function show(AIGeneration $generation): JsonResponse
     {

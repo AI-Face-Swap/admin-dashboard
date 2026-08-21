@@ -21,9 +21,18 @@ class AIImageGenerationController extends Controller
     /**
      * Generate an image from a text prompt.
      *
-     * This is the single shared endpoint — the admin dashboard (session)
-     * and the mobile app (Sanctum token) both call this. No duplicate AI
-     * logic anywhere.
+     * Uses Segmind AI models to generate images from text descriptions.
+     *
+     * **Cost:** 5 coins per generation (configurable in admin settings).
+     *
+     * **Available models:**
+     * - `seedream-v5-lite-text-to-image` — Fast, affordable (default)
+     * - `nano-banana-2-lite` — Google's fastest (~4 sec)
+     * - `qwen-image-3` — Best for legible in-image text
+     *
+     * @response 200 {"status": "completed", "generation": {"id": 1, "operation": "image-generation", "output": ["https://..."], "coins_spent": 5, "coins_remaining": 95}}
+     * @response 402 {"message": "Not enough coins — top up to continue."}
+     * @response 422 {"status": "failed", "message": "Segmind generation failed: ..."}
      */
     public function store(ImageGenerationRequest $request): JsonResponse
     {
