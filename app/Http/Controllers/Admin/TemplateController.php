@@ -34,7 +34,7 @@ class TemplateController extends Controller
                     ->where('name', 'like', "%{$search}%")
                     ->orWhere('slug', 'like', "%{$search}%")
                     ->orWhereHas('tags', fn ($tag) => $tag->where('name', 'like', "%{$search}%"))))
-            ->orderBy('name')
+            ->latest()
             ->paginate(12)
             ->withQueryString();
 

@@ -21,6 +21,8 @@ class AIGenerationStatusController extends Controller
      */
     public function show(AIGeneration $generation): JsonResponse
     {
+        $generation->load(['provider:id,name,slug', 'template:id,name,slug,type']);
+
         return response()->json([
             'id' => $generation->id,
             'operation' => $generation->operation,
@@ -31,6 +33,8 @@ class AIGenerationStatusController extends Controller
             'duration_ms' => $generation->duration_ms,
             'output' => $generation->output_metadata ?? [],
             'error' => $generation->error,
+            'provider' => $generation->provider,
+            'template' => $generation->template,
             'created_at' => $generation->created_at,
             'updated_at' => $generation->updated_at,
         ]);

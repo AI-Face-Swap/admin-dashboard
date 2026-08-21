@@ -28,6 +28,11 @@
 | 22 | Coin cost configurable via `config('ai.php')` + `.env` | Admin Core |
 | 23 | Error handling: JSON error responses instead of 500 crashes | Bug Fix |
 | 24 | Admin coin cost settings page (`/admin/settings` — UI to change coin costs) | Admin Core |
+| 25 | API documentation with Scramble (`/docs/api` — OpenAPI 3.1.0) | Admin Core |
+| 26 | Sliders CRUD (admin list/create/edit + mobile API) | Admin Core |
+| 27 | Customer-facing frontend (`frontend/` — TanStack Router + React Query + shadcn) | Frontend |
+| 28 | Slider carousel on homepage | Frontend |
+| 29 | Frontend type/API alignment fixes (slider, generation, operation types) | Bug Fix |
 
 ---
 

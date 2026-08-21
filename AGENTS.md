@@ -48,6 +48,24 @@ Laravel admin dashboard + mobile-facing API for AI media generation (image gener
 | — | API documentation with Scramble (`/docs/api` — OpenAPI 3.1.0, auto-generated from code) | ✅ |
 | — | Sliders CRUD (admin list/create/edit + mobile API `GET /api/v1/sliders`) | ✅ |
 
+### Customer-facing frontend (`frontend/`)
+
+A standalone React SPA for customers (not Inertia) lives in `frontend/`. It uses TanStack Router + React Query + Axios to talk to the same `/api/v1/*` endpoints as the mobile app.
+
+| Component | Stack |
+|---|---|
+| Router | `@tanstack/react-router` (file-based pages) |
+| State | `@tanstack/react-query` (server state) |
+| HTTP | Axios with Bearer token (localStorage) |
+| UI | shadcn/ui components + Tailwind CSS v4 |
+| Animation | Framer Motion |
+
+**Frontend pages:** `/` (home + slider carousel), `/login`, `/register`, `/dashboard`, `/templates`, `/templates/$slug`, `/generations/$id`
+
+**Run frontend dev server:** `cd frontend && npm run dev` (port 5173, proxies `/api` to `localhost:8000`)
+
+**Build frontend:** `cd frontend && npm run build`
+
 ### Pending phases
 
 | # | Feature | Effort |
@@ -92,6 +110,9 @@ Laravel admin dashboard + mobile-facing API for AI media generation (image gener
 | `POST /api/v1/ai/images` | sanctum (session + token) | Text-to-image generation endpoint |
 | `GET /api/v1/ai/generations/{id}` | sanctum | Poll generation status |
 | `GET /api/v1/sliders` | public | Active sliders for mobile app |
+| `GET /api/v1/templates` | public | Active templates (search, category, type filters, pagination) |
+| `GET /api/v1/templates/{slug}` | public | Single template by slug |
+| `GET /api/v1/template-categories` | public | Active template categories |
 
 **Admin web routes:**
 

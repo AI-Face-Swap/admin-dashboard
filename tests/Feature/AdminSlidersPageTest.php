@@ -138,8 +138,8 @@ class AdminSlidersPageTest extends TestCase
 
         $response = $this->get('/api/v1/sliders');
 
-        $response->assertOk()->assertJsonCount(2, 'sliders');
-        $response->assertJsonPath('sliders.0.title', 'High');
-        $response->assertJsonPath('sliders.1.title', 'Low');
+        $response->assertOk()->assertJsonCount(2);
+        $response->assertJsonPath('0.title', 'High');
+        $response->assertJsonPath('1.title', 'Low');
     }
 }

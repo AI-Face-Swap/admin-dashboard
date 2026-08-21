@@ -30,6 +30,6 @@ class SliderController extends Controller
                 'sorting' => $slider->sorting,
             ]);
 
-        return response()->json(['sliders' => $sliders]);
+        return response()->json($sliders);
     }
 }

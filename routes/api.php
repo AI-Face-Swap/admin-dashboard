@@ -6,6 +6,8 @@ use App\Http\Controllers\Api\AIImageGenerationController;
 use App\Http\Controllers\Api\AIVideoFaceSwapController;
 use App\Http\Controllers\Api\CustomerAuthController;
 use App\Http\Controllers\Api\SliderController;
+use App\Http\Controllers\Api\TemplateCategoryController;
+use App\Http\Controllers\Api\TemplateController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -29,6 +31,9 @@ Route::prefix('v1')->middleware('guest:customer')->group(function () {
 
 Route::prefix('v1')->group(function () {
     Route::get('sliders', [SliderController::class, 'index']);
+    Route::get('templates', [TemplateController::class, 'index']);
+    Route::get('templates/{slug}', [TemplateController::class, 'show']);
+    Route::get('template-categories', [TemplateCategoryController::class, 'index']);
 });
 
 Route::prefix('v1')->middleware(['auth:sanctum', 'customer.not-banned'])->group(function () {
