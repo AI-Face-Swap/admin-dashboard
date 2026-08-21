@@ -9,6 +9,7 @@ use App\AI\Services\AIService;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\ImageGenerationRequest;
 use App\Models\Customer;
+use App\Models\Setting;
 use Illuminate\Http\JsonResponse;
 
 class AIImageGenerationController extends Controller
@@ -27,7 +28,7 @@ class AIImageGenerationController extends Controller
     public function store(ImageGenerationRequest $request): JsonResponse
     {
         $requester = $request->user();
-        $templateCost = (int) config('ai.coin_costs.image_generation', 5);
+        $templateCost = (int) Setting::get('ai', 'coin_cost_image_generation', config('ai.coin_costs.image_generation', 5));
 
         if ($requester instanceof Customer) {
             $this->authorizeCustomerCoins($requester, $templateCost);

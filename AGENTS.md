@@ -42,6 +42,9 @@ Laravel admin dashboard + mobile-facing API for AI media generation (image gener
 | — | Bug fix: `AIService::execute()` accepts optional `$existingGeneration` to prevent duplicate generation rows | ✅ |
 | — | Bug fix: image face-swap validates template type = `image` (prevents video templates in image swap) | ✅ |
 | — | Bug fix: video face-swap polling detects HTML responses + refreshes generations via `router.reload()` | ✅ |
+| — | Coin cost configurable via `config('ai.php')` + `.env` | ✅ |
+| — | Error handling: JSON error responses instead of 500 crashes | ✅ |
+| — | Admin coin cost settings page (`/admin/settings` — UI to change coin costs) | ✅ |
 
 ### Pending phases
 
@@ -72,7 +75,7 @@ Laravel admin dashboard + mobile-facing API for AI media generation (image gener
 
 ### Current DB tables
 
-`users` (admin), `customers` (mobile/web users), `roles`, `permissions`, `role_user`, `permission_role`, `templates`, `template_categories`, `template_tags`, `template_tag`, `ai_providers`, `ai_generations`, `api_request_logs`, `personal_access_tokens`, `sessions`, `cache`, `jobs`, `failed_jobs`, `passkeys`, `password_reset_tokens`
+`users` (admin), `customers` (mobile/web users), `roles`, `permissions`, `role_user`, `permission_role`, `templates`, `template_categories`, `template_tags`, `template_tag`, `ai_providers`, `ai_generations`, `api_request_logs`, `settings` (key-value config), `personal_access_tokens`, `sessions`, `cache`, `jobs`, `failed_jobs`, `passkeys`, `password_reset_tokens`
 
 ### Current API routes
 
@@ -102,6 +105,8 @@ Laravel admin dashboard + mobile-facing API for AI media generation (image gener
 | `PATCH /admin/customers/{customer}/unban` | `customers.manage` | Unban customer |
 | `POST /admin/customers/{customer}/coins` | `customers.manage` | Add coins (developer role only) |
 | `DELETE /admin/customers/{customer}` | `customers.manage` | Delete customer |
+| `GET /admin/settings` | `settings.manage` | Admin settings page (coin costs) |
+| `PUT /admin/settings` | `settings.manage` | Update coin costs |
 
 ### Middleware setup (`bootstrap/app.php`)
 

@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\ProviderController;
 use App\Http\Controllers\Admin\RoleController;
+use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\TemplateCategoryController;
 use App\Http\Controllers\Admin\TemplateController;
 use App\Http\Controllers\Admin\TemplateTagController;
@@ -77,6 +78,10 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::patch('customers/{customer}/unban', [CustomerController::class, 'unban'])->middleware('permission:customers.manage')->name('customers.unban');
     Route::post('customers/{customer}/add-coins', [CustomerController::class, 'addCoins'])->middleware('permission:customers.manage')->name('customers.add-coins');
     Route::delete('customers/{customer}', [CustomerController::class, 'destroy'])->middleware('permission:customers.manage')->name('customers.destroy');
+
+    // Settings
+    Route::get('settings', [SettingController::class, 'index'])->middleware('permission:settings.manage')->name('settings.index');
+    Route::put('settings', [SettingController::class, 'update'])->middleware('permission:settings.manage')->name('settings.update');
 });
 
 require __DIR__.'/settings.php';

@@ -84,8 +84,9 @@ const mainNavItems: NavItem[] = [
     },
     {
         title: 'Settings',
-        href: '/settings/profile',
+        href: '/admin/settings',
         icon: Settings,
+        permission: 'settings.manage',
     },
 ];
 
