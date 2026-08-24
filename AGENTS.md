@@ -40,6 +40,10 @@ Laravel backend + admin dashboard for AI media generation (image generation, fac
 | — | Sliders CRUD (admin + mobile API) | ✅ |
 | — | Generation outputs stored to our DigitalOcean Spaces | ✅ |
 | — | `GET /api/v1/customer/generations` (paginated, filtered, with stats) | ✅ |
+| — | Image-to-Video API (`POST /api/v1/ai/image-to-video`) — Wan 2.2 I2V Flash | ✅ |
+| — | Image-to-Video supports file upload + URL (like face-swap) | ✅ |
+| — | Admin AI page: Image to Video tab with upload/URL toggle | ✅ |
+| — | API Playground: all 16 routes including image-to-video (upload + URL) | ✅ |
 
 ## Pending phases
 
@@ -64,6 +68,8 @@ Laravel backend + admin dashboard for AI media generation (image generation, fac
 - **ALL generation outputs stored to OUR cloud**: SegmindProvider downloads and stores to DigitalOcean Spaces. Never return provider URLs. Use `php artisan fix:segmind-urls` to fix existing data.
 - **Output metadata format**: stored as `{"url": "/generations/uuid.ext"}` (relative URL).
 - **Template cost in coins**: Frontend shows template cost in coins, NOT USD cost. USD cost is internal only.
+- **File upload pattern**: Face-swap and image-to-video accept both file upload AND URL. Upload stores to Spaces, returns public URL.
+- **Boolean validation**: Use `'nullable|string|in:true,false,0,1'` for form-data booleans (not `'boolean'`).
 
 ## Current DB tables
 
@@ -80,6 +86,7 @@ Laravel backend + admin dashboard for AI media generation (image generation, fac
 | `POST /api/v1/ai/face-swap` | sanctum | Face-swap endpoint |
 | `POST /api/v1/ai/video-face-swap` | sanctum | Video face-swap (queued) |
 | `POST /api/v1/ai/images` | sanctum | Text-to-image generation |
+| `POST /api/v1/ai/image-to-video` | sanctum | Image-to-video (Wan 2.2) — accepts `image` (file) OR `image_url` (URL) |
 | `GET /api/v1/ai/generations/{id}` | sanctum | Poll generation status |
 | `GET /api/v1/customer/generations` | sanctum | Customer's generations |
 | `GET /api/v1/sliders` | public | Active sliders |

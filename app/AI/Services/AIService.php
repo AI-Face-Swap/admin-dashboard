@@ -46,6 +46,14 @@ class AIService
     }
 
     /**
+     * Generate a video from an image (image-to-video operation).
+     */
+    public function imageToVideo(GenerationRequest $request, User|Customer|null $requester = null): AIGeneration
+    {
+        return $this->execute($request, $requester);
+    }
+
+    /**
      * Execute a generation end-to-end: create the row, call the provider,
      * persist the outcome, and rethrow failures as typed exceptions.
      *
@@ -131,6 +139,7 @@ class AIService
             AIGeneration::OPERATION_FACE_SWAP => $provider->faceSwap($request),
             AIGeneration::OPERATION_IMAGE => $provider->generateImage($request),
             AIGeneration::OPERATION_VIDEO_FACE_SWAP => $provider->videoFaceSwap($request),
+            AIGeneration::OPERATION_IMAGE_TO_VIDEO => $provider->imageToVideo($request),
             default => throw new UnsupportedOperationException("Unknown operation: {$request->operation}"),
         };
     }

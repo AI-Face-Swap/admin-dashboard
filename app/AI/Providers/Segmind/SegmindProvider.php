@@ -222,6 +222,58 @@ class SegmindProvider implements AIProviderInterface
     }
 
     /**
+     * {@inheritDoc}
+     */
+    public function imageToVideo(GenerationRequest $request): AIResponse
+    {
+        $endpoint = $this->operations['image-to-video']
+            ?? throw new UnsupportedOperationException('Segmind image-to-video endpoint is not configured.');
+
+        $startedAt = hrtime(true);
+
+        $submit = $this->submit($endpoint, $request->payload);
+
+        $requestId = $submit['request_id'] ?? null;
+        $statusUrl = $submit['status_url'] ?? null;
+        $responseUrl = $submit['response_url'] ?? null;
+
+        if (! $requestId || ! $statusUrl || ! $responseUrl) {
+            throw new AIGenerationFailedException(
+                'Segmind v2 submit response was missing request_id/status_url/response_url.',
+                null,
+                $submit,
+            );
+        }
+
+        // Video generation takes longer — use extended poll timeout.
+        $this->pollUntilTerminal($requestId, $statusUrl, timeoutSeconds: 600);
+
+        $result = $this->fetchResult($requestId, $responseUrl);
+
+        $durationMs = isset($result['metrics']['inference_time'])
+            ? (int) round((float) $result['metrics']['inference_time'] * 1000)
+            : (int) round((hrtime(true) - $startedAt) / 1e6);
+
+        $cost = isset($result['metrics']['cost'])
+            ? (string) $result['metrics']['cost']
+            : null;
+
+        return new AIResponse(
+            provider: $this->name(),
+            operation: 'image-to-video',
+            model: $request->model,
+            requestId: $requestId,
+            status: 'completed',
+            durationMs: $durationMs,
+            output: $this->normalizeOutput($result['output'] ?? null),
+            usage: is_array($result['metrics'] ?? null) ? $result['metrics'] : null,
+            cost: $cost,
+            currency: $cost !== null ? 'USD' : null,
+            rawResponse: $result,
+        );
+    }
+
+    /**
      * POST to the v2 endpoint and return the submit body.
      *
      * @param  array<string, mixed>  $payload

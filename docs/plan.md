@@ -43,6 +43,12 @@
 | 37 | `php artisan fix:segmind-urls` — migrate existing Segmind URLs to our Spaces | Dev Tooling |
 | 38 | Generation detail: back to history, template info, coin cost (not USD) | Frontend |
 | 39 | History page: shows actual result images/videos (not status icons) | Frontend |
+| 40 | Image-to-Video API (`POST /api/v1/ai/image-to-video`) — Wan 2.2 I2V Flash | AI Feature |
+| 41 | Image-to-Video supports file upload + URL (like face-swap pattern) | AI Feature |
+| 42 | Admin AI page: Image to Video tab with upload/URL toggle | Admin Core |
+| 43 | API Playground: all 16 routes including image-to-video (upload + URL) | Admin Core |
+| 44 | API Playground: form-data templates auto-populate correct fields | Admin Core |
+| 45 | Boolean validation fix: `'string|in:true,false,0,1'` for form-data | Bug Fix |
 
 ---
 
@@ -63,7 +69,7 @@
 |---|---|---|---|
 | 5 | **Usage/cost analytics dashboard** | Medium | Charts: generations/day, cost/day, per-provider |
 | 6 | **Image editing features** | Medium | Background removal, image upscaling via Segmind |
-| 7 | **Image → Video** | Medium | Animate photos into videos (premium, higher coin cost) |
+| 7 | ~~Image → Video~~ | ~~Medium~~ | ~~Done — Wan 2.2 I2V Flash, 20 coins~~ |
 | 8 | **Virtual try-on** | Medium | Try clothes on photos (fashion niche) |
 | 9 | **Animation polish** | Medium | Page transitions, card entrances, loading states |
 | 10 | **Replicate provider** | Medium | New provider (when you have credits) |

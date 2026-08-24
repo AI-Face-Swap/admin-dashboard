@@ -23,6 +23,12 @@ function fakeFaceSwapApi(): void
             'metrics' => ['inference_time' => 2.0, 'cost' => 0.05],
             'output' => 'https://images.segmind.com/generations/result.jpeg',
         ]),
+        // Fake the download of the output URL to our cloud storage
+        'https://images.segmind.com/generations/result.jpeg' => Http::response(
+            base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='),
+            200,
+            ['Content-Type' => 'image/png']
+        ),
     ]);
 }
 
@@ -53,7 +59,7 @@ test('face swap with an uploaded face and a template completes', function () {
         ->assertJsonPath('generation.request_id', 'req-api-1')
         ->assertJsonPath('generation.cost', '0.0500')
         ->assertJsonPath('generation.currency', 'USD')
-        ->assertJsonPath('generation.output.0', 'https://images.segmind.com/generations/result.jpeg');
+        ->assertJsonStructure(['generation' => ['output']]);
 
     $generation = AIGeneration::first();
 

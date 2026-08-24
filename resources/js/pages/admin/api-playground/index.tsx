@@ -192,9 +192,60 @@ const ENDPOINT_TEMPLATES: {
         headers: [{ key: 'Accept', value: 'application/json' }],
     },
     {
+        label: 'Image to Video (Upload)',
+        method: 'POST',
+        url: '/api/v1/ai/image-to-video',
+        bodyType: 'form-data',
+        body: '',
+        headers: [{ key: 'Accept', value: 'application/json' }],
+    },
+    {
+        label: 'Image to Video (URL)',
+        method: 'POST',
+        url: '/api/v1/ai/image-to-video',
+        bodyType: 'json',
+        body: '{\n  "prompt": "Slow cinematic pan around the subject, soft lighting, dramatic atmosphere",\n  "image_url": "https://example.com/input-image.jpg",\n  "negative_prompt": "blurry, low quality, text overlays",\n  "resolution": "720p",\n  "prompt_extend": true\n}',
+        headers: [
+            { key: 'Content-Type', value: 'application/json' },
+            { key: 'Accept', value: 'application/json' },
+        ],
+    },
+    {
         label: 'Get Sliders (Public)',
         method: 'GET',
         url: '/api/v1/sliders',
+        bodyType: 'none',
+        body: '',
+        headers: [{ key: 'Accept', value: 'application/json' }],
+    },
+    {
+        label: 'Get Templates (Public)',
+        method: 'GET',
+        url: '/api/v1/templates',
+        bodyType: 'none',
+        body: '',
+        headers: [{ key: 'Accept', value: 'application/json' }],
+    },
+    {
+        label: 'Get Template by Slug',
+        method: 'GET',
+        url: '/api/v1/templates/superman-suit',
+        bodyType: 'none',
+        body: '',
+        headers: [{ key: 'Accept', value: 'application/json' }],
+    },
+    {
+        label: 'Get Template Categories (Public)',
+        method: 'GET',
+        url: '/api/v1/template-categories',
+        bodyType: 'none',
+        body: '',
+        headers: [{ key: 'Accept', value: 'application/json' }],
+    },
+    {
+        label: 'Get My Generations',
+        method: 'GET',
+        url: '/api/v1/customer/generations',
         bodyType: 'none',
         body: '',
         headers: [{ key: 'Accept', value: 'application/json' }],
@@ -368,16 +419,29 @@ export default function APIPlayground() {
             setShowRawBody(false);
 
             if (template.bodyType === 'form-data') {
-                const isVideo = template.url.includes('video-face-swap');
-                setFormDataFields([
-                    {
-                        key: 'template_slug',
-                        value: isVideo
-                            ? 'your-video-template-slug'
-                            : 'superman',
-                    },
-                ]);
-                setFormFileFields([{ key: 'face_image', file: null }]);
+                const isImageToVideo = template.url.includes('image-to-video');
+                const isVideoFaceSwap = template.url.includes('video-face-swap');
+
+                if (isImageToVideo) {
+                    // Image-to-video: prompt + image file
+                    setFormDataFields([
+                        { key: 'prompt', value: 'Slow cinematic pan around the subject' },
+                        { key: 'resolution', value: '720p' },
+                    ]);
+                    setFormFileFields([{ key: 'image', file: null }]);
+                } else if (isVideoFaceSwap) {
+                    // Video face-swap: template_slug + face image
+                    setFormDataFields([
+                        { key: 'template_slug', value: 'your-video-template-slug' },
+                    ]);
+                    setFormFileFields([{ key: 'face_image', file: null }]);
+                } else {
+                    // Face-swap (default): template_slug + face image
+                    setFormDataFields([
+                        { key: 'template_slug', value: 'superman' },
+                    ]);
+                    setFormFileFields([{ key: 'face_image', file: null }]);
+                }
             } else {
                 setFormDataFields([{ key: '', value: '' }]);
                 setFormFileFields([]);

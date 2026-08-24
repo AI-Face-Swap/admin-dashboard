@@ -61,6 +61,8 @@ class AIGeneration extends Model
 
     public const OPERATION_VIDEO_FACE_SWAP = 'video-face-swap';
 
+    public const OPERATION_IMAGE_TO_VIDEO = 'image-to-video';
+
     public const STATUS_QUEUED = 'queued';
 
     public const STATUS_PROCESSING = 'processing';

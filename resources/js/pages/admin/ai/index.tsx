@@ -71,7 +71,7 @@ function csrfToken(): string {
     return cookie ? decodeURIComponent(cookie.split('=')[1]) : '';
 }
 
-type TabType = 'image' | 'video' | 'generate';
+type TabType = 'image' | 'video' | 'generate' | 'image-to-video';
 
 export default function Index({
     templates,
@@ -116,6 +116,16 @@ export default function Index({
                     >
                         Image Generation
                     </Button>
+                    <Button
+                        variant={
+                            activeTab === 'image-to-video'
+                                ? 'default'
+                                : 'outline'
+                        }
+                        onClick={() => setActiveTab('image-to-video')}
+                    >
+                        Image to Video
+                    </Button>
                 </div>
 
                 {activeTab === 'image' && (
@@ -127,6 +137,8 @@ export default function Index({
                 )}
 
                 {activeTab === 'generate' && <ImageGeneration />}
+
+                {activeTab === 'image-to-video' && <ImageToVideo />}
 
                 <AnimatedCard>
                     <CardContent>
@@ -1211,6 +1223,349 @@ function ImageGeneration() {
                                             />
                                         ),
                                     )}
+                                </div>
+                            ) : (
+                                <div className="flex h-40 items-center justify-center rounded-lg bg-muted/50 text-sm text-muted-foreground">
+                                    No output returned.
+                                </div>
+                            )}
+                            <div className="flex flex-wrap gap-2 text-sm">
+                                <Badge variant="outline">
+                                    status: {result.generation.status}
+                                </Badge>
+                                <Badge variant="outline">
+                                    cost: {result.generation.cost ?? '—'}{' '}
+                                    {result.generation.currency ?? ''}
+                                </Badge>
+                                <Badge variant="outline">
+                                    duration:{' '}
+                                    {result.generation.duration_ms ?? '—'} ms
+                                </Badge>
+                            </div>
+                        </div>
+                    )}
+                </CardContent>
+            </AnimatedCard>
+        </div>
+    );
+}
+
+function ImageToVideo() {
+    const [prompt, setPrompt] = useState('');
+    const [negativePrompt, setNegativePrompt] = useState('');
+    const [imageMode, setImageMode] = useState<'upload' | 'url'>('upload');
+    const [imageFile, setImageFile] = useState<File | null>(null);
+    const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const [imageUrl, setImageUrl] = useState('');
+    const [resolution, setResolution] = useState('720p');
+    const [promptExtend, setPromptExtend] = useState(true);
+    const [seed, setSeed] = useState('');
+    const [processing, setProcessing] = useState(false);
+    const [polling, setPolling] = useState(false);
+    const [result, setResult] = useState<GenerationResult | null>(null);
+    const [error, setError] = useState('');
+    const [generationId, setGenerationId] = useState<number | null>(null);
+    const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const onImageFileChange = (file: File | null) => {
+        setImageFile(file);
+        setImagePreview(file ? URL.createObjectURL(file) : null);
+    };
+
+    const pollStatus = useCallback(async (id: number) => {
+        try {
+            const response = await fetch(`/api/v1/ai/generations/${id}`, {
+                headers: {
+                    Accept: 'application/json',
+                    'X-XSRF-TOKEN': csrfToken(),
+                },
+            });
+
+            if (!response.ok) {
+                setError('Polling failed — check authentication.');
+                setProcessing(false);
+                setPolling(false);
+                if (pollRef.current) {
+                    clearInterval(pollRef.current);
+                    pollRef.current = null;
+                }
+                return;
+            }
+
+            const data = await response.json();
+
+            if (data.status === 'completed' || data.status === 'failed') {
+                setResult({
+                    status: data.status,
+                    generation: {
+                        id: data.id,
+                        request_id: data.request_id,
+                        operation: data.operation,
+                        status: data.status,
+                        cost: data.cost,
+                        currency: data.currency,
+                        duration_ms: data.duration_ms,
+                        output: data.output ?? [],
+                    },
+                });
+                setProcessing(false);
+                setPolling(false);
+                setGenerationId(null);
+                if (pollRef.current) {
+                    clearInterval(pollRef.current);
+                    pollRef.current = null;
+                }
+                router.reload({ only: ['generations'] });
+            }
+        } catch {
+            setError('Polling failed — network error.');
+            setProcessing(false);
+            setPolling(false);
+            if (pollRef.current) {
+                clearInterval(pollRef.current);
+                pollRef.current = null;
+            }
+        }
+    }, []);
+
+    useEffect(() => {
+        if (generationId && polling) {
+            pollRef.current = setInterval(() => {
+                pollStatus(generationId);
+            }, 5000);
+        }
+        return () => {
+            if (pollRef.current) {
+                clearInterval(pollRef.current);
+                pollRef.current = null;
+            }
+        };
+    }, [generationId, polling, pollStatus]);
+
+    const generate = async () => {
+        if (!prompt.trim()) {
+            return;
+        }
+
+        if (imageMode === 'upload' && !imageFile) {
+            setError('Upload an image first.');
+            return;
+        }
+
+        if (imageMode === 'url' && !imageUrl.trim()) {
+            setError('Enter an image URL.');
+            return;
+        }
+
+        setProcessing(true);
+        setError('');
+        setResult(null);
+        setGenerationId(null);
+        setPolling(false);
+
+        const form = new FormData();
+        form.append('prompt', prompt.trim());
+
+        if (imageMode === 'upload' && imageFile) {
+            form.append('image', imageFile);
+        } else {
+            form.append('image_url', imageUrl.trim());
+        }
+
+        if (negativePrompt.trim()) {
+            form.append('negative_prompt', negativePrompt.trim());
+        }
+
+        form.append('resolution', resolution);
+        form.append('prompt_extend', String(promptExtend));
+
+        if (seed) {
+            form.append('seed', seed);
+        }
+
+        try {
+            const response = await fetch('/api/v1/ai/image-to-video', {
+                method: 'POST',
+                headers: {
+                    Accept: 'application/json',
+                    'X-XSRF-TOKEN': csrfToken(),
+                },
+                credentials: 'same-origin',
+                body: form,
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                setError(data.message || 'Generation failed.');
+                setProcessing(false);
+                return;
+            }
+
+            // Job dispatched — start polling
+            setGenerationId(data.generation.id);
+            setPolling(true);
+        } catch {
+            setError('Network error — please try again.');
+            setProcessing(false);
+        }
+    };
+
+    return (
+        <div className="grid gap-6 xl:grid-cols-3">
+            <AnimatedCard className="xl:col-span-2">
+                <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                        <Label>Prompt *</Label>
+                        <textarea
+                            value={prompt}
+                            onChange={(e) => setPrompt(e.target.value)}
+                            placeholder="Slow cinematic pan around the subject, soft lighting, dramatic atmosphere"
+                            className="flex min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
+                        />
+                    </div>
+
+                    <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                            <Label>Input Image *</Label>
+                            <div className="flex gap-1">
+                                <Button
+                                    type="button"
+                                    variant={imageMode === 'upload' ? 'default' : 'outline'}
+                                    size="sm"
+                                    onClick={() => setImageMode('upload')}
+                                >
+                                    Upload
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant={imageMode === 'url' ? 'default' : 'outline'}
+                                    size="sm"
+                                    onClick={() => setImageMode('url')}
+                                >
+                                    URL
+                                </Button>
+                            </div>
+                        </div>
+
+                        {imageMode === 'upload' ? (
+                            <>
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    onChange={(e) => onImageFileChange(e.target.files?.[0] ?? null)}
+                                />
+                                <div
+                                    className="flex h-40 cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed text-sm text-muted-foreground"
+                                    onClick={() => fileInputRef.current?.click()}
+                                >
+                                    {imagePreview ? (
+                                        <img src={imagePreview} alt="Preview" className="size-full object-contain" />
+                                    ) : (
+                                        'Click to upload the input image'
+                                    )}
+                                </div>
+                            </>
+                        ) : (
+                            <Input
+                                value={imageUrl}
+                                onChange={(e) => setImageUrl(e.target.value)}
+                                placeholder="https://example.com/input-image.jpg"
+                            />
+                        )}
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label>Negative Prompt (optional)</Label>
+                        <Input
+                            value={negativePrompt}
+                            onChange={(e) => setNegativePrompt(e.target.value)}
+                            placeholder="blurry, low quality, text overlays"
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label>Resolution</Label>
+                            <Select value={resolution} onValueChange={setResolution}>
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="480p">480p ($0.075)</SelectItem>
+                                    <SelectItem value="720p">720p ($0.18)</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Seed (optional)</Label>
+                            <Input
+                                value={seed}
+                                onChange={(e) => setSeed(e.target.value)}
+                                placeholder="Random"
+                                type="number"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        <input
+                            type="checkbox"
+                            id="promptExtend"
+                            checked={promptExtend}
+                            onChange={(e) => setPromptExtend(e.target.checked)}
+                            className="h-4 w-4"
+                        />
+                        <Label htmlFor="promptExtend">Prompt Extend (auto-enhance)</Label>
+                    </div>
+
+                    {error && (
+                        <p className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+                            {error}
+                        </p>
+                    )}
+
+                    <AnimatedButton
+                        onClick={generate}
+                        disabled={processing || !prompt.trim()}
+                        className="w-full"
+                    >
+                        {processing ? 'Generating...' : 'Generate Video from Image'}
+                    </AnimatedButton>
+                </CardContent>
+            </AnimatedCard>
+
+            <AnimatedCard>
+                <CardContent>
+                    <p className="mb-3 font-medium">Result</p>
+                    {!result && !processing && (
+                        <div className="flex h-64 items-center justify-center rounded-lg bg-muted/50 text-sm text-muted-foreground">
+                            Run a generation to see the result here.
+                        </div>
+                    )}
+                    {processing && !result && (
+                        <div className="flex h-64 flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
+                            <div className="h-6 w-6 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                            <p>Video processing — this usually takes 1-3 minutes...</p>
+                            <p className="text-xs">Polling every 5 seconds for status updates.</p>
+                        </div>
+                    )}
+                    {result && (
+                        <div className="space-y-4">
+                            {result.generation.output.length > 0 ? (
+                                <div className="grid gap-4">
+                                    {result.generation.output.map((url, index) => (
+                                        <video
+                                            key={url}
+                                            src={url}
+                                            controls
+                                            className="w-full rounded-lg border"
+                                            alt={`Generated ${index + 1}`}
+                                        />
+                                    ))}
                                 </div>
                             ) : (
                                 <div className="flex h-40 items-center justify-center rounded-lg bg-muted/50 text-sm text-muted-foreground">

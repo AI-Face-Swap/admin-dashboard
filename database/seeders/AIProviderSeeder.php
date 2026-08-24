@@ -22,6 +22,7 @@ class AIProviderSeeder extends Seeder
                         'face-swap' => 'faceswap-v5',
                         'video-face-swap' => 'video-faceswap-by-facefusion-labs',
                         'image-generation' => 'seedream-v5-lite-text-to-image',
+                        'image-to-video' => 'wan-2.2-i2v-flash',
                     ],
                 ],
             ],

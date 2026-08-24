@@ -26,6 +26,7 @@ return [
         'image_generation' => (int) env('AI_IMAGE_GENERATION_COST', 5),
         'face_swap' => (int) env('AI_FACE_SWAP_COST', 5),
         'video_face_swap' => (int) env('AI_VIDEO_FACE_SWAP_COST', 20),
+        'image_to_video' => (int) env('AI_IMAGE_TO_VIDEO_COST', 20),
     ],
 
     'providers' => [
