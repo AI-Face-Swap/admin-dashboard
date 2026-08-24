@@ -72,6 +72,11 @@ class AIGeneration extends Model
     public const STATUS_FAILED = 'failed';
 
     /**
+     * Generations stuck in queued/processing for longer than this are considered abandoned.
+     */
+    public const TIMEOUT_MINUTES = 10;
+
+    /**
      * The provider that served this generation.
      *
      * @return BelongsTo<AIProvider, $this>
@@ -119,6 +124,28 @@ class AIGeneration extends Model
     public function getOutputAttribute(): ?array
     {
         return $this->output_metadata;
+    }
+
+    /**
+     * Scope: find generations stuck in queued/processing for too long.
+     */
+    public function scopeStuck($query)
+    {
+        return $query->whereIn('status', [self::STATUS_QUEUED, self::STATUS_PROCESSING])
+            ->where('created_at', '<', now()->subMinutes(self::TIMEOUT_MINUTES));
+    }
+
+    /**
+     * Mark stuck generations as failed.
+     *
+     * @return int Number of generations marked as failed
+     */
+    public static function failStuck(): int
+    {
+        return static::stuck()->update([
+            'status' => self::STATUS_FAILED,
+            'error' => 'Generation timed out — request abandoned or server disconnected.',
+        ]);
     }
 
     /**

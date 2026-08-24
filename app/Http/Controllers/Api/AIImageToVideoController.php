@@ -59,7 +59,13 @@ class AIImageToVideoController extends Controller
         ]);
 
         $requester = $request->user();
-        $templateCost = (int) Setting::get('ai', 'coin_cost_image_to_video', config('ai.coin_costs.image_to_video', 20));
+
+        // Determine cost based on resolution
+        $resolution = $request->string('resolution', '720p')->toString();
+        $costKey = $resolution === '480p' ? 'coin_cost_image_to_video_480p' : 'coin_cost_image_to_video_720p';
+        $configKey = $resolution === '480p' ? 'ai.coin_costs.image_to_video_480p' : 'ai.coin_costs.image_to_video_720p';
+        $defaultCost = $resolution === '480p' ? 10 : 20;
+        $templateCost = (int) Setting::get('ai', $costKey, config($configKey, $defaultCost));
 
         if ($requester instanceof Customer) {
             $this->authorizeCustomerCoins($requester, $templateCost);

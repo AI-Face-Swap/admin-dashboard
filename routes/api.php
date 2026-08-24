@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\AIGenerationStatusController;
 use App\Http\Controllers\Api\AIImageGenerationController;
 use App\Http\Controllers\Api\AIImageToVideoController;
 use App\Http\Controllers\Api\AIVideoFaceSwapController;
+use App\Http\Controllers\Api\CoinCostController;
 use App\Http\Controllers\Api\CustomerAuthController;
 use App\Http\Controllers\Api\CustomerGenerationController;
 use App\Http\Controllers\Api\SliderController;
@@ -36,6 +37,7 @@ Route::prefix('v1')->group(function () {
     Route::get('templates', [TemplateController::class, 'index']);
     Route::get('templates/{slug}', [TemplateController::class, 'show']);
     Route::get('template-categories', [TemplateCategoryController::class, 'index']);
+    Route::get('coin-costs', [CoinCostController::class, 'index']);
 });
 
 Route::prefix('v1')->middleware(['auth:sanctum', 'customer.not-banned'])->group(function () {

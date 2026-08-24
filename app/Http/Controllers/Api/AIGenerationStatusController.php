@@ -21,6 +21,17 @@ class AIGenerationStatusController extends Controller
      */
     public function show(AIGeneration $generation): JsonResponse
     {
+        // Check if generation is stuck and mark as failed
+        if (in_array($generation->status, [AIGeneration::STATUS_QUEUED, AIGeneration::STATUS_PROCESSING])) {
+            $timeout = AIGeneration::TIMEOUT_MINUTES;
+            if ($generation->created_at->diffInMinutes(now()) > $timeout) {
+                $generation->update([
+                    'status' => AIGeneration::STATUS_FAILED,
+                    'error' => "Generation timed out after {$timeout} minutes — request abandoned or server disconnected.",
+                ]);
+            }
+        }
+
         $generation->load(['provider:id,name,slug', 'template:id,name,slug,type']);
 
         return response()->json([

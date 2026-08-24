@@ -11,8 +11,9 @@ import admin from '@/routes/admin';
 
 type CoinCosts = {
     image_generation: number;
-    face_swap: number;
-    video_face_swap: number;
+    image_to_video_480p: number;
+    image_to_video_720p: number;
+    // face_swap and video_face_swap use template.cost, not global setting
 };
 
 type Props = {
@@ -126,54 +127,60 @@ export default function Index({ coinCosts }: Props) {
                                 </p>
                             </div>
 
-                            <div className="space-y-2">
-                                <Label htmlFor="face_swap" className="text-sm font-medium">
-                                    Face Swap
-                                </Label>
-                                <div className="flex items-center gap-2">
-                                    <Input
-                                        id="face_swap"
-                                        type="number"
-                                        min={0}
-                                        max={1000}
-                                        value={costs.face_swap}
-                                        onChange={(e) =>
-                                            handleChange('face_swap', e.target.value)
-                                        }
-                                        className="w-[120px] font-mono text-sm"
-                                    />
-                                    <span className="text-sm text-muted-foreground">
-                                        coins per request
-                                    </span>
-                                </div>
-                                <p className="text-xs text-muted-foreground">
-                                    Image face swap via Segmind
+                            <div className="border-t pt-4">
+                                <p className="mb-3 text-sm font-medium text-muted-foreground">
+                                    Image to Video (Wan 2.2 I2V Flash)
                                 </p>
-                            </div>
 
-                            <div className="space-y-2">
-                                <Label htmlFor="video_face_swap" className="text-sm font-medium">
-                                    Video Face Swap
-                                </Label>
-                                <div className="flex items-center gap-2">
-                                    <Input
-                                        id="video_face_swap"
-                                        type="number"
-                                        min={0}
-                                        max={1000}
-                                        value={costs.video_face_swap}
-                                        onChange={(e) =>
-                                            handleChange('video_face_swap', e.target.value)
-                                        }
-                                        className="w-[120px] font-mono text-sm"
-                                    />
-                                    <span className="text-sm text-muted-foreground">
-                                        coins per request
-                                    </span>
+                                <div className="space-y-2">
+                                    <Label htmlFor="image_to_video_480p" className="text-sm font-medium">
+                                        480p Resolution
+                                    </Label>
+                                    <div className="flex items-center gap-2">
+                                        <Input
+                                            id="image_to_video_480p"
+                                            type="number"
+                                            min={0}
+                                            max={1000}
+                                            value={costs.image_to_video_480p}
+                                            onChange={(e) =>
+                                                handleChange('image_to_video_480p', e.target.value)
+                                            }
+                                            className="w-[120px] font-mono text-sm"
+                                        />
+                                        <span className="text-sm text-muted-foreground">
+                                            coins per request
+                                        </span>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">
+                                        Faster generation, lower quality
+                                    </p>
                                 </div>
-                                <p className="text-xs text-muted-foreground">
-                                    Video face swap via Segmind (takes 5+ minutes)
-                                </p>
+
+                                <div className="mt-3 space-y-2">
+                                    <Label htmlFor="image_to_video_720p" className="text-sm font-medium">
+                                        720p Resolution
+                                    </Label>
+                                    <div className="flex items-center gap-2">
+                                        <Input
+                                            id="image_to_video_720p"
+                                            type="number"
+                                            min={0}
+                                            max={1000}
+                                            value={costs.image_to_video_720p}
+                                            onChange={(e) =>
+                                                handleChange('image_to_video_720p', e.target.value)
+                                            }
+                                            className="w-[120px] font-mono text-sm"
+                                        />
+                                        <span className="text-sm text-muted-foreground">
+                                            coins per request
+                                        </span>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">
+                                        Higher quality, slower generation
+                                    </p>
+                                </div>
                             </div>
                         </div>
 

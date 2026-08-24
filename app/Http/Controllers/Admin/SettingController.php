@@ -17,8 +17,9 @@ class SettingController extends Controller
     {
         $coinCosts = [
             'image_generation' => (int) Setting::get('ai', 'coin_cost_image_generation', 5),
-            'face_swap' => (int) Setting::get('ai', 'coin_cost_face_swap', 5),
-            'video_face_swap' => (int) Setting::get('ai', 'coin_cost_video_face_swap', 20),
+            'image_to_video_480p' => (int) Setting::get('ai', 'coin_cost_image_to_video_480p', 10),
+            'image_to_video_720p' => (int) Setting::get('ai', 'coin_cost_image_to_video_720p', 20),
+            // Note: face_swap and video_face_swap use template.cost, not global setting
         ];
 
         return Inertia::render('admin/settings/index', [
@@ -33,13 +34,13 @@ class SettingController extends Controller
     {
         $validated = $request->validate([
             'coin_costs.image_generation' => 'required|integer|min:0|max:1000',
-            'coin_costs.face_swap' => 'required|integer|min:0|max:1000',
-            'coin_costs.video_face_swap' => 'required|integer|min:0|max:1000',
+            'coin_costs.image_to_video_480p' => 'required|integer|min:0|max:1000',
+            'coin_costs.image_to_video_720p' => 'required|integer|min:0|max:1000',
         ]);
 
         Setting::set('ai', 'coin_cost_image_generation', $validated['coin_costs']['image_generation']);
-        Setting::set('ai', 'coin_cost_face_swap', $validated['coin_costs']['face_swap']);
-        Setting::set('ai', 'coin_cost_video_face_swap', $validated['coin_costs']['video_face_swap']);
+        Setting::set('ai', 'coin_cost_image_to_video_480p', $validated['coin_costs']['image_to_video_480p']);
+        Setting::set('ai', 'coin_cost_image_to_video_720p', $validated['coin_costs']['image_to_video_720p']);
 
         // Clear config cache so changes take effect immediately
         if (function_exists('config_cache')) {
@@ -48,8 +49,8 @@ class SettingController extends Controller
 
         $coinCosts = [
             'image_generation' => (int) Setting::get('ai', 'coin_cost_image_generation', 5),
-            'face_swap' => (int) Setting::get('ai', 'coin_cost_face_swap', 5),
-            'video_face_swap' => (int) Setting::get('ai', 'coin_cost_video_face_swap', 20),
+            'image_to_video_480p' => (int) Setting::get('ai', 'coin_cost_image_to_video_480p', 10),
+            'image_to_video_720p' => (int) Setting::get('ai', 'coin_cost_image_to_video_720p', 20),
         ];
 
         return Inertia::render('admin/settings/index', [

@@ -54,16 +54,16 @@ class AdminSettingsPageTest extends TestCase
         $response = $this->actingAs($this->admin)->put('/admin/settings', [
             'coin_costs' => [
                 'image_generation' => 10,
-                'face_swap' => 8,
-                'video_face_swap' => 25,
+                'image_to_video_480p' => 10,
+                'image_to_video_720p' => 20,
             ],
         ]);
 
         $response->assertOk();
 
         $this->assertEquals('10', Setting::get('ai', 'coin_cost_image_generation'));
-        $this->assertEquals('8', Setting::get('ai', 'coin_cost_face_swap'));
-        $this->assertEquals('25', Setting::get('ai', 'coin_cost_video_face_swap'));
+        $this->assertEquals('10', Setting::get('ai', 'coin_cost_image_to_video_480p'));
+        $this->assertEquals('20', Setting::get('ai', 'coin_cost_image_to_video_720p'));
     }
 
     public function test_coin_costs_persist(): void
