@@ -120,6 +120,8 @@ class AIImageToVideoController extends Controller
 
             if ($requester instanceof Customer && $generation->status === 'completed') {
                 $requester->spendCoins($templateCost);
+                // Save coins spent to generation record
+                $generation->update(['coins_spent' => $templateCost]);
             }
 
             return response()->json([

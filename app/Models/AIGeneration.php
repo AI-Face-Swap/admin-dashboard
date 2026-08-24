@@ -39,6 +39,7 @@ use Illuminate\Support\Carbon;
     'request_id',
     'cost',
     'currency',
+    'coins_spent',
     'duration_ms',
     'input_metadata',
     'output_metadata',

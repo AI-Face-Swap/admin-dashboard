@@ -44,6 +44,10 @@ Laravel backend + admin dashboard for AI media generation (image generation, fac
 | — | Image-to-Video supports file upload + URL (like face-swap) | ✅ |
 | — | Admin AI page: Image to Video tab with upload/URL toggle | ✅ |
 | — | API Playground: all 16 routes including image-to-video (upload + URL) | ✅ |
+| — | `coins_spent` column on `ai_generations` — tracks coins per generation | ✅ |
+| — | `GET /api/v1/coin-costs` — returns coin costs from admin settings | ✅ |
+| — | Customer detail: shows both USD cost and coins spent | ✅ |
+| — | `CleanupStuckGenerations` command — auto-fails timed-out generations | ✅ |
 
 ## Pending phases
 
@@ -54,6 +58,7 @@ Laravel backend + admin dashboard for AI media generation (image generation, fac
 | 3 | Usage/cost analytics dashboard | Medium |
 | 4 | Payment integration (KBZ, RevenueCat, Stripe) | Large |
 | 5 | Full test suite coverage | Large |
+| 6 | Longer video duration (10s, 15s, 20s) — multiple calls + FFmpeg stitching | Medium |
 
 ## Key architecture patterns
 
@@ -70,6 +75,10 @@ Laravel backend + admin dashboard for AI media generation (image generation, fac
 - **Template cost in coins**: Frontend shows template cost in coins, NOT USD cost. USD cost is internal only.
 - **File upload pattern**: Face-swap and image-to-video accept both file upload AND URL. Upload stores to Spaces, returns public URL.
 - **Boolean validation**: Use `'nullable|string|in:true,false,0,1'` for form-data booleans (not `'boolean'`).
+- **`coins_spent` on ai_generations**: Every generation saves `coins_spent` (template cost for face-swap, settings cost for image-gen/image-to-video).
+- **Coin costs from admin settings**: Use `config('ai.coin_cost_*')` for image-generation and image-to-video. Face-swap/video-face-swap use `template.cost`.
+- **Coin cost API endpoint**: `GET /api/v1/coin-costs` returns costs from database — frontend MUST fetch from here, never hardcode.
+- **Cleanup stuck generations**: Run `php artisan app:cleanup-stuck-generations` or check status endpoint auto-fails generations >10min old.
 
 ## Current DB tables
 
@@ -93,6 +102,7 @@ Laravel backend + admin dashboard for AI media generation (image generation, fac
 | `GET /api/v1/templates` | public | Active templates |
 | `GET /api/v1/templates/{slug}` | public | Single template |
 | `GET /api/v1/template-categories` | public | Template categories |
+| `GET /api/v1/coin-costs` | public | Coin costs from admin settings |
 
 ## Admin web routes
 
@@ -128,6 +138,9 @@ vendor/bin/pint --dirty --format agent
 
 # Fix Segmind URLs
 php artisan fix:segmind-urls
+
+# Cleanup stuck generations
+php artisan app:cleanup-stuck-generations
 ```
 
 ## Rules

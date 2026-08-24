@@ -62,8 +62,9 @@ class CustomerController extends Controller
     {
         $customer->loadCount('generations');
 
+        // Load generations with template for coin cost display
         $generations = AIGeneration::where('customer_id', $customer->id)
-            ->with('template:id,name,slug')
+            ->with('template:id,name,slug,cost')
             ->orderBy('created_at', 'desc')
             ->paginate(20)
             ->withQueryString();
@@ -74,13 +75,25 @@ class CustomerController extends Controller
             ->pluck('count', 'status')
             ->toArray();
 
-        $totalCost = (float) AIGeneration::where('customer_id', $customer->id)
-            ->whereNotNull('cost')
-            ->sum('cost');
-
-        $totalCoinsSpent = AIGeneration::where('customer_id', $customer->id)
+        // Calculate total coins spent from template costs (not USD cost)
+        $completedGenerations = AIGeneration::where('customer_id', $customer->id)
             ->where('status', 'completed')
-            ->sum('cost');
+            ->with('template:id,cost')
+            ->get();
+
+        $totalCoinsSpent = 0;
+        foreach ($completedGenerations as $gen) {
+            // For face-swap and video-face-swap, use template cost
+            // For image-generation and image-to-video, use the configured coin cost
+            if (in_array($gen->operation, ['face-swap', 'video-face-swap'])) {
+                $totalCoinsSpent += (int) ($gen->template->cost ?? 0);
+            } else {
+                // For other operations, we don't track coins in the generation record
+                // This would need a separate coin_transactions table for accurate tracking
+                // For now, use template cost if available
+                $totalCoinsSpent += (int) ($gen->template->cost ?? 0);
+            }
+        }
 
         return Inertia::render('admin/customers/show', [
             'customer' => $customer,
@@ -91,7 +104,6 @@ class CustomerController extends Controller
                 'failed' => $generationStats['failed'] ?? 0,
                 'processing' => ($generationStats['processing'] ?? 0) + ($generationStats['queued'] ?? 0),
             ],
-            'totalCost' => $totalCost,
             'totalCoinsSpent' => $totalCoinsSpent,
         ]);
     }

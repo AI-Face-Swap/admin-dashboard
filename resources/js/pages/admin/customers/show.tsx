@@ -60,9 +60,10 @@ type Generation = {
     status: string;
     cost: string | null;
     currency: string | null;
+    coins_spent: number | null;
     duration_ms: number | null;
     created_at: string;
-    template: { id: number; name: string; slug: string } | null;
+    template: { id: number; name: string; slug: string; cost: number } | null;
 };
 
 type GenerationStats = {
@@ -333,7 +334,24 @@ return;
                                                 <TableCell className="text-sm">{gen.operation}</TableCell>
                                                 <TableCell className="text-sm">{gen.template?.name ?? '—'}</TableCell>
                                                 <TableCell className="text-sm">
-                                                    {gen.cost ? `${gen.cost} ${gen.currency ?? ''}` : '—'}
+                                                    <div className="flex flex-col gap-0.5">
+                                                        {gen.coins_spent !== null && gen.coins_spent !== undefined ? (
+                                                            <span className="flex items-center gap-1 text-[var(--gold)]">
+                                                                <Coins className="h-3 w-3" />
+                                                                {gen.coins_spent} coins
+                                                            </span>
+                                                        ) : gen.template?.cost ? (
+                                                            <span className="flex items-center gap-1 text-[var(--gold)]">
+                                                                <Coins className="h-3 w-3" />
+                                                                {gen.template.cost} coins
+                                                            </span>
+                                                        ) : null}
+                                                        {gen.cost && (
+                                                            <span className="text-xs text-muted-foreground">
+                                                                ${gen.cost} {gen.currency}
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </TableCell>
                                                 <TableCell className="text-sm text-muted-foreground">
                                                     {gen.duration_ms ? `${gen.duration_ms}ms` : '—'}

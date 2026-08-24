@@ -81,6 +81,7 @@
 | 11 | **Payment integration** | Large | KBZ, RevenueCat, Stripe, Google Pay, Apple Pay |
 | 12 | **Text → Video** | Large | Premium feature, highest coin cost |
 | 13 | **Full test suite coverage** | Large | Comprehensive Pest tests for every feature |
+| 14 | **Longer video duration (10s, 15s, 20s)** | Medium | Multiple Segmind calls + FFmpeg stitching, duration selector on frontend |
 
 ---
 
@@ -120,6 +121,7 @@
 | Background removal | 🔲 Pending | `bria-remove-bg` |
 | Image upscaling | 🔲 Pending | `real-esrgan-x4` |
 | Image → Video | 🔲 Pending | `wan-2.6-i2v-flash`, `luma-ray-3.2` |
+| Longer Video (10s+) | 🔲 Pending | Multiple calls + FFmpeg stitching |
 | Virtual try-on | 🔲 Pending | `pruna-p-try-on` |
 | Text → Video | 🔲 Pending | `seedance-2.5` |
 | Object removal | 🔲 Pending | `inpainting` |
