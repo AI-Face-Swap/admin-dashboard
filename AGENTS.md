@@ -8,7 +8,7 @@
 - **Package managers**: Composer (PHP) + npm / pnpm (JS)
 - **Database**: MySQL (local + production), configured in `.env` as `DB_CONNECTION=mysql`
 - **Storage**: DigitalOcean Spaces (`imagesbucket.sgp1.digitaloceanspaces.com`)
-- **Local dev**: Docker Compose (`serversideup/php:8.4-fpm-nginx` + MariaDB 11 + Redis 7 + Mailpit + Node 20) with a Makefile — see `docs/features/docker-setup.md`
+- **Local dev**: Docker Compose (`serversideup/php:8.4-fpm-nginx` + MariaDB 11 + Redis 7 + Mailpit + Node 20) with a Makefile — start here: **`DOCKER.md`** · deep-dive: `docs/features/docker-setup.md`
 - **Testing**: Pest 4
 - **Tooling**: Pint (PHP style), PHPStan/Larastan (static analysis), ESLint + Prettier (JS), Wayfinder (typed routes), Vite
 
@@ -50,6 +50,7 @@ Laravel backend + admin dashboard for AI media generation (image generation, fac
 | — | Customer detail: shows both USD cost and coins spent | ✅ |
 | — | `CleanupStuckGenerations` command — auto-fails timed-out generations | ✅ |
 | — | Docker local dev environment (compose + Makefile, `/healthcheck`, Vite on :5174) | ✅ |
+| — | Production Docker stack: multi-stage image, Caddy TLS, queue + scheduler containers, GHCR CI/CD | ✅ |
 
 ## Pending phases
 
@@ -151,7 +152,18 @@ make down          # stop — NEVER deletes volumes/database
 make migrate       # migrate inside the php container
 make shell         # bash into php container
 make wayfinder     # regenerate typed routes after route changes (node has no PHP)
+
+# Docker (production) — see docs/features/docker-production-setup.md
+docker compose --env-file .env.production -f docker-compose.production.yml up -d
+IMAGE_TAG=<sha> docker compose --env-file .env.production -f docker-compose.production.yml up -d   # rollback
 ```
+
+## Production rules
+
+- **Config must be cacheable**: never put objects/closures in `config/*.php` — AUTORUN runs `php artisan optimize` on boot and non-serializable values fail the container.
+- **Wayfinder types are gitignored**: CI builds generate them in the image's vendor stage; locally run `make wayfinder`.
+- **Font builds are hermetic**: `node_modules/.cache/laravel-vite-plugin` is committed — keep it when npm cache issues occur, re-warm with a local `npm run build`.
+- Production secrets live only in `.env.production` on the VPS (gitignored); `.env.production.example` documents every key.
 
 ## Rules
 
