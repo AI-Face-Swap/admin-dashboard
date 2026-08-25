@@ -136,6 +136,8 @@ docker compose ... down          # volumes survive
 
 * mysql/redis have **no published ports** — reachable only inside the compose network.
 * The `php` service publishes `127.0.0.1:8080` only (override with `APP_PORT`) — the host nginx is the only path in; the port is never exposed publicly.
+* `laravel.log` persists on the `php_logs` volume (survives deploys); truncate via `prod-shell` when it grows.
+* The image contains no `.env` file by design — generate keys with `php artisan key:generate --show` and set them in `.env.production`.
 * Sessions/cache/queue use the `database` driver (tables come from normal migrations).
 * The scheduler runs `app:cleanup-stuck-generations` every five minutes (added in `routes/console.php`).
 * `config/scramble.php` must stay serializable (no object values) or AUTORUN's `optimize` fails.

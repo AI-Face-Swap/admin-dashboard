@@ -5,6 +5,8 @@ services:
     image: ghcr.io/ai-face-swap/admin-dashboard:${IMAGE_TAG:-latest}
     restart: unless-stopped
     env_file: .env.production
+    volumes:
+      - php_logs:/var/www/html/storage/logs # logs survive container recreation
     ports:
       - '127.0.0.1:${APP_PORT:-8080}:8080' # host nginx reverse-proxies to this
     environment:
@@ -94,5 +96,6 @@ services:
       retries: 12
 
 volumes:
+  php_logs:
   mysql_data:
   redis_data:

@@ -97,6 +97,10 @@ docker compose --env-file .env.production \
 nano .env.production      # paste output into APP_KEY=
 ```
 
+> **Never run plain `php artisan key:generate` inside the container** — it tries
+> to write `/var/www/html/.env`, which doesn't exist in the image. Always use
+> `--show` and edit `.env.production` on the host, then `make prod-restart`.
+
 If port 8080 is taken on the server, set a different one:
 
 ```env
@@ -208,11 +212,14 @@ docker compose --env-file .env.production -f docker-compose.production.yml \
 |---|---|
 | `ERROR: .env.production not found` | Copy `.env.production.example` and fill it in |
 | Page 500 right after first boot | `APP_KEY` empty? → Step 3 of prod setup |
+| `Unsupported cipher or incorrect key length` | `APP_KEY` empty in the running container — generate with `key:generate --show`, paste into `.env.production`, then `up -d` to recreate |
+| `key:generate` fails: "No such file or directory (.env)" | The image has **no `.env` by design** — use `key:generate --show` and put the key in `.env.production` on the host |
 | Service unhealthy | `make prod-logs s=<service>` |
 | Migration errors at boot | `make prod-logs s=php` — AUTORUN output shows the SQL error |
 | Site unreachable / cert fails | DNS not propagated yet (`dig ai.htut.com`); re-run `certbot --nginx -d ai.htut.com` |
 | Port 8080 busy | `ss -tlnp \| grep 8080` — set `APP_PORT=<free port>` in `.env.production`, update the nginx `proxy_pass` |
 | 502 from nginx | app container down? `make prod-ps`; check it listens on `127.0.0.1:8080`: `curl http://127.0.0.1:8080/healthcheck` |
+| `laravel.log` growing large | Logs persist on the `php_logs` volume — truncate inside the container: `make prod-shell` then `: > storage/logs/laravel.log` |
 | Disk filling up | `docker system df`; prune safely: `docker builder prune -f` |
 
 **Never** run `docker compose down -v` in production — it deletes the database volume.
