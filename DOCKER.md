@@ -6,10 +6,10 @@ Deep-dive docs: `docs/features/docker-setup.md` (dev) · `docs/features/docker-p
 ```
 LOCAL DEV                          PRODUCTION
 docker-compose.yml                 docker-compose.production.yml
-┌ php :8080 (serversideup) ┐       internet → Caddy :80/:443 (auto HTTPS)
-├ mysql :3307→3306          ┤              │ reverse_proxy php:8080
-├ redis :6380→6379          ┤       php · queue · scheduler
-├ mailpit :8025 / :1025     ┤       mysql · redis  (no public ports)
+┌ php :8080 (serversideup) ┐       internet → host nginx :80/:443 (TLS via certbot)
+├ mysql :3307→3306          ┤              │ proxy_pass http://127.0.0.1:8080
+├ redis :6380→6379          ┤       php :8080 (published on localhost only)
+├ mailpit :8025 / :1025     ┤       queue · scheduler · mysql · redis (no public ports)
 └ node :5174 (Vite)         ┘       image from GHCR, built by GitHub Actions
 ```
 
@@ -59,13 +59,15 @@ make down             # stop — database survives (volumes kept)
 ## 2. Production server — start from scratch
 
 Target: any Ubuntu VPS (e.g. DigitalOcean droplet), domain `ai.htut.com`.
+The server's **host nginx** keeps :80/:443 (it can already serve other projects);
+the Docker stack publishes the app on `127.0.0.1:8080` only.
 
 ### Step 1 — Prepare the server
 
 ```bash
 ssh root@<SERVER_IP>
 
-apt update && apt install -y docker.io docker-compose-v2 git ufw
+apt update && apt install -y docker.io docker-compose-v2 git nginx ufw
 ufw allow OpenSSH && ufw allow 80,443/tcp && ufw enable
 ```
 
@@ -95,11 +97,10 @@ docker compose --env-file .env.production \
 nano .env.production      # paste output into APP_KEY=
 ```
 
-While waiting for the domain, also set in `.env.production`:
+If port 8080 is taken on the server, set a different one:
 
 ```env
-DOMAIN=<SERVER_IP>        # switch to ai.htut.com once DNS resolves
-APP_URL=http://<SERVER_IP>
+APP_PORT=8088             # optional — default is 8080
 ```
 
 ### Step 4 — First boot
@@ -113,7 +114,7 @@ docker build -t ghcr.io/ai-face-swap/admin-dashboard:latest .
 make prod-up
 make prod-ps      # every service should show Up (healthy)
 
-curl http://127.0.0.1/healthcheck    # → OK
+curl http://127.0.0.1:8080/healthcheck    # → OK
 ```
 
 Migrations run automatically on start (`AUTORUN_ENABLED=true`).
@@ -141,15 +142,25 @@ At the registrar for `htut.com`, add one DNS record:
 Type A · Name: ai · Value: <SERVER_IP>
 ```
 
-Then on the server:
+Then wire the host nginx to the Docker app (adjust `server_name` if your
+domain differs) and issue the certificate:
 
 ```bash
-nano .env.production      # DOMAIN=ai.htut.com and APP_URL=https://ai.htut.com
+cp deploy/nginx-ai.htut.com.conf.example /etc/nginx/sites-available/htut-ai
+ln -s /etc/nginx/sites-available/htut-ai /etc/nginx/sites-enabled/
+nginx -t && systemctl reload nginx
 
-make prod-restart         # Caddy re-reads DOMAIN and requests the certificate
+certbot --nginx -d ai.htut.com   # adds the :443 block + HTTP→HTTPS redirect
 ```
 
-Caddy obtains the Let's Encrypt certificate automatically — no manual TLS work, ever.
+Update `.env.production` when HTTPS is live:
+
+```env
+APP_URL=https://ai.htut.com
+```
+
+Laravel already trusts the proxy (`trustProxies` in `bootstrap/app.php`), so
+https URLs, secure cookies and client IPs work out of the box.
 
 ---
 
@@ -199,8 +210,9 @@ docker compose --env-file .env.production -f docker-compose.production.yml \
 | Page 500 right after first boot | `APP_KEY` empty? → Step 3 of prod setup |
 | Service unhealthy | `make prod-logs s=<service>` |
 | Migration errors at boot | `make prod-logs s=php` — AUTORUN output shows the SQL error |
-| Site unreachable / cert fails | DNS not propagated yet (`dig ai.htut.com`); Caddy retries automatically |
-| Port 80/443 busy | `ss -tlnp \| grep -E ':(80\|443)'` — stop the other service |
+| Site unreachable / cert fails | DNS not propagated yet (`dig ai.htut.com`); re-run `certbot --nginx -d ai.htut.com` |
+| Port 8080 busy | `ss -tlnp \| grep 8080` — set `APP_PORT=<free port>` in `.env.production`, update the nginx `proxy_pass` |
+| 502 from nginx | app container down? `make prod-ps`; check it listens on `127.0.0.1:8080`: `curl http://127.0.0.1:8080/healthcheck` |
 | Disk filling up | `docker system df`; prune safely: `docker builder prune -f` |
 
 **Never** run `docker compose down -v` in production — it deletes the database volume.

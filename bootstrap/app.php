@@ -21,6 +21,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Host nginx terminates TLS and proxies to the container over HTTP —
+        // trust it so Laravel generates https URLs and sees real client IPs.
+        $middleware->trustProxies(at: '*');
+
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
 
         // API routes use Bearer token auth (Sanctum), not session cookies.

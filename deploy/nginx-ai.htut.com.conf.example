@@ -1,0 +1,39 @@
+# HTUT AI — nginx reverse-proxy site (host level)
+#
+# The production Docker stack publishes the app on 127.0.0.1:8080 only.
+# This file makes the HOST nginx (which already serves other projects on
+# :80/:443) proxy ai.htut.com to it.
+#
+# Install on the VPS:
+#   sudo cp deploy/nginx-ai.htut.com.conf.example /etc/nginx/sites-available/htut-ai
+#   sudo ln -s /etc/nginx/sites-available/htut-ai /etc/nginx/sites-enabled/
+#   sudo nginx -t && sudo systemctl reload nginx
+#
+# Then issue the certificate (adds the :443 block + HTTP→HTTPS redirect):
+#   sudo certbot --nginx -d ai.htut.com
+
+server {
+    listen 80;
+    listen [::]:80;
+    server_name ai.htut.com;
+
+    # Match PHP_UPLOAD_MAX_FILE_SIZE / NGINX_CLIENT_MAX_BODY_SIZE in compose
+    client_max_body_size 100M;
+
+    location / {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_http_version 1.1;
+
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Upgrade           $http_upgrade;
+        proxy_set_header Connection        "";
+
+        # Video face-swap and long uploads must not be cut off early
+        proxy_read_timeout    600s;
+        proxy_send_timeout    600s;
+        proxy_request_buffering off;
+    }
+}

@@ -50,7 +50,7 @@ Laravel backend + admin dashboard for AI media generation (image generation, fac
 | — | Customer detail: shows both USD cost and coins spent | ✅ |
 | — | `CleanupStuckGenerations` command — auto-fails timed-out generations | ✅ |
 | — | Docker local dev environment (compose + Makefile, `/healthcheck`, Vite on :5174) | ✅ |
-| — | Production Docker stack: multi-stage image, Caddy TLS, queue + scheduler containers, GHCR CI/CD | ✅ |
+| — | Production Docker stack: multi-stage image, host-nginx reverse proxy (`127.0.0.1:8080`), queue + scheduler containers, GHCR CI/CD | ✅ |
 
 ## Pending phases
 

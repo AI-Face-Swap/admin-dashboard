@@ -2,14 +2,15 @@
 
 ## Overview
 
-Production deployment for HTUT AI on a single VPS: Caddy (automatic HTTPS) → serversideup PHP container, with dedicated queue worker and scheduler containers. Images are built by GitHub Actions, pushed to GHCR, and deployed over SSH.
+Production deployment for HTUT AI on a single VPS: the **host nginx** (which also serves other projects on :80/:443, TLS via certbot) reverse-proxies to the serversideup PHP container published on `127.0.0.1:8080`, with dedicated queue worker and scheduler containers. Images are built by GitHub Actions, pushed to GHCR, and deployed over SSH.
 
 ```
 ai.htut.com ──A record──► VPS IP
    ▼
-Caddy :80/:443 (auto Let's Encrypt, HTTP→HTTPS redirect)
-   ▼ reverse_proxy php:8080 (internal only)
-php · queue · scheduler · mysql · redis  ← all internal except caddy
+host nginx :80/:443 (certbot TLS, shared with other projects)
+   ▼ proxy_pass http://127.0.0.1:8080
+php :8080 (published on localhost only)
+queue · scheduler · mysql · redis  ← no public ports
 ```
 
 ## Files
@@ -19,7 +20,7 @@ php · queue · scheduler · mysql · redis  ← all internal except caddy
 | `Dockerfile` | Multi-stage build (see below) |
 | `.dockerignore` | Keeps secrets/dev artifacts out of the image |
 | `docker-compose.production.yml` | Production stack (`htut-ai-prod` project) |
-| `Caddyfile` | `${DOMAIN}` site block → `reverse_proxy php:8080` |
+| `deploy/nginx-ai.htut.com.conf.example` | Host-nginx site block → `proxy_pass http://127.0.0.1:8080` |
 | `.env.production.example` | Template — real `.env.production` lives only on the VPS |
 | `.github/workflows/deploy.yml` | Build → GHCR → SSH deploy on push to `main` |
 
@@ -37,7 +38,7 @@ Ownership is set at `COPY --chown=www-data` time (the container user cannot chow
 
 ```bash
 # 1. Create a DigitalOcean droplet (Ubuntu 24.04), then as root:
-apt update && apt install -y docker.io docker-compose-v2 git ufw
+apt update && apt install -y docker.io docker-compose-v2 git nginx ufw
 ufw allow OpenSSH && ufw allow 80,443/tcp && ufw enable
 
 # 2. Clone the repo
@@ -59,7 +60,13 @@ nano .env.production        # paste into APP_KEY=
 docker compose --env-file .env.production \
   -f docker-compose.production.yml up -d
 docker compose --env-file .env.production -f docker-compose.production.yml ps
-curl http://127.0.0.1/healthcheck     # → OK
+curl http://127.0.0.1:8080/healthcheck     # → OK
+
+# 6. Host-nginx site + TLS (see deploy/nginx-ai.htut.com.conf.example header):
+cp deploy/nginx-ai.htut.com.conf.example /etc/nginx/sites-available/htut-ai
+ln -s /etc/nginx/sites-available/htut-ai /etc/nginx/sites-enabled/
+nginx -t && systemctl reload nginx
+certbot --nginx -d ai.htut.com             # adds the :443 block + redirect
 ```
 
 ## GitHub Actions secrets
@@ -80,7 +87,11 @@ At the registrar for `htut.com`:
 Type: A · Name: ai · Value: <VPS_PUBLIC_IP> · TTL: default
 ```
 
-Until then, set `DOMAIN=<VPS_IP>` in `.env.production` — Caddy serves plain HTTP on port 80 for bare IPs. The moment `DOMAIN=ai.htut.com` resolves, recreate caddy (`up -d caddy`) and Let's Encrypt issuance + HTTPS redirect happen automatically.
+Once DNS resolves, run `certbot --nginx -d ai.htut.com` on the VPS to issue the
+Let's Encrypt certificate and add the HTTP→HTTPS redirect, then set
+`APP_URL=https://ai.htut.com` in `.env.production`. Laravel trusts the proxy
+(`trustProxies` in `bootstrap/app.php`), so https URLs and client IPs are
+correct out of the box.
 
 ## Deploys & rollback
 
@@ -124,6 +135,7 @@ docker compose ... down          # volumes survive
 ## Notes
 
 * mysql/redis have **no published ports** — reachable only inside the compose network.
+* The `php` service publishes `127.0.0.1:8080` only (override with `APP_PORT`) — the host nginx is the only path in; the port is never exposed publicly.
 * Sessions/cache/queue use the `database` driver (tables come from normal migrations).
 * The scheduler runs `app:cleanup-stuck-generations` every five minutes (added in `routes/console.php`).
 * `config/scramble.php` must stay serializable (no object values) or AUTORUN's `optimize` fails.
