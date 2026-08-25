@@ -8,6 +8,7 @@
 - **Package managers**: Composer (PHP) + npm / pnpm (JS)
 - **Database**: MySQL (local + production), configured in `.env` as `DB_CONNECTION=mysql`
 - **Storage**: DigitalOcean Spaces (`imagesbucket.sgp1.digitaloceanspaces.com`)
+- **Local dev**: Docker Compose (`serversideup/php:8.4-fpm-nginx` + MariaDB 11 + Redis 7 + Mailpit + Node 20) with a Makefile — see `docs/features/docker-setup.md`
 - **Testing**: Pest 4
 - **Tooling**: Pint (PHP style), PHPStan/Larastan (static analysis), ESLint + Prettier (JS), Wayfinder (typed routes), Vite
 
@@ -48,6 +49,7 @@ Laravel backend + admin dashboard for AI media generation (image generation, fac
 | — | `GET /api/v1/coin-costs` — returns coin costs from admin settings | ✅ |
 | — | Customer detail: shows both USD cost and coins spent | ✅ |
 | — | `CleanupStuckGenerations` command — auto-fails timed-out generations | ✅ |
+| — | Docker local dev environment (compose + Makefile, `/healthcheck`, Vite on :5174) | ✅ |
 
 ## Pending phases
 
@@ -79,6 +81,7 @@ Laravel backend + admin dashboard for AI media generation (image generation, fac
 - **Coin costs from admin settings**: Use `config('ai.coin_cost_*')` for image-generation and image-to-video. Face-swap/video-face-swap use `template.cost`.
 - **Coin cost API endpoint**: `GET /api/v1/coin-costs` returns costs from database — frontend MUST fetch from here, never hardcode.
 - **Cleanup stuck generations**: Run `php artisan app:cleanup-stuck-generations` or check status endpoint auto-fails generations >10min old.
+- **Docker networking**: Containers communicate via service names — compose sets `DB_HOST=mysql`, `REDIS_HOST=redis`, `MAIL_HOST=mailpit` as real env vars (override `.env` inside containers only). Host ports 8080/3307/6380/8025/5174 are for host access; never use them for Laravel→service connections.
 
 ## Current DB tables
 
@@ -141,6 +144,13 @@ php artisan fix:segmind-urls
 
 # Cleanup stuck generations
 php artisan app:cleanup-stuck-generations
+
+# Docker (local dev)
+make up            # start all services (app: http://localhost:8080)
+make down          # stop — NEVER deletes volumes/database
+make migrate       # migrate inside the php container
+make shell         # bash into php container
+make wayfinder     # regenerate typed routes after route changes (node has no PHP)
 ```
 
 ## Rules
