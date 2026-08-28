@@ -50,6 +50,7 @@
 | 44 | API Playground: form-data templates auto-populate correct fields | Admin Core |
 | 45 | Boolean validation fix: `'string|in:true,false,0,1'` for form-data | Bug Fix |
 | 46 | Google customer login (web redirect + mobile ID-token flow) | Customer |
+| 47 | Apple customer login (web redirect/form-post + mobile identity-token flow) | Customer |
 
 ---
 
@@ -59,7 +60,7 @@
 
 | # | Feature | Effort | Notes |
 |---|---|---|---|
-| 1 | **Apple login** | Medium | Google done; Apple needs Apple Developer credentials |
+| 1 | **Social login provider account settings / unlinking** | Medium | Google and Apple login are done |
 | 2 | **Customer email verification** | Small | Verify email on register, block unverified |
 | 3 | **Customer password reset** | Small | Forgot-password flow (email link) |
 | 4 | ~~Admin coin cost settings page~~ | ~~Small~~ | ~~Done — UI to change coin costs instead of .env~~ |

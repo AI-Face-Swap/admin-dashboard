@@ -32,6 +32,12 @@ return [
         'redirect' => env('GOOGLE_REDIRECT_URI'),
     ],
 
+    'apple' => [
+        'client_id' => env('APPLE_CLIENT_ID'),
+        'client_ids' => array_filter(array_map('trim', explode(',', env('APPLE_CLIENT_IDS', env('APPLE_CLIENT_ID', ''))))),
+        'redirect' => env('APPLE_REDIRECT_URI'),
+    ],
+
     'ses' => [
         'key' => env('AWS_ACCESS_KEY_ID'),
         'secret' => env('AWS_SECRET_ACCESS_KEY'),

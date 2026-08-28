@@ -52,13 +52,14 @@ Laravel backend + admin dashboard for AI media generation (image generation, fac
 | — | Docker local dev environment (compose + Makefile, `/healthcheck`, Vite on :5174) | ✅ |
 | — | Production Docker stack: multi-stage image, host-nginx reverse proxy (`127.0.0.1:8080`), queue + scheduler containers, GHCR CI/CD | ✅ |
 | — | Google customer login (web redirect + mobile ID-token flow) | ✅ |
+| — | Apple customer login (web redirect/form-post + mobile identity-token flow) | ✅ |
 
 ## Pending phases
 
 | # | Feature | Effort |
 |---|---|---|
 | 1 | Customer email verification + password reset | Small |
-| 2 | Apple social login | Medium |
+| 2 | Social login provider account settings / unlinking | Medium |
 | 3 | Usage/cost analytics dashboard | Medium |
 | 4 | Payment integration (KBZ, RevenueCat, Stripe) | Large |
 | 5 | Full test suite coverage | Large |
@@ -100,6 +101,9 @@ Laravel backend + admin dashboard for AI media generation (image generation, fac
 | `GET /api/v1/auth/google/redirect` | guest | Start Google web OAuth |
 | `GET /api/v1/auth/google/callback` | guest | Google web OAuth callback |
 | `POST /api/v1/auth/google/mobile` | guest | Mobile Google ID-token login |
+| `GET /api/v1/auth/apple/redirect` | guest | Start Apple web OAuth |
+| `GET/POST /api/v1/auth/apple/callback` | guest | Apple web OAuth callback |
+| `POST /api/v1/auth/apple/mobile` | guest | Mobile Apple identity-token login |
 | `POST /api/v1/ai/face-swap` | sanctum | Face-swap endpoint |
 | `POST /api/v1/ai/video-face-swap` | sanctum | Video face-swap (queued) |
 | `POST /api/v1/ai/images` | sanctum | Text-to-image generation |

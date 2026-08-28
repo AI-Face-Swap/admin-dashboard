@@ -37,6 +37,9 @@ Route::prefix('v1')->middleware('guest:customer')->group(function () {
     Route::get('auth/google/redirect', [CustomerSocialAuthController::class, 'redirectToGoogle'])->middleware('throttle:10,1');
     Route::get('auth/google/callback', [CustomerSocialAuthController::class, 'handleGoogleCallback'])->middleware('throttle:10,1');
     Route::post('auth/google/mobile', [CustomerSocialAuthController::class, 'mobileGoogleLogin'])->middleware('throttle:10,1');
+    Route::get('auth/apple/redirect', [CustomerSocialAuthController::class, 'redirectToApple'])->middleware('throttle:10,1');
+    Route::match(['get', 'post'], 'auth/apple/callback', [CustomerSocialAuthController::class, 'handleAppleCallback'])->middleware('throttle:10,1');
+    Route::post('auth/apple/mobile', [CustomerSocialAuthController::class, 'mobileAppleLogin'])->middleware('throttle:10,1');
 });
 
 // Email verification — uses signed URL from email, no auth required
