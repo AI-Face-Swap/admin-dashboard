@@ -32,7 +32,7 @@ function fakeCustomerFaceSwap(): void
     ]);
 }
 
-test('a customer can register and receives a token with 100 coins', function () {
+test('a customer can register and receives no token (must verify email first)', function () {
     $response = $this->postJson('/api/v1/auth/register', [
         'name' => 'John Doe',
         'email' => 'john@example.com',
@@ -44,14 +44,14 @@ test('a customer can register and receives a token with 100 coins', function () 
         ->assertJsonPath('customer.email', 'john@example.com')
         ->assertJsonPath('customer.customer_type', 'free')
         ->assertJsonPath('customer.coins', 100)
-        ->assertJsonStructure(['customer', 'token']);
+        ->assertJsonStructure(['customer', 'message']);
 
     $customer = Customer::where('email', 'john@example.com')->first();
 
     expect($customer)->not->toBeNull()
         ->and($customer->isFree())->toBeTrue()
         ->and($customer->coins)->toBe(100)
-        ->and($customer->tokens)->toHaveCount(1);
+        ->and($customer->hasVerifiedEmail())->toBeFalse();
 });
 
 test('registering with a duplicate email is rejected', function () {
@@ -65,11 +65,11 @@ test('registering with a duplicate email is rejected', function () {
     ])->assertStatus(422);
 });
 
-test('a customer can log in and use the token on me', function () {
+test('a verified customer can log in and use the token on me', function () {
     Customer::factory()->create([
         'email' => 'john@example.com',
         'password' => 'password123',
-    ]);
+    ]); // factory creates verified by default
 
     $login = $this->postJson('/api/v1/auth/login', [
         'email' => 'john@example.com',
@@ -85,6 +85,19 @@ test('a customer can log in and use the token on me', function () {
         ->getJson('/api/v1/auth/me')
         ->assertOk()
         ->assertJsonPath('customer.email', 'john@example.com');
+});
+
+test('unverified customer cannot log in', function () {
+    Customer::factory()->unverified()->create([
+        'email' => 'john@example.com',
+        'password' => 'password123',
+    ]);
+
+    $this->postJson('/api/v1/auth/login', [
+        'email' => 'john@example.com',
+        'password' => 'password123',
+    ])->assertStatus(403)
+        ->assertJson(['message' => 'Please verify your email before logging in.']);
 });
 
 test('login with wrong credentials is rejected', function () {

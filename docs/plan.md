@@ -49,6 +49,7 @@
 | 43 | API Playground: all 16 routes including image-to-video (upload + URL) | Admin Core |
 | 44 | API Playground: form-data templates auto-populate correct fields | Admin Core |
 | 45 | Boolean validation fix: `'string|in:true,false,0,1'` for form-data | Bug Fix |
+| 46 | Google customer login (web redirect + mobile ID-token flow) | Customer |
 
 ---
 
@@ -58,7 +59,7 @@
 
 | # | Feature | Effort | Notes |
 |---|---|---|---|
-| 1 | **Social login (Google/Apple)** | Medium | Needs your OAuth client credentials |
+| 1 | **Apple login** | Medium | Google done; Apple needs Apple Developer credentials |
 | 2 | **Customer email verification** | Small | Verify email on register, block unverified |
 | 3 | **Customer password reset** | Small | Forgot-password flow (email link) |
 | 4 | ~~Admin coin cost settings page~~ | ~~Small~~ | ~~Done — UI to change coin costs instead of .env~~ |

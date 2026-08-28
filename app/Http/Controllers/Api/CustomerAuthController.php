@@ -22,10 +22,11 @@ class CustomerAuthController extends Controller
     /**
      * Register a new customer.
      *
-     * Creates a new customer account with 100 free coins.
-     * Returns a Bearer token for subsequent API calls.
+     * Creates a new customer account with 100 free coins and sends a
+     * verification email. Does NOT return a token — the customer must
+     * verify their email before they can log in.
      *
-     * @response 201 {"customer": {"id": 1, "name": "John", "email": "john@example.com", "coins": 100}, "token": "1|abc..."}
+     * @response 201 {"customer": {"id": 1, "name": "John", "email": "john@example.com", "coins": 100}, "message": "Verification email sent."}
      */
     public function register(RegisterRequest $request): JsonResponse
     {
@@ -38,11 +39,9 @@ class CustomerAuthController extends Controller
         // Send email verification notification
         $customer->notify(new VerifyEmail);
 
-        $token = $customer->createToken('mobile')->plainTextToken;
-
         return response()->json([
             'customer' => $customer,
-            'token' => $token,
+            'message' => 'Verification email sent. Please verify your email before logging in.',
         ], 201);
     }
 
@@ -50,9 +49,11 @@ class CustomerAuthController extends Controller
      * Log in an existing customer.
      *
      * Returns a Bearer token for subsequent API calls.
+     * Rejects unverified emails — customer must verify before logging in.
      * Updates last_active_at timestamp.
      *
      * @response 200 {"customer": {"id": 1, "name": "John", "coins": 50}, "token": "2|xyz..."}
+     * @response 403 {"message": "Please verify your email before logging in."}
      */
     public function login(LoginRequest $request): JsonResponse
     {
@@ -62,6 +63,12 @@ class CustomerAuthController extends Controller
             throw ValidationException::withMessages([
                 'email' => ['These credentials do not match our records.'],
             ]);
+        }
+
+        if (! $customer->hasVerifiedEmail()) {
+            return response()->json([
+                'message' => 'Please verify your email before logging in.',
+            ], 403);
         }
 
         $customer->update(['last_active_at' => now()]);
@@ -105,17 +112,23 @@ class CustomerAuthController extends Controller
     }
 
     /**
-     * Send an email verification notification to the authenticated customer.
+     * Send an email verification notification to a customer by email.
      *
-     * @response 200 {"message": "Verification email sent."}
-     * @response 403 {"message": "Your email is already verified."}
+     * Always returns success to prevent email enumeration.
+     * Throttled to 3 requests per minute.
+     *
+     * @response 200 {"message": "If an account with that email exists and is unverified, a verification link has been sent."}
      */
     public function sendVerificationEmail(SendVerificationEmailRequest $request): JsonResponse
     {
-        $request->user()->notify(new VerifyEmail);
+        $customer = Customer::where('email', $request->string('email'))->first();
+
+        if ($customer && ! $customer->hasVerifiedEmail()) {
+            $customer->notify(new VerifyEmail);
+        }
 
         return response()->json([
-            'message' => 'Verification email sent.',
+            'message' => 'If an account with that email exists and is unverified, a verification link has been sent.',
         ]);
     }
 

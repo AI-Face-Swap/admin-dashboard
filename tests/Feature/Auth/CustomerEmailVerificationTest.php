@@ -10,29 +10,29 @@ test('unverified customer can request verification email', function () {
 
     $customer = Customer::factory()->unverified()->create();
 
-    $token = $customer->createToken('mobile')->plainTextToken;
-
-    $this->withHeader('Authorization', "Bearer {$token}")
-        ->postJson('/api/v1/auth/email/verify/resend')
-        ->assertOk()
-        ->assertJson(['message' => 'Verification email sent.']);
+    $this->postJson('/api/v1/auth/email/verify/resend', [
+        'email' => $customer->email,
+    ])->assertOk();
 
     Notification::assertSentTo($customer, VerifyEmail::class);
 });
 
-test('verified customer cannot request verification email', function () {
+test('resend returns success even for verified email', function () {
+    Notification::fake();
+
     $customer = Customer::factory()->create(); // already verified
 
-    $token = $customer->createToken('mobile')->plainTextToken;
+    $this->postJson('/api/v1/auth/email/verify/resend', [
+        'email' => $customer->email,
+    ])->assertOk();
 
-    $this->withHeader('Authorization', "Bearer {$token}")
-        ->postJson('/api/v1/auth/email/verify/resend')
-        ->assertForbidden();
+    Notification::assertNothingSent();
 });
 
-test('unauthenticated user cannot request verification email', function () {
+test('resend requires email field', function () {
     $this->postJson('/api/v1/auth/email/verify/resend')
-        ->assertUnauthorized();
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('email');
 });
 
 test('customer email can be verified with signed URL', function () {
