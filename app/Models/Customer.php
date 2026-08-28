@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Database\Factories\CustomerFactory;
+use Illuminate\Auth\Passwords\CanResetPassword;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Builder;
@@ -32,10 +34,10 @@ use Laravel\Sanctum\HasApiTokens;
  */
 #[Fillable(['name', 'email', 'password', 'avatar', 'auth_provider', 'auth_provider_id', 'customer_type', 'coins', 'is_banned', 'email_verified_at', 'last_active_at'])]
 #[Hidden(['password', 'remember_token'])]
-class Customer extends Authenticatable
+class Customer extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<CustomerFactory> */
-    use HasApiTokens, HasFactory, Notifiable;
+    use CanResetPassword, HasApiTokens, HasFactory, Notifiable;
 
     public const TYPE_FREE = 'free';
 

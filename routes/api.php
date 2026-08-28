@@ -30,7 +30,14 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('v1')->middleware('guest:customer')->group(function () {
     Route::post('auth/register', [CustomerAuthController::class, 'register'])->middleware('throttle:10,1');
     Route::post('auth/login', [CustomerAuthController::class, 'login'])->middleware('throttle:10,1');
+    Route::post('auth/forgot-password', [CustomerAuthController::class, 'forgotPassword'])->middleware('throttle:5,1');
+    Route::post('auth/reset-password', [CustomerAuthController::class, 'resetPassword']);
 });
+
+// Email verification — uses signed URL from email, no auth required
+Route::prefix('v1')->get('email/verify/{id}/{hash}', [CustomerAuthController::class, 'verifyEmail'])
+    ->middleware('signed')
+    ->name('api.v1.email.verify');
 
 Route::prefix('v1')->group(function () {
     Route::get('sliders', [SliderController::class, 'index']);
@@ -43,6 +50,7 @@ Route::prefix('v1')->group(function () {
 Route::prefix('v1')->middleware(['auth:sanctum', 'customer.not-banned'])->group(function () {
     Route::post('auth/logout', [CustomerAuthController::class, 'logout']);
     Route::get('auth/me', [CustomerAuthController::class, 'me']);
+    Route::post('auth/email/verify/resend', [CustomerAuthController::class, 'sendVerificationEmail']);
 
     Route::post('ai/face-swap', [AIFaceSwapController::class, 'store'])->middleware('throttle:30,1');
     Route::post('ai/video-face-swap', [AIVideoFaceSwapController::class, 'store'])->middleware('throttle:10,1');

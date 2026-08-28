@@ -88,20 +88,25 @@ const STATUS_COLORS: Record<number, string> = {
     5: 'bg-red-500/15 text-red-400 border-red-500/30',
 };
 
-const ENDPOINT_TEMPLATES: {
+interface EndpointTemplate {
     label: string;
+    group: string;
     method: HttpMethod;
     url: string;
     bodyType: BodyType;
     body: string;
     headers: KeyValuePair[];
-}[] = [
+}
+
+const ENDPOINT_TEMPLATES: EndpointTemplate[] = [
+    // ── Auth ──────────────────────────────────────────────────────────────
     {
         label: 'Register Customer',
+        group: 'auth',
         method: 'POST',
         url: '/api/v1/auth/register',
         bodyType: 'json',
-        body: '{\n  "name": "Test User",\n  "email": "test@example.com",\n  "password": "password123",\n "password_confirmation": "password123"\n}',
+        body: '{\n  "name": "Test User",\n  "email": "test@example.com",\n  "password": "password123",\n  "password_confirmation": "password123"\n}',
         headers: [
             { key: 'Content-Type', value: 'application/json' },
             { key: 'Accept', value: 'application/json' },
@@ -109,6 +114,7 @@ const ENDPOINT_TEMPLATES: {
     },
     {
         label: 'Login Customer',
+        group: 'auth',
         method: 'POST',
         url: '/api/v1/auth/login',
         bodyType: 'json',
@@ -120,6 +126,7 @@ const ENDPOINT_TEMPLATES: {
     },
     {
         label: 'Get Profile (/me)',
+        group: 'auth',
         method: 'GET',
         url: '/api/v1/auth/me',
         bodyType: 'none',
@@ -127,7 +134,51 @@ const ENDPOINT_TEMPLATES: {
         headers: [{ key: 'Accept', value: 'application/json' }],
     },
     {
+        label: 'Logout',
+        group: 'auth',
+        method: 'POST',
+        url: '/api/v1/auth/logout',
+        bodyType: 'none',
+        body: '',
+        headers: [{ key: 'Accept', value: 'application/json' }],
+    },
+    {
+        label: 'Resend Verification Email',
+        group: 'auth',
+        method: 'POST',
+        url: '/api/v1/auth/email/verify/resend',
+        bodyType: 'none',
+        body: '',
+        headers: [{ key: 'Accept', value: 'application/json' }],
+    },
+    {
+        label: 'Forgot Password',
+        group: 'auth',
+        method: 'POST',
+        url: '/api/v1/auth/forgot-password',
+        bodyType: 'json',
+        body: '{\n  "email": "test@example.com"\n}',
+        headers: [
+            { key: 'Content-Type', value: 'application/json' },
+            { key: 'Accept', value: 'application/json' },
+        ],
+    },
+    {
+        label: 'Reset Password',
+        group: 'auth',
+        method: 'POST',
+        url: '/api/v1/auth/reset-password',
+        bodyType: 'json',
+        body: '{\n  "email": "test@example.com",\n  "token": "from-email",\n  "password": "newpassword123",\n  "password_confirmation": "newpassword123"\n}',
+        headers: [
+            { key: 'Content-Type', value: 'application/json' },
+            { key: 'Accept', value: 'application/json' },
+        ],
+    },
+    // ── AI ────────────────────────────────────────────────────────────────
+    {
         label: 'Face Swap (URL)',
+        group: 'ai',
         method: 'POST',
         url: '/api/v1/ai/face-swap',
         bodyType: 'json',
@@ -139,6 +190,7 @@ const ENDPOINT_TEMPLATES: {
     },
     {
         label: 'Face Swap (Upload)',
+        group: 'ai',
         method: 'POST',
         url: '/api/v1/ai/face-swap',
         bodyType: 'form-data',
@@ -147,6 +199,7 @@ const ENDPOINT_TEMPLATES: {
     },
     {
         label: 'Video Face Swap (URL)',
+        group: 'ai',
         method: 'POST',
         url: '/api/v1/ai/video-face-swap',
         bodyType: 'json',
@@ -158,6 +211,7 @@ const ENDPOINT_TEMPLATES: {
     },
     {
         label: 'Video Face Swap (Upload)',
+        group: 'ai',
         method: 'POST',
         url: '/api/v1/ai/video-face-swap',
         bodyType: 'form-data',
@@ -166,6 +220,7 @@ const ENDPOINT_TEMPLATES: {
     },
     {
         label: 'Image Generation',
+        group: 'ai',
         method: 'POST',
         url: '/api/v1/ai/images',
         bodyType: 'json',
@@ -176,23 +231,8 @@ const ENDPOINT_TEMPLATES: {
         ],
     },
     {
-        label: 'Check Generation Status',
-        method: 'GET',
-        url: '/api/v1/ai/generations/1',
-        bodyType: 'none',
-        body: '',
-        headers: [{ key: 'Accept', value: 'application/json' }],
-    },
-    {
-        label: 'Logout',
-        method: 'POST',
-        url: '/api/v1/auth/logout',
-        bodyType: 'none',
-        body: '',
-        headers: [{ key: 'Accept', value: 'application/json' }],
-    },
-    {
         label: 'Image to Video (Upload)',
+        group: 'ai',
         method: 'POST',
         url: '/api/v1/ai/image-to-video',
         bodyType: 'form-data',
@@ -201,6 +241,7 @@ const ENDPOINT_TEMPLATES: {
     },
     {
         label: 'Image to Video (URL)',
+        group: 'ai',
         method: 'POST',
         url: '/api/v1/ai/image-to-video',
         bodyType: 'json',
@@ -211,7 +252,18 @@ const ENDPOINT_TEMPLATES: {
         ],
     },
     {
-        label: 'Get Sliders (Public)',
+        label: 'Check Generation Status',
+        group: 'ai',
+        method: 'GET',
+        url: '/api/v1/ai/generations/1',
+        bodyType: 'none',
+        body: '',
+        headers: [{ key: 'Accept', value: 'application/json' }],
+    },
+    // ── Public ────────────────────────────────────────────────────────────
+    {
+        label: 'Get Sliders',
+        group: 'public',
         method: 'GET',
         url: '/api/v1/sliders',
         bodyType: 'none',
@@ -219,7 +271,8 @@ const ENDPOINT_TEMPLATES: {
         headers: [{ key: 'Accept', value: 'application/json' }],
     },
     {
-        label: 'Get Templates (Public)',
+        label: 'Get Templates',
+        group: 'public',
         method: 'GET',
         url: '/api/v1/templates',
         bodyType: 'none',
@@ -228,6 +281,7 @@ const ENDPOINT_TEMPLATES: {
     },
     {
         label: 'Get Template by Slug',
+        group: 'public',
         method: 'GET',
         url: '/api/v1/templates/superman-suit',
         bodyType: 'none',
@@ -235,7 +289,8 @@ const ENDPOINT_TEMPLATES: {
         headers: [{ key: 'Accept', value: 'application/json' }],
     },
     {
-        label: 'Get Template Categories (Public)',
+        label: 'Get Template Categories',
+        group: 'public',
         method: 'GET',
         url: '/api/v1/template-categories',
         bodyType: 'none',
@@ -243,7 +298,18 @@ const ENDPOINT_TEMPLATES: {
         headers: [{ key: 'Accept', value: 'application/json' }],
     },
     {
+        label: 'Get Coin Costs',
+        group: 'public',
+        method: 'GET',
+        url: '/api/v1/coin-costs',
+        bodyType: 'none',
+        body: '',
+        headers: [{ key: 'Accept', value: 'application/json' }],
+    },
+    // ── Customer ──────────────────────────────────────────────────────────
+    {
         label: 'Get My Generations',
+        group: 'customer',
         method: 'GET',
         url: '/api/v1/customer/generations',
         bodyType: 'none',
@@ -251,6 +317,20 @@ const ENDPOINT_TEMPLATES: {
         headers: [{ key: 'Accept', value: 'application/json' }],
     },
 ];
+
+const GROUP_LABELS: Record<string, string> = {
+    auth: 'Auth',
+    ai: 'AI',
+    public: 'Public',
+    customer: 'Customer',
+};
+
+const GROUP_COLORS: Record<string, string> = {
+    auth: 'text-violet-400 border-violet-500/30 bg-violet-500/15',
+    ai: 'text-sky-400 border-sky-500/30 bg-sky-500/15',
+    public: 'text-emerald-400 border-emerald-500/30 bg-emerald-500/15',
+    customer: 'text-amber-400 border-amber-500/30 bg-amber-500/15',
+};
 
 const HISTORY_KEY = 'api-playground-history';
 const TOKEN_KEY = 'api-playground-bearer-token';
@@ -340,6 +420,7 @@ export default function APIPlayground() {
     const [copied, setCopied] = useState(false);
     const [previewHtml, setPreviewHtml] = useState(false);
     const [showRawBody, setShowRawBody] = useState(false);
+    const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
     const fileInputRefs = useRef<Map<number, HTMLInputElement>>(new Map());
 
     // Load history from localStorage on mount
@@ -905,7 +986,7 @@ export default function APIPlayground() {
                 </Card>
             </motion.div>
 
-            {/* Endpoint Templates */}
+            {/* Endpoint Templates — grouped by sub-route, collapsible */}
             <motion.div
                 variants={fadeIn}
                 initial="initial"
@@ -918,25 +999,74 @@ export default function APIPlayground() {
                             Quick Templates
                         </CardTitle>
                     </CardHeader>
-                    <CardContent>
-                        <div className="flex flex-wrap gap-2">
-                            {ENDPOINT_TEMPLATES.map((template) => (
-                                <AnimatedButton
-                                    key={template.label}
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => applyTemplate(template)}
-                                >
+                    <CardContent className="space-y-2 p-0 pb-2">
+                        {Object.entries(
+                            ENDPOINT_TEMPLATES.reduce(
+                                (acc, t) => {
+                                    (acc[t.group] ??= []).push(t);
+
+                                    return acc;
+                                },
+                                {} as Record<string, EndpointTemplate[]>,
+                            ),
+                        ).map(([group, templates]) => (
+                            <Collapsible
+                                key={group}
+                                open={openGroups.has(group)}
+                                onOpenChange={() => {
+                                    setOpenGroups((prev) => {
+                                        const next = new Set(prev);
+
+                                        if (next.has(group)) {
+                                            next.delete(group);
+                                        } else {
+                                            next.add(group);
+                                        }
+
+                                        return next;
+                                    });
+                                }}
+                            >
+                                <CollapsibleTrigger className="flex w-full items-center gap-2 px-4 py-2.5 text-left transition-colors hover:bg-muted/50">
+                                    {openGroups.has(group) ? (
+                                        <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
+                                    ) : (
+                                        <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                                    )}
                                     <Badge
-                                        variant="secondary"
-                                        className={`mr-2 text-xs ${METHOD_COLORS[template.method]}`}
+                                        variant="outline"
+                                        className={`text-xs font-semibold uppercase tracking-wider ${GROUP_COLORS[group] ?? ''}`}
                                     >
-                                        {template.method}
+                                        {GROUP_LABELS[group] ?? group}
                                     </Badge>
-                                    {template.label}
-                                </AnimatedButton>
-                            ))}
-                        </div>
+                                    <span className="text-xs text-muted-foreground">
+                                        {templates.length} endpoint{templates.length !== 1 ? 's' : ''}
+                                    </span>
+                                </CollapsibleTrigger>
+                                <CollapsibleContent>
+                                    <div className="flex flex-wrap gap-2 border-t px-4 py-3">
+                                        {templates.map((template) => (
+                                            <AnimatedButton
+                                                key={template.label}
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() =>
+                                                    applyTemplate(template)
+                                                }
+                                            >
+                                                <Badge
+                                                    variant="secondary"
+                                                    className={`mr-2 text-xs ${METHOD_COLORS[template.method]}`}
+                                                >
+                                                    {template.method}
+                                                </Badge>
+                                                {template.label}
+                                            </AnimatedButton>
+                                        ))}
+                                    </div>
+                                </CollapsibleContent>
+                            </Collapsible>
+                        ))}
                     </CardContent>
                 </Card>
             </motion.div>
