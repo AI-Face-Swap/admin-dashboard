@@ -52,7 +52,9 @@ class AIImageToVideoController extends Controller
             'image' => 'required_without:image_url|file|image|max:10240',
             'image_url' => 'required_without:image|url',
             'negative_prompt' => 'nullable|string|max:1000',
-            'resolution' => 'nullable|string|in:480p,720p',
+            'model' => 'nullable|string|in:seedance-2.5,wan2.7-r2v,kling-o1-reference-image-to-video',
+            'aspect_ratio' => 'nullable|string|in:1:1,9:16,16:9,4:3,3:4',
+            'resolution' => 'nullable|string|in:480p,720p,1080p',
             'prompt_extend' => 'nullable|string|in:true,false,0,1',
             'seed' => 'nullable|integer|min:0',
             'watermark' => 'nullable|string|in:true,false,0,1',
@@ -62,9 +64,21 @@ class AIImageToVideoController extends Controller
 
         // Determine cost based on resolution
         $resolution = $request->string('resolution', '720p')->toString();
-        $costKey = $resolution === '480p' ? 'coin_cost_image_to_video_480p' : 'coin_cost_image_to_video_720p';
-        $configKey = $resolution === '480p' ? 'ai.coin_costs.image_to_video_480p' : 'ai.coin_costs.image_to_video_720p';
-        $defaultCost = $resolution === '480p' ? 10 : 20;
+        $costKey = match ($resolution) {
+            '480p' => 'coin_cost_image_to_video_480p',
+            '1080p' => 'coin_cost_image_to_video_1080p',
+            default => 'coin_cost_image_to_video_720p',
+        };
+        $configKey = match ($resolution) {
+            '480p' => 'ai.coin_costs.image_to_video_480p',
+            '1080p' => 'ai.coin_costs.image_to_video_1080p',
+            default => 'ai.coin_costs.image_to_video_720p',
+        };
+        $defaultCost = match ($resolution) {
+            '480p' => 10,
+            '1080p' => 30,
+            default => 20,
+        };
         $templateCost = (int) Setting::get('ai', $costKey, config($configKey, $defaultCost));
 
         if ($requester instanceof Customer) {
@@ -77,6 +91,7 @@ class AIImageToVideoController extends Controller
         $payload = [
             'prompt' => $request->string('prompt')->toString(),
             'image' => $imageUrl,
+            // 'duration' => 10, // Default duration in seconds
         ];
 
         if ($request->filled('negative_prompt')) {
@@ -87,6 +102,10 @@ class AIImageToVideoController extends Controller
             $payload['resolution'] = $request->string('resolution')->toString();
         } else {
             $payload['resolution'] = '720p';
+        }
+
+        if ($request->filled('aspect_ratio')) {
+            $payload['aspect_ratio'] = $request->string('aspect_ratio')->toString();
         }
 
         if ($request->has('prompt_extend')) {
@@ -108,12 +127,14 @@ class AIImageToVideoController extends Controller
             'image_url' => $imageUrl,
         ]);
 
+        $model = $request->string('model', 'kling-o1-reference-image-to-video')->toString();
+
         try {
             $generation = $this->aiService->imageToVideo(
                 new GenerationRequest(
                     operation: 'image-to-video',
                     payload: $payload,
-                    model: 'wan-2.2-i2v-flash',
+                    model: $model,
                 ),
                 $requester,
             );

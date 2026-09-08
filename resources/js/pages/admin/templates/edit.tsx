@@ -35,6 +35,12 @@ type Template = {
     is_active: boolean;
     category: { id: number; name: string } | null;
     tags: { id: number; name: string }[];
+    sort_order: number;
+    prompt: string | null;
+    negative_prompt: string | null;
+    aspect_ratio: string | null;
+    resolution: string | null;
+    seed: string | null;
 };
 
 export default function Edit({
@@ -48,6 +54,16 @@ export default function Edit({
 }) {
     const [name, setName] = useState(template.name);
     const [description, setDescription] = useState(template.description ?? '');
+    const [sortOrder, setSortOrder] = useState(
+        String(template.sort_order ?? 1),
+    );
+    const [prompt, setPrompt] = useState(template.prompt ?? '');
+    const [negativePrompt, setNegativePrompt] = useState(
+        template.negative_prompt ?? '',
+    );
+    const [aspectRatio, setAspectRatio] = useState(template.aspect_ratio ?? '');
+    const [resolution, setResolution] = useState(template.resolution ?? '');
+    const [seed, setSeed] = useState(template.seed ?? '');
     const [categoryId, setCategoryId] = useState(
         template.category ? String(template.category.id) : '',
     );
@@ -86,6 +102,12 @@ export default function Edit({
                 model,
                 is_active: isActive,
                 tags: selectedTags,
+                sort_order: parseInt(sortOrder, 10) || 1,
+                prompt: prompt || undefined,
+                negative_prompt: negativePrompt || undefined,
+                aspect_ratio: aspectRatio || undefined,
+                resolution: resolution || undefined,
+                seed: seed || undefined,
             },
             {
                 forceFormData: true,
@@ -113,181 +135,303 @@ export default function Edit({
                     </Link>
                 </div>
 
-                <AnimatedCard className="max-w-2xl">
+                <AnimatedCard className="mx-auto w-full max-w-5xl">
                     <CardContent>
-                        <form onSubmit={submit} className="space-y-6">
-                            <div className="grid gap-2">
-                                <Label htmlFor="name">Template name</Label>
-                                <Input
-                                    id="name"
-                                    value={name}
-                                    onChange={(e) => setName(e.target.value)}
-                                    required
-                                />
-                                <InputError message={errors.name} />
-                            </div>
-
-                            <div className="grid gap-2">
-                                <Label htmlFor="description">Description</Label>
-                                <Textarea
-                                    id="description"
-                                    value={description}
-                                    onChange={(e) =>
-                                        setDescription(e.target.value)
-                                    }
-                                    rows={2}
-                                />
-                            </div>
-
-                            <div className="grid gap-4 sm:grid-cols-3">
+                        <form
+                            onSubmit={submit}
+                            className="grid gap-8 md:grid-cols-2"
+                        >
+                            <div className="space-y-6">
                                 <div className="grid gap-2">
-                                    <Label>Type</Label>
-                                    <Select
-                                        value={type}
-                                        onValueChange={(v) =>
-                                            setType(v as 'image' | 'video')
-                                        }
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Type" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="image">
-                                                Image
-                                            </SelectItem>
-                                            <SelectItem value="video">
-                                                Video
-                                            </SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-
-                                <div className="grid gap-2">
-                                    <Label htmlFor="category">Category</Label>
-                                    <Select
-                                        value={categoryId}
-                                        onValueChange={setCategoryId}
-                                    >
-                                        <SelectTrigger id="category">
-                                            <SelectValue placeholder="None" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {categories.map((cat) => (
-                                                <SelectItem
-                                                    key={cat.id}
-                                                    value={String(cat.id)}
-                                                >
-                                                    {cat.name}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-
-                                <div className="grid gap-2">
-                                    <Label htmlFor="cost">Cost (coins)</Label>
+                                    <Label htmlFor="name">Template name</Label>
                                     <Input
-                                        id="cost"
-                                        type="number"
-                                        min={0}
-                                        value={cost}
+                                        id="name"
+                                        value={name}
                                         onChange={(e) =>
-                                            setCost(e.target.value)
+                                            setName(e.target.value)
+                                        }
+                                        required
+                                    />
+                                    <InputError message={errors.name} />
+                                </div>
+
+                                <div className="grid gap-2">
+                                    <Label htmlFor="description">
+                                        Description
+                                    </Label>
+                                    <Textarea
+                                        id="description"
+                                        value={description}
+                                        onChange={(e) =>
+                                            setDescription(e.target.value)
+                                        }
+                                        rows={2}
+                                    />
+                                </div>
+
+                                <div className="grid gap-4 sm:grid-cols-3">
+                                    <div className="grid gap-2">
+                                        <Label>Type</Label>
+                                        <Select
+                                            value={type}
+                                            onValueChange={(v) =>
+                                                setType(v as 'image' | 'video')
+                                            }
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Type" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="image">
+                                                    Image
+                                                </SelectItem>
+                                                <SelectItem value="video">
+                                                    Video
+                                                </SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="category">
+                                            Category
+                                        </Label>
+                                        <Select
+                                            value={categoryId}
+                                            onValueChange={setCategoryId}
+                                        >
+                                            <SelectTrigger id="category">
+                                                <SelectValue placeholder="None" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {categories.map((cat) => (
+                                                    <SelectItem
+                                                        key={cat.id}
+                                                        value={String(cat.id)}
+                                                    >
+                                                        {cat.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="cost">
+                                            Cost (coins)
+                                        </Label>
+                                        <Input
+                                            id="cost"
+                                            type="number"
+                                            min={0}
+                                            value={cost}
+                                            onChange={(e) =>
+                                                setCost(e.target.value)
+                                            }
+                                        />
+                                        <InputError message={errors.cost} />
+                                    </div>
+                                </div>
+
+                                <div className="grid gap-2">
+                                    <Label htmlFor="file">
+                                        Replace file (optional, max 50 MB)
+                                    </Label>
+                                    <Input
+                                        id="file"
+                                        type="file"
+                                        accept={
+                                            type === 'image'
+                                                ? 'image/*'
+                                                : 'video/*'
+                                        }
+                                        onChange={(e) =>
+                                            setFile(e.target.files?.[0] ?? null)
                                         }
                                     />
-                                    <InputError message={errors.cost} />
-                                </div>
-                            </div>
-
-                            <div className="grid gap-2">
-                                <Label htmlFor="file">
-                                    Replace file (optional, max 50 MB)
-                                </Label>
-                                <Input
-                                    id="file"
-                                    type="file"
-                                    accept={
-                                        type === 'image' ? 'image/*' : 'video/*'
-                                    }
-                                    onChange={(e) =>
-                                        setFile(e.target.files?.[0] ?? null)
-                                    }
-                                />
-                                <p className="text-xs text-muted-foreground">
-                                    Current: {template.file_path}
-                                </p>
-                                <InputError message={errors.file} />
-                            </div>
-
-                            <div className="grid gap-2">
-                                <Label htmlFor="thumbnail">
-                                    Replace thumbnail (optional, max 5 MB)
-                                </Label>
-                                <Input
-                                    id="thumbnail"
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={(e) =>
-                                        setThumbnail(
-                                            e.target.files?.[0] ?? null,
-                                        )
-                                    }
-                                />
-                                <InputError message={errors.thumbnail} />
-                            </div>
-
-                            <div className="grid gap-2">
-                                <Label htmlFor="model">
-                                    Segmind model (optional)
-                                </Label>
-                                <Input
-                                    id="model"
-                                    value={model}
-                                    onChange={(e) => setModel(e.target.value)}
-                                    placeholder="e.g. segmind/face-swap-model"
-                                />
-                            </div>
-
-                            <div className="grid gap-2">
-                                <Label>Tags</Label>
-                                <div className="flex flex-wrap gap-2">
-                                    {tags.map((tag) => (
-                                        <label
-                                            key={tag.id}
-                                            className="flex cursor-pointer items-center gap-2 rounded border px-3 py-1.5 text-sm"
-                                        >
-                                            <Checkbox
-                                                checked={selectedTags.includes(
-                                                    tag.id,
-                                                )}
-                                                onCheckedChange={() =>
-                                                    toggleTag(tag.id)
-                                                }
-                                            />
-                                            <span>{tag.name}</span>
-                                        </label>
-                                    ))}
-                                </div>
-                            </div>
-
-                            <div className="flex items-center justify-between rounded-lg border p-4">
-                                <div>
-                                    <Label htmlFor="is-active">Active</Label>
-                                    <p className="text-sm text-muted-foreground">
-                                        Hidden templates are not offered to
-                                        customers.
+                                    <p className="text-xs text-muted-foreground">
+                                        Current: {template.file_path}
                                     </p>
+                                    <InputError message={errors.file} />
                                 </div>
-                                <Switch
-                                    id="is-active"
-                                    checked={isActive}
-                                    onCheckedChange={setIsActive}
-                                />
+
+                                <div className="grid gap-2">
+                                    <Label htmlFor="thumbnail">
+                                        Replace thumbnail (optional, max 5 MB)
+                                    </Label>
+                                    <Input
+                                        id="thumbnail"
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={(e) =>
+                                            setThumbnail(
+                                                e.target.files?.[0] ?? null,
+                                            )
+                                        }
+                                    />
+                                    <InputError message={errors.thumbnail} />
+                                </div>
+
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="sortOrder">
+                                            Sort order
+                                        </Label>
+                                        <Input
+                                            id="sortOrder"
+                                            type="number"
+                                            value={sortOrder}
+                                            onChange={(e) =>
+                                                setSortOrder(e.target.value)
+                                            }
+                                        />
+                                        <InputError
+                                            message={errors.sort_order}
+                                        />
+                                    </div>
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="seed">
+                                            Seed (optional)
+                                        </Label>
+                                        <Input
+                                            id="seed"
+                                            type="number"
+                                            value={seed}
+                                            onChange={(e) =>
+                                                setSeed(e.target.value)
+                                            }
+                                        />
+                                        <InputError message={errors.seed} />
+                                    </div>
+                                </div>
+
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="aspectRatio">
+                                            Aspect Ratio
+                                        </Label>
+                                        <Input
+                                            id="aspectRatio"
+                                            value={aspectRatio}
+                                            onChange={(e) =>
+                                                setAspectRatio(e.target.value)
+                                            }
+                                            placeholder="e.g. 16:9"
+                                        />
+                                        <InputError
+                                            message={errors.aspect_ratio}
+                                        />
+                                    </div>
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="resolution">
+                                            Resolution
+                                        </Label>
+                                        <Input
+                                            id="resolution"
+                                            value={resolution}
+                                            onChange={(e) =>
+                                                setResolution(e.target.value)
+                                            }
+                                            placeholder="e.g. 1080p"
+                                        />
+                                        <InputError
+                                            message={errors.resolution}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="grid gap-2">
+                                    <Label htmlFor="prompt">Prompt</Label>
+                                    <Textarea
+                                        id="prompt"
+                                        value={prompt}
+                                        onChange={(e) =>
+                                            setPrompt(e.target.value)
+                                        }
+                                        rows={3}
+                                    />
+                                    <InputError message={errors.prompt} />
+                                </div>
+
+                                <div className="grid gap-2">
+                                    <Label htmlFor="negativePrompt">
+                                        Negative Prompt
+                                    </Label>
+                                    <Textarea
+                                        id="negativePrompt"
+                                        value={negativePrompt}
+                                        onChange={(e) =>
+                                            setNegativePrompt(e.target.value)
+                                        }
+                                        rows={2}
+                                    />
+                                    <InputError
+                                        message={errors.negative_prompt}
+                                    />
+                                </div>
                             </div>
 
-                            <AnimatedButton type="submit" disabled={processing}>
-                                {processing ? 'Saving...' : 'Save Changes'}
-                            </AnimatedButton>
+                            <div className="space-y-6">
+                                <div className="grid gap-2">
+                                    <Label htmlFor="model">
+                                        Model (optional)
+                                    </Label>
+                                    <Input
+                                        id="model"
+                                        value={model}
+                                        onChange={(e) =>
+                                            setModel(e.target.value)
+                                        }
+                                        placeholder="e.g. segmind/face-swap-model"
+                                    />
+                                </div>
+
+                                <div className="grid gap-2">
+                                    <Label>Tags</Label>
+                                    <div className="flex flex-wrap gap-2">
+                                        {tags.map((tag) => (
+                                            <label
+                                                key={tag.id}
+                                                className="flex cursor-pointer items-center gap-2 rounded border px-3 py-1.5 text-sm"
+                                            >
+                                                <Checkbox
+                                                    checked={selectedTags.includes(
+                                                        tag.id,
+                                                    )}
+                                                    onCheckedChange={() =>
+                                                        toggleTag(tag.id)
+                                                    }
+                                                />
+                                                <span>{tag.name}</span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center justify-between rounded-lg border p-4">
+                                    <div>
+                                        <Label htmlFor="is-active">
+                                            Active
+                                        </Label>
+                                        <p className="text-sm text-muted-foreground">
+                                            Hidden templates are not offered to
+                                            customers.
+                                        </p>
+                                    </div>
+                                    <Switch
+                                        id="is-active"
+                                        checked={isActive}
+                                        onCheckedChange={setIsActive}
+                                    />
+                                </div>
+
+                                <AnimatedButton
+                                    type="submit"
+                                    disabled={processing}
+                                >
+                                    {processing ? 'Saving...' : 'Save Changes'}
+                                </AnimatedButton>
+                            </div>
                         </form>
                     </CardContent>
                 </AnimatedCard>

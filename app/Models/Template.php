@@ -22,10 +22,16 @@ use Illuminate\Support\Facades\Storage;
  * @property string|null $model
  * @property int $cost
  * @property bool $is_active
+ * @property int $sort_order
+ * @property string|null $prompt
+ * @property string|null $negative_prompt
+ * @property string|null $aspect_ratio
+ * @property string|null $resolution
+ * @property string|null $seed
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['category_id', 'slug', 'name', 'description', 'type', 'file_path', 'thumbnail_path', 'model', 'cost', 'is_active'])]
+#[Fillable(['category_id', 'slug', 'name', 'description', 'type', 'file_path', 'thumbnail_path', 'model', 'cost', 'is_active', 'sort_order', 'prompt', 'negative_prompt', 'aspect_ratio', 'resolution', 'seed'])]
 class Template extends Model
 {
     use HasAutoSlug;

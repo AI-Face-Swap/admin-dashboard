@@ -64,5 +64,6 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'customer.not-banned'])->group(
     Route::post('ai/images', [AIImageGenerationController::class, 'store'])->middleware('throttle:20,1');
     Route::post('ai/image-to-video', [AIImageToVideoController::class, 'store'])->middleware('throttle:10,1');
     Route::get('ai/generations/{generation}', [AIGenerationStatusController::class, 'show']);
+    Route::delete('ai/generations/{generation}', [AIGenerationStatusController::class, 'destroy']);
     Route::get('customer/generations', [CustomerGenerationController::class, 'index']);
 });

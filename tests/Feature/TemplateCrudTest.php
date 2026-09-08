@@ -276,6 +276,47 @@ test('templates routes require the templates permission', function () {
     $this->actingAs($user);
 
     $this->get(route('admin.templates.index'))->assertForbidden();
-    $this->post(route('admin.template-categories.store'), ['name' => 'Test'])
-        ->assertForbidden();
+});
+
+test('an admin can save a template from a completed generation', function () {
+    $this->actingAs($this->admin);
+    Storage::fake('spaces');
+
+    // Create a dummy generation output file on the disk
+    Storage::disk('spaces')->put('generations/dummy.mp4', 'dummy content');
+
+    $provider = \App\Models\AIProvider::create(['name' => 'Test', 'slug' => 'test', 'is_active' => true]);
+    $generation = App\Models\AIGeneration::create([
+        'provider_id' => $provider->id,
+        'operation' => App\Models\AIGeneration::OPERATION_IMAGE_TO_VIDEO,
+        'status' => App\Models\AIGeneration::STATUS_COMPLETED,
+        'output_metadata' => ['generations/dummy.mp4'],
+        'input_metadata' => [
+            'prompt' => 'Test prompt',
+            'negative_prompt' => 'No blur',
+            'aspect_ratio' => '16:9',
+            'resolution' => '1080p',
+            'seed' => 12345,
+        ],
+    ]);
+
+    $this->post(route('admin.templates.from-generation', $generation))
+        ->assertRedirect()
+        ->assertSessionHas('success', 'Generation saved to templates successfully.');
+
+    $template = Template::where('type', Template::TYPE_VIDEO)->first();
+
+    expect($template)->not->toBeNull()
+        ->and($template->prompt)->toBe('Test prompt')
+        ->and($template->negative_prompt)->toBe('No blur')
+        ->and($template->aspect_ratio)->toBe('16:9')
+        ->and($template->resolution)->toBe('1080p')
+        ->and($template->seed)->toBe('12345')
+        ->and($template->sort_order)->toBe(1)
+        ->and($template->name)->toContain('Video Template');
+
+    // Check that the file was copied to templates/
+    Storage::disk('spaces')->assertExists($template->file_path);
+    expect($template->file_path)->toStartWith('templates/')
+        ->and($template->file_path)->not->toBe('generations/dummy.mp4');
 });

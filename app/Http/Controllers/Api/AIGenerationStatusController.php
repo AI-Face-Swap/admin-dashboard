@@ -5,6 +5,10 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\AIGeneration;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use App\Models\Customer;
+use App\Models\User;
 
 class AIGenerationStatusController extends Controller
 {
@@ -49,5 +53,48 @@ class AIGenerationStatusController extends Controller
             'created_at' => $generation->created_at,
             'updated_at' => $generation->updated_at,
         ]);
+    }
+
+    /**
+     * Delete an AI generation and its stored output file.
+     *
+     * Customers can delete their own generations.
+     * Admins can delete any generation.
+     */
+    public function destroy(AIGeneration $generation, Request $request)
+    {
+        $user = $request->user();
+        
+        $isOwner = $user instanceof Customer && $generation->customer_id === $user->id;
+        $isAdmin = $user instanceof User; // Assuming User model is the Admin model
+
+        if (!$isOwner && !$isAdmin) {
+            abort(403, 'Unauthorized to delete this generation.');
+        }
+
+        // Delete output files from DO Spaces if they exist
+        if (!empty($generation->output_metadata) && is_array($generation->output_metadata)) {
+            foreach ($generation->output_metadata as $sourceUrl) {
+                if (is_string($sourceUrl)) {
+                    if (filter_var($sourceUrl, FILTER_VALIDATE_URL)) {
+                        $sourcePath = ltrim(parse_url($sourceUrl, PHP_URL_PATH), '/');
+                    } else {
+                        $sourcePath = ltrim($sourceUrl, '/');
+                    }
+
+                    if (Storage::disk('spaces')->exists($sourcePath)) {
+                        Storage::disk('spaces')->delete($sourcePath);
+                    }
+                }
+            }
+        }
+
+        $generation->delete();
+
+                if ($request->wantsJson() && !$request->hasHeader('X-Inertia')) {
+            return response()->json(['message' => 'Generation deleted successfully.']);
+        }
+        
+        return back()->with('success', 'Generation deleted successfully.');
     }
 }

@@ -338,8 +338,24 @@ function GenerationDetailModal({
                 )}
 
                 {/* Timestamps */}
-                <div className="text-xs text-muted-foreground">
-                    Created: {new Date(generation.created_at).toLocaleString()}
+                <div className="flex items-center justify-between mt-6 pt-4 border-t">
+                    <div className="text-xs text-muted-foreground">
+                        Created: {new Date(generation.created_at).toLocaleString()}
+                    </div>
+                    <Button 
+                        variant="destructive" 
+                        size="sm"
+                        onClick={() => {
+                            if (confirm('Are you sure you want to delete this generation and its output file?')) {
+                                router.delete(`/api/v1/ai/generations/${generation.id}`, {
+                                    preserveScroll: true,
+                                    onSuccess: () => onClose(),
+                                });
+                            }
+                        }}
+                    >
+                        Delete
+                    </Button>
                 </div>
             </div>
         </div>
@@ -1257,6 +1273,8 @@ function ImageToVideo() {
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [imageUrl, setImageUrl] = useState('');
+    const [model, setModel] = useState('kling-o1-reference-image-to-video');
+    const [aspectRatio, setAspectRatio] = useState('16:9');
     const [resolution, setResolution] = useState('720p');
     const [promptExtend, setPromptExtend] = useState(true);
     const [seed, setSeed] = useState('');
@@ -1378,6 +1396,8 @@ function ImageToVideo() {
         }
 
         form.append('resolution', resolution);
+        form.append('model', model);
+        form.append('aspect_ratio', aspectRatio);
         form.append('prompt_extend', String(promptExtend));
 
         if (seed) {
@@ -1489,14 +1509,46 @@ function ImageToVideo() {
 
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
+                            <Label>Model</Label>
+                            <Select value={model} onValueChange={setModel}>
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="kling-o1-reference-image-to-video">Kling (Default)</SelectItem>
+                                    <SelectItem value="wan2.7-r2v">Wan 2.7 R2V</SelectItem>
+                                    <SelectItem value="seedance-2.5">Seedance 2.5</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Aspect Ratio</Label>
+                            <Select value={aspectRatio} onValueChange={setAspectRatio}>
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="16:9">16:9 (Landscape)</SelectItem>
+                                    <SelectItem value="9:16">9:16 (Portrait)</SelectItem>
+                                    <SelectItem value="1:1">1:1 (Square)</SelectItem>
+                                    <SelectItem value="4:3">4:3</SelectItem>
+                                    <SelectItem value="3:4">3:4</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
                             <Label>Resolution</Label>
                             <Select value={resolution} onValueChange={setResolution}>
                                 <SelectTrigger>
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="480p">480p ($0.075)</SelectItem>
-                                    <SelectItem value="720p">720p ($0.18)</SelectItem>
+                                    <SelectItem value="480p">480p</SelectItem>
+                                    <SelectItem value="720p">720p</SelectItem>
+                                    <SelectItem value="1080p">1080p</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -1585,6 +1637,29 @@ function ImageToVideo() {
                                     {result.generation.duration_ms ?? '—'} ms
                                 </Badge>
                             </div>
+                            
+                            <div className="pt-2 flex items-center gap-2">
+                                <Button
+                                    variant="secondary"
+                                    onClick={() => router.post(`/admin/templates/from-generation/${result.generation.id}`, {}, { preserveScroll: true })}
+                                >
+                                    Save to Templates
+                                </Button>
+                                <Button
+                                    variant="destructive"
+                                    onClick={() => {
+                                        if (confirm('Are you sure you want to delete this generation and its output file?')) {
+                                            router.delete(`/api/v1/ai/generations/${result.generation.id}`, {
+                                                preserveScroll: true,
+                                                onSuccess: () => setResult(null),
+                                            });
+                                        }
+                                    }}
+                                >
+                                    Delete
+                                </Button>
+                            </div>
+
                         </div>
                     )}
                 </CardContent>

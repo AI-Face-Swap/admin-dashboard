@@ -245,7 +245,7 @@ const ENDPOINT_TEMPLATES: EndpointTemplate[] = [
         method: 'POST',
         url: '/api/v1/ai/image-to-video',
         bodyType: 'json',
-        body: '{\n  "prompt": "Slow cinematic pan around the subject, soft lighting, dramatic atmosphere",\n  "image_url": "https://example.com/input-image.jpg",\n  "negative_prompt": "blurry, low quality, text overlays",\n  "resolution": "720p",\n  "prompt_extend": true\n}',
+        body: '{\n  "prompt": "Slow cinematic pan around the subject, soft lighting, dramatic atmosphere",\n  "image_url": "https://example.com/input-image.jpg",\n  "negative_prompt": "blurry, low quality, text overlays",\n  "resolution": "1080p",\n  "model": "kling-o1-reference-image-to-video",\n  "aspect_ratio": "16:9",\n  "prompt_extend": true\n}',
         headers: [
             { key: 'Content-Type', value: 'application/json' },
             { key: 'Accept', value: 'application/json' },
@@ -507,7 +507,9 @@ export default function APIPlayground() {
                     // Image-to-video: prompt + image file
                     setFormDataFields([
                         { key: 'prompt', value: 'Slow cinematic pan around the subject' },
-                        { key: 'resolution', value: '720p' },
+                        { key: 'resolution', value: '1080p' },
+                        { key: 'model', value: 'kling-o1-reference-image-to-video' },
+                        { key: 'aspect_ratio', value: '16:9' },
                     ]);
                     setFormFileFields([{ key: 'image', file: null }]);
                 } else if (isVideoFaceSwap) {
