@@ -35,7 +35,7 @@ class TemplateController extends Controller
             ->when($validated['category'] ?? null, fn ($query, $slug) => $query
                 ->whereHas('category', fn ($cat) => $cat->where('slug', $slug)))
             ->when($validated['type'] ?? null, fn ($query, $type) => $query->where('type', $type))
-            ->latest()
+            ->orderBy('sort_order', 'asc')
             ->paginate($validated['per_page'] ?? 12)
             ->withQueryString();
 
