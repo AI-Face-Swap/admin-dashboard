@@ -58,7 +58,7 @@ jobs:
           ssh -i ~/.ssh/deploy_key \
               -o StrictHostKeyChecking=accept-new \
               "$SSH_USER@$SSH_HOST" \
-              'cd /var/www/htut-ai && \
+              'cd /var/www/htut-ai-backend && \
                git pull --ff-only && \
                IMAGE_TAG=${{ needs.build.outputs.tag }} \
                  docker compose --env-file .env.production \
