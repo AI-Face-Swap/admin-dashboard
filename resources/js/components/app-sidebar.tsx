@@ -13,6 +13,9 @@ import {
     TerminalSquare,
     UserCheck,
     Users,
+    MonitorPlay,
+    Blocks,
+    Handshake,
 } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
@@ -59,6 +62,24 @@ const mainNavItems: NavItem[] = [
         href: '/admin/sliders',
         icon: SlidersHorizontal,
         permission: 'templates.view',
+    },
+    {
+        title: 'Home Showcases',
+        href: '/admin/home-showcases',
+        icon: MonitorPlay,
+        permission: 'settings.manage',
+    },
+    {
+        title: 'Home Features',
+        href: '/admin/home-features',
+        icon: Blocks,
+        permission: 'settings.manage',
+    },
+    {
+        title: 'Partners',
+        href: '/admin/partners',
+        icon: Handshake,
+        permission: 'settings.manage',
     },
     {
         title: 'Providers',

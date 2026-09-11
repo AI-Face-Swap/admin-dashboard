@@ -22,8 +22,11 @@ class SettingController extends Controller
             // Note: face_swap and video_face_swap use template.cost, not global setting
         ];
 
+        $footerSettings = Setting::group('footer');
+        
         return Inertia::render('admin/settings/index', [
             'coinCosts' => $coinCosts,
+            'footerSettings' => $footerSettings,
         ]);
     }
 
@@ -36,11 +39,28 @@ class SettingController extends Controller
             'coin_costs.image_generation' => 'required|integer|min:0|max:1000',
             'coin_costs.image_to_video_480p' => 'required|integer|min:0|max:1000',
             'coin_costs.image_to_video_720p' => 'required|integer|min:0|max:1000',
+            
+            'footer_settings.about_text' => 'nullable|string',
+            'footer_settings.contact_email' => 'nullable|string',
+            'footer_settings.social_facebook' => 'nullable|string',
+            'footer_settings.social_twitter' => 'nullable|string',
+            'footer_settings.social_discord' => 'nullable|string',
+            'footer_settings.social_youtube' => 'nullable|string',
+            'footer_settings.link_terms' => 'nullable|string',
+            'footer_settings.link_privacy' => 'nullable|string',
+            'footer_settings.link_faq' => 'nullable|string',
+            'footer_settings.copyright_text' => 'nullable|string',
         ]);
 
         Setting::set('ai', 'coin_cost_image_generation', $validated['coin_costs']['image_generation']);
         Setting::set('ai', 'coin_cost_image_to_video_480p', $validated['coin_costs']['image_to_video_480p']);
         Setting::set('ai', 'coin_cost_image_to_video_720p', $validated['coin_costs']['image_to_video_720p']);
+
+        if (isset($validated['footer_settings'])) {
+            foreach ($validated['footer_settings'] as $key => $value) {
+                Setting::set('footer', $key, $value);
+            }
+        }
 
         // Clear config cache so changes take effect immediately
         if (function_exists('config_cache')) {
@@ -55,7 +75,8 @@ class SettingController extends Controller
 
         return Inertia::render('admin/settings/index', [
             'coinCosts' => $coinCosts,
-            'flash' => ['success' => 'Coin costs updated successfully.'],
+            'footerSettings' => Setting::group('footer'),
+            'flash' => ['success' => 'Settings updated successfully.'],
         ]);
     }
 }

@@ -53,6 +53,12 @@ Route::prefix('v1')->group(function () {
     Route::get('templates/{slug}', [TemplateController::class, 'show']);
     Route::get('template-categories', [TemplateCategoryController::class, 'index']);
     Route::get('coin-costs', [CoinCostController::class, 'index']);
+
+    // Home Page Dynamic Content
+    Route::get('home-showcases', [\App\Http\Controllers\Api\HomePageController::class, 'showcases']);
+    Route::get('home-features', [\App\Http\Controllers\Api\HomePageController::class, 'features']);
+    Route::get('partners', [\App\Http\Controllers\Api\HomePageController::class, 'partners']);
+    Route::get('settings/footer', [\App\Http\Controllers\Api\HomePageController::class, 'footerSettings']);
 });
 
 Route::prefix('v1')->middleware(['auth:sanctum', 'customer.not-banned'])->group(function () {
