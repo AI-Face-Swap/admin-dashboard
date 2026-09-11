@@ -42,4 +42,12 @@ interface AIProviderInterface
      * @throws AIGenerationFailedException
      */
     public function videoFaceSwap(GenerationRequest $request): AIResponse;
+
+    /**
+     * Generate a video from an image.
+     *
+     * @throws UnsupportedOperationException
+     * @throws AIGenerationFailedException
+     */
+    public function imageToVideo(GenerationRequest $request): AIResponse;
 }

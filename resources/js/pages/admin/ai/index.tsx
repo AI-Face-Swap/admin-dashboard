@@ -338,19 +338,27 @@ function GenerationDetailModal({
                 )}
 
                 {/* Timestamps */}
-                <div className="flex items-center justify-between mt-6 pt-4 border-t">
+                <div className="mt-6 flex items-center justify-between border-t pt-4">
                     <div className="text-xs text-muted-foreground">
-                        Created: {new Date(generation.created_at).toLocaleString()}
+                        Created:{' '}
+                        {new Date(generation.created_at).toLocaleString()}
                     </div>
-                    <Button 
-                        variant="destructive" 
+                    <Button
+                        variant="destructive"
                         size="sm"
                         onClick={() => {
-                            if (confirm('Are you sure you want to delete this generation and its output file?')) {
-                                router.delete(`/api/v1/ai/generations/${generation.id}`, {
-                                    preserveScroll: true,
-                                    onSuccess: () => onClose(),
-                                });
+                            if (
+                                confirm(
+                                    'Are you sure you want to delete this generation and its output file?',
+                                )
+                            ) {
+                                router.delete(
+                                    `/api/v1/ai/generations/${generation.id}`,
+                                    {
+                                        preserveScroll: true,
+                                        onSuccess: () => onClose(),
+                                    },
+                                );
                             }
                         }}
                     >
@@ -613,11 +621,10 @@ function ImageFaceSwap({ templates }: { templates: Template[] }) {
                     {result && (
                         <div className="space-y-4">
                             <div className="grid gap-4 sm:grid-cols-2">
-                                {result.generation.output.map((url, index) => (
+                                {result.generation.output.map((url) => (
                                     <img
                                         key={url}
                                         src={url}
-                                        alt={`Result ${index + 1}`}
                                         className="w-full rounded-lg border object-contain"
                                     />
                                 ))}
@@ -1024,17 +1031,14 @@ function VideoFaceSwap({ templates }: { templates: Template[] }) {
                         <div className="space-y-4">
                             {result.generation.output.length > 0 ? (
                                 <div className="grid gap-4">
-                                    {result.generation.output.map(
-                                        (url, index) => (
-                                            <video
-                                                key={url}
-                                                src={url}
-                                                controls
-                                                className="w-full rounded-lg border"
-                                                alt={`Result ${index + 1}`}
-                                            />
-                                        ),
-                                    )}
+                                    {result.generation.output.map((url) => (
+                                        <video
+                                            key={url}
+                                            src={url}
+                                            controls
+                                            className="w-full rounded-lg border"
+                                        />
+                                    ))}
                                 </div>
                             ) : (
                                 <div className="flex h-40 items-center justify-center rounded-lg bg-muted/50 text-sm text-muted-foreground">
@@ -1171,24 +1175,39 @@ function ImageGeneration() {
                                     <SelectContent>
                                         <SelectItem value="512">512</SelectItem>
                                         <SelectItem value="768">768</SelectItem>
-                                        <SelectItem value="1024">1024</SelectItem>
-                                        <SelectItem value="1536">1536</SelectItem>
-                                        <SelectItem value="2048">2048</SelectItem>
+                                        <SelectItem value="1024">
+                                            1024
+                                        </SelectItem>
+                                        <SelectItem value="1536">
+                                            1536
+                                        </SelectItem>
+                                        <SelectItem value="2048">
+                                            2048
+                                        </SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
                             <div className="space-y-2">
                                 <Label>Height</Label>
-                                <Select value={height} onValueChange={setHeight}>
+                                <Select
+                                    value={height}
+                                    onValueChange={setHeight}
+                                >
                                     <SelectTrigger>
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="512">512</SelectItem>
                                         <SelectItem value="768">768</SelectItem>
-                                        <SelectItem value="1024">1024</SelectItem>
-                                        <SelectItem value="1536">1536</SelectItem>
-                                        <SelectItem value="2048">2048</SelectItem>
+                                        <SelectItem value="1024">
+                                            1024
+                                        </SelectItem>
+                                        <SelectItem value="1536">
+                                            1536
+                                        </SelectItem>
+                                        <SelectItem value="2048">
+                                            2048
+                                        </SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -1229,16 +1248,13 @@ function ImageGeneration() {
                         <div className="space-y-4">
                             {result.generation.output.length > 0 ? (
                                 <div className="grid gap-4">
-                                    {result.generation.output.map(
-                                        (url, index) => (
-                                            <img
-                                                key={url}
-                                                src={url}
-                                                alt={`Generated ${index + 1}`}
-                                                className="w-full rounded-lg border"
-                                            />
-                                        ),
-                                    )}
+                                    {result.generation.output.map((url) => (
+                                        <img
+                                            key={url}
+                                            src={url}
+                                            className="w-full rounded-lg border"
+                                        />
+                                    ))}
                                 </div>
                             ) : (
                                 <div className="flex h-40 items-center justify-center rounded-lg bg-muted/50 text-sm text-muted-foreground">
@@ -1304,10 +1320,12 @@ function ImageToVideo() {
                 setError('Polling failed — check authentication.');
                 setProcessing(false);
                 setPolling(false);
+
                 if (pollRef.current) {
                     clearInterval(pollRef.current);
                     pollRef.current = null;
                 }
+
                 return;
             }
 
@@ -1330,16 +1348,19 @@ function ImageToVideo() {
                 setProcessing(false);
                 setPolling(false);
                 setGenerationId(null);
+
                 if (pollRef.current) {
                     clearInterval(pollRef.current);
                     pollRef.current = null;
                 }
+
                 router.reload({ only: ['generations'] });
             }
         } catch {
             setError('Polling failed — network error.');
             setProcessing(false);
             setPolling(false);
+
             if (pollRef.current) {
                 clearInterval(pollRef.current);
                 pollRef.current = null;
@@ -1353,6 +1374,7 @@ function ImageToVideo() {
                 pollStatus(generationId);
             }, 5000);
         }
+
         return () => {
             if (pollRef.current) {
                 clearInterval(pollRef.current);
@@ -1368,11 +1390,13 @@ function ImageToVideo() {
 
         if (imageMode === 'upload' && !imageFile) {
             setError('Upload an image first.');
+
             return;
         }
 
         if (imageMode === 'url' && !imageUrl.trim()) {
             setError('Enter an image URL.');
+
             return;
         }
 
@@ -1420,6 +1444,7 @@ function ImageToVideo() {
             if (!response.ok) {
                 setError(data.message || 'Generation failed.');
                 setProcessing(false);
+
                 return;
             }
 
@@ -1452,7 +1477,11 @@ function ImageToVideo() {
                             <div className="flex gap-1">
                                 <Button
                                     type="button"
-                                    variant={imageMode === 'upload' ? 'default' : 'outline'}
+                                    variant={
+                                        imageMode === 'upload'
+                                            ? 'default'
+                                            : 'outline'
+                                    }
                                     size="sm"
                                     onClick={() => setImageMode('upload')}
                                 >
@@ -1460,7 +1489,11 @@ function ImageToVideo() {
                                 </Button>
                                 <Button
                                     type="button"
-                                    variant={imageMode === 'url' ? 'default' : 'outline'}
+                                    variant={
+                                        imageMode === 'url'
+                                            ? 'default'
+                                            : 'outline'
+                                    }
                                     size="sm"
                                     onClick={() => setImageMode('url')}
                                 >
@@ -1476,14 +1509,24 @@ function ImageToVideo() {
                                     type="file"
                                     accept="image/*"
                                     className="hidden"
-                                    onChange={(e) => onImageFileChange(e.target.files?.[0] ?? null)}
+                                    onChange={(e) =>
+                                        onImageFileChange(
+                                            e.target.files?.[0] ?? null,
+                                        )
+                                    }
                                 />
                                 <div
                                     className="flex h-40 cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed text-sm text-muted-foreground"
-                                    onClick={() => fileInputRef.current?.click()}
+                                    onClick={() =>
+                                        fileInputRef.current?.click()
+                                    }
                                 >
                                     {imagePreview ? (
-                                        <img src={imagePreview} alt="Preview" className="size-full object-contain" />
+                                        <img
+                                            src={imagePreview}
+                                            alt="Preview"
+                                            className="size-full object-contain"
+                                        />
                                     ) : (
                                         'Click to upload the input image'
                                     )}
@@ -1515,22 +1558,37 @@ function ImageToVideo() {
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="kling-o1-reference-image-to-video">Kling (Default)</SelectItem>
-                                    <SelectItem value="wan2.7-r2v">Wan 2.7 R2V</SelectItem>
-                                    <SelectItem value="seedance-2.5">Seedance 2.5</SelectItem>
+                                    <SelectItem value="kling-o1-reference-image-to-video">
+                                        Kling (Default)
+                                    </SelectItem>
+                                    <SelectItem value="wan2.7-r2v">
+                                        Wan 2.7 R2V
+                                    </SelectItem>
+                                    <SelectItem value="seedance-2.5">
+                                        Seedance 2.5
+                                    </SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
                         <div className="space-y-2">
                             <Label>Aspect Ratio</Label>
-                            <Select value={aspectRatio} onValueChange={setAspectRatio}>
+                            <Select
+                                value={aspectRatio}
+                                onValueChange={setAspectRatio}
+                            >
                                 <SelectTrigger>
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="16:9">16:9 (Landscape)</SelectItem>
-                                    <SelectItem value="9:16">9:16 (Portrait)</SelectItem>
-                                    <SelectItem value="1:1">1:1 (Square)</SelectItem>
+                                    <SelectItem value="16:9">
+                                        16:9 (Landscape)
+                                    </SelectItem>
+                                    <SelectItem value="9:16">
+                                        9:16 (Portrait)
+                                    </SelectItem>
+                                    <SelectItem value="1:1">
+                                        1:1 (Square)
+                                    </SelectItem>
                                     <SelectItem value="4:3">4:3</SelectItem>
                                     <SelectItem value="3:4">3:4</SelectItem>
                                 </SelectContent>
@@ -1541,7 +1599,10 @@ function ImageToVideo() {
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label>Resolution</Label>
-                            <Select value={resolution} onValueChange={setResolution}>
+                            <Select
+                                value={resolution}
+                                onValueChange={setResolution}
+                            >
                                 <SelectTrigger>
                                     <SelectValue />
                                 </SelectTrigger>
@@ -1571,7 +1632,9 @@ function ImageToVideo() {
                             onChange={(e) => setPromptExtend(e.target.checked)}
                             className="h-4 w-4"
                         />
-                        <Label htmlFor="promptExtend">Prompt Extend (auto-enhance)</Label>
+                        <Label htmlFor="promptExtend">
+                            Prompt Extend (auto-enhance)
+                        </Label>
                     </div>
 
                     {error && (
@@ -1585,7 +1648,9 @@ function ImageToVideo() {
                         disabled={processing || !prompt.trim()}
                         className="w-full"
                     >
-                        {processing ? 'Generating...' : 'Generate Video from Image'}
+                        {processing
+                            ? 'Generating...'
+                            : 'Generate Video from Image'}
                     </AnimatedButton>
                 </CardContent>
             </AnimatedCard>
@@ -1601,21 +1666,25 @@ function ImageToVideo() {
                     {processing && !result && (
                         <div className="flex h-64 flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
                             <div className="h-6 w-6 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                            <p>Video processing — this usually takes 1-3 minutes...</p>
-                            <p className="text-xs">Polling every 5 seconds for status updates.</p>
+                            <p>
+                                Video processing — this usually takes 1-3
+                                minutes...
+                            </p>
+                            <p className="text-xs">
+                                Polling every 5 seconds for status updates.
+                            </p>
                         </div>
                     )}
                     {result && (
                         <div className="space-y-4">
                             {result.generation.output.length > 0 ? (
                                 <div className="grid gap-4">
-                                    {result.generation.output.map((url, index) => (
+                                    {result.generation.output.map((url) => (
                                         <video
                                             key={url}
                                             src={url}
                                             controls
                                             className="w-full rounded-lg border"
-                                            alt={`Generated ${index + 1}`}
                                         />
                                     ))}
                                 </div>
@@ -1637,29 +1706,42 @@ function ImageToVideo() {
                                     {result.generation.duration_ms ?? '—'} ms
                                 </Badge>
                             </div>
-                            
-                            <div className="pt-2 flex items-center gap-2">
+
+                            <div className="flex items-center gap-2 pt-2">
                                 <Button
                                     variant="secondary"
-                                    onClick={() => router.post(`/admin/templates/from-generation/${result.generation.id}`, {}, { preserveScroll: true })}
+                                    onClick={() =>
+                                        router.post(
+                                            `/admin/templates/from-generation/${result.generation.id}`,
+                                            {},
+                                            { preserveScroll: true },
+                                        )
+                                    }
                                 >
                                     Save to Templates
                                 </Button>
                                 <Button
                                     variant="destructive"
                                     onClick={() => {
-                                        if (confirm('Are you sure you want to delete this generation and its output file?')) {
-                                            router.delete(`/api/v1/ai/generations/${result.generation.id}`, {
-                                                preserveScroll: true,
-                                                onSuccess: () => setResult(null),
-                                            });
+                                        if (
+                                            confirm(
+                                                'Are you sure you want to delete this generation and its output file?',
+                                            )
+                                        ) {
+                                            router.delete(
+                                                `/api/v1/ai/generations/${result.generation.id}`,
+                                                {
+                                                    preserveScroll: true,
+                                                    onSuccess: () =>
+                                                        setResult(null),
+                                                },
+                                            );
                                         }
                                     }}
                                 >
                                     Delete
                                 </Button>
                             </div>
-
                         </div>
                     )}
                 </CardContent>

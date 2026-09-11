@@ -282,11 +282,11 @@ class ExampleDataSeeder extends Seeder
             }
         }
 
-        $this->command?->info('Example data seeded successfully!');
-        $this->command?->info('  • '.Customer::count().' customers');
-        $this->command?->info('  • '.Template::count().' templates');
-        $this->command?->info('  • '.TemplateCategory::count().' categories');
-        $this->command?->info('  • '.TemplateTag::count().' tags');
-        $this->command?->info('  • '.AIGeneration::count().' AI generations');
+        $this->command->info('Example data seeded successfully!');
+        $this->command->info('  • '.Customer::count().' customers');
+        $this->command->info('  • '.Template::count().' templates');
+        $this->command->info('  • '.TemplateCategory::count().' categories');
+        $this->command->info('  • '.TemplateTag::count().' tags');
+        $this->command->info('  • '.AIGeneration::count().' AI generations');
     }
 }

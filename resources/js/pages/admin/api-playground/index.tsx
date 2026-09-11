@@ -501,21 +501,31 @@ export default function APIPlayground() {
 
             if (template.bodyType === 'form-data') {
                 const isImageToVideo = template.url.includes('image-to-video');
-                const isVideoFaceSwap = template.url.includes('video-face-swap');
+                const isVideoFaceSwap =
+                    template.url.includes('video-face-swap');
 
                 if (isImageToVideo) {
                     // Image-to-video: prompt + image file
                     setFormDataFields([
-                        { key: 'prompt', value: 'Slow cinematic pan around the subject' },
+                        {
+                            key: 'prompt',
+                            value: 'Slow cinematic pan around the subject',
+                        },
                         { key: 'resolution', value: '1080p' },
-                        { key: 'model', value: 'kling-o1-reference-image-to-video' },
+                        {
+                            key: 'model',
+                            value: 'kling-o1-reference-image-to-video',
+                        },
                         { key: 'aspect_ratio', value: '16:9' },
                     ]);
                     setFormFileFields([{ key: 'image', file: null }]);
                 } else if (isVideoFaceSwap) {
                     // Video face-swap: template_slug + face image
                     setFormDataFields([
-                        { key: 'template_slug', value: 'your-video-template-slug' },
+                        {
+                            key: 'template_slug',
+                            value: 'your-video-template-slug',
+                        },
                     ]);
                     setFormFileFields([{ key: 'face_image', file: null }]);
                 } else {
@@ -707,7 +717,9 @@ export default function APIPlayground() {
             }
 
             saveToHistory({
-                id: (globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`),
+                id:
+                    globalThis.crypto?.randomUUID?.() ??
+                    `${Date.now()}-${Math.random().toString(36).slice(2)}`,
                 method,
                 url,
                 body:
@@ -1037,12 +1049,13 @@ export default function APIPlayground() {
                                     )}
                                     <Badge
                                         variant="outline"
-                                        className={`text-xs font-semibold uppercase tracking-wider ${GROUP_COLORS[group] ?? ''}`}
+                                        className={`text-xs font-semibold tracking-wider uppercase ${GROUP_COLORS[group] ?? ''}`}
                                     >
                                         {GROUP_LABELS[group] ?? group}
                                     </Badge>
                                     <span className="text-xs text-muted-foreground">
-                                        {templates.length} endpoint{templates.length !== 1 ? 's' : ''}
+                                        {templates.length} endpoint
+                                        {templates.length !== 1 ? 's' : ''}
                                     </span>
                                 </CollapsibleTrigger>
                                 <CollapsibleContent>

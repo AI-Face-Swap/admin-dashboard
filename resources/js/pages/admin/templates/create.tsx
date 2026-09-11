@@ -21,13 +21,19 @@ import admin from '@/routes/admin';
 
 type TemplateCategory = { id: number; name: string; slug: string };
 type TemplateTag = { id: number; name: string; slug: string };
+type AIModelOption = { id: number; provider_name: string; model_name: string };
+type GenerationType = { id: number; name: string; slug: string };
 
 export default function Create({
     categories,
     tags,
+    aiModels,
+    generationTypes,
 }: {
     categories: TemplateCategory[];
     tags: TemplateTag[];
+    aiModels: AIModelOption[];
+    generationTypes: GenerationType[];
 }) {
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
@@ -38,11 +44,13 @@ export default function Create({
     const [resolution, setResolution] = useState('');
     const [seed, setSeed] = useState('');
     const [categoryId, setCategoryId] = useState<string>('');
+    const [generationTypeId, setGenerationTypeId] = useState<string>('');
     const [type, setType] = useState<'image' | 'video'>('image');
     const [file, setFile] = useState<File | null>(null);
     const [thumbnail, setThumbnail] = useState<File | null>(null);
     const [cost, setCost] = useState('0');
-    const [model, setModel] = useState('');
+    const [model] = useState('');
+    const [aiModelId, setAiModelId] = useState<string>('');
     const [isActive, setIsActive] = useState(true);
     const [selectedTags, setSelectedTags] = useState<number[]>([]);
     const [errors, setErrors] = useState<Record<string, string>>({});
@@ -64,11 +72,13 @@ export default function Create({
                 name,
                 description,
                 category_id: categoryId || undefined,
+                generation_type_id: generationTypeId || undefined,
                 type,
                 cost: parseInt(cost, 10) || 0,
                 file,
                 thumbnail,
                 model,
+                ai_model_id: aiModelId ? parseInt(aiModelId, 10) : undefined,
                 is_active: isActive,
                 tags: selectedTags,
                 sort_order: parseInt(sortOrder, 10) || 1,
@@ -181,6 +191,30 @@ export default function Create({
                                                         value={String(cat.id)}
                                                     >
                                                         {cat.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="generationType">
+                                            Generation Type
+                                        </Label>
+                                        <Select
+                                            value={generationTypeId}
+                                            onValueChange={setGenerationTypeId}
+                                        >
+                                            <SelectTrigger id="generationType">
+                                                <SelectValue placeholder="None" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {generationTypes.map((gt) => (
+                                                    <SelectItem
+                                                        key={gt.id}
+                                                        value={String(gt.id)}
+                                                    >
+                                                        {gt.name}
                                                     </SelectItem>
                                                 ))}
                                             </SelectContent>
@@ -345,17 +379,45 @@ export default function Create({
                             <div className="space-y-6">
                                 <div className="grid gap-2">
                                     <Label htmlFor="model">
-                                        Model (optional)
+                                        AI Model (optional)
                                     </Label>
-                                    <Input
-                                        id="model"
-                                        value={model}
-                                        onChange={(e) =>
-                                            setModel(e.target.value)
-                                        }
-                                        placeholder="e.g. segmind/face-swap-model"
-                                    />
-                                    <InputError message={errors.model} />
+                                    {aiModels.length === 0 ? (
+                                        <p className="text-sm text-muted-foreground">
+                                            No AI models yet —{' '}
+                                            <a
+                                                href="/admin/ai-models"
+                                                className="underline"
+                                            >
+                                                create some first
+                                            </a>
+                                            .
+                                        </p>
+                                    ) : (
+                                        <Select
+                                            value={aiModelId}
+                                            onValueChange={setAiModelId}
+                                        >
+                                            <SelectTrigger id="model">
+                                                <SelectValue placeholder="None" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {aiModels.map((m) => (
+                                                    <SelectItem
+                                                        key={m.id}
+                                                        value={String(m.id)}
+                                                    >
+                                                        {m.provider_name} —{' '}
+                                                        {m.model_name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    )}
+                                    {errors.ai_model_id && (
+                                        <p className="text-sm text-destructive">
+                                            {errors.ai_model_id}
+                                        </p>
+                                    )}
                                 </div>
 
                                 <div className="grid gap-2">

@@ -51,22 +51,35 @@ export default function Index({ tags }: { tags: Tag[] }) {
                                     <TableHead>Tag</TableHead>
                                     <TableHead>Slug</TableHead>
                                     <TableHead>Templates</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
+                                    <TableHead className="text-right">
+                                        Actions
+                                    </TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {tags.map((tag) => (
                                     <TableRow key={tag.id}>
-                                        <TableCell className="font-medium">#{tag.name}</TableCell>
-                                        <TableCell className="font-mono text-xs">{tag.slug}</TableCell>
+                                        <TableCell className="font-medium">
+                                            #{tag.name}
+                                        </TableCell>
+                                        <TableCell className="font-mono text-xs">
+                                            {tag.slug}
+                                        </TableCell>
                                         <TableCell>
-                                            <Badge variant="outline">{tag.templates_count}</Badge>
+                                            <Badge variant="outline">
+                                                {tag.templates_count}
+                                            </Badge>
                                         </TableCell>
                                         <TableCell className="text-right">
                                             {can('templates.manage') && (
                                                 <div className="flex justify-end gap-2">
-                                                    <Link href={`/admin/template-tags/${tag.id}/edit`}>
-                                                        <AnimatedButton variant="outline" size="sm">
+                                                    <Link
+                                                        href={`/admin/template-tags/${tag.id}/edit`}
+                                                    >
+                                                        <AnimatedButton
+                                                            variant="outline"
+                                                            size="sm"
+                                                        >
                                                             Edit
                                                         </AnimatedButton>
                                                     </Link>
@@ -74,8 +87,14 @@ export default function Index({ tags }: { tags: Tag[] }) {
                                                         variant="destructive"
                                                         size="sm"
                                                         onClick={() => {
-                                                            if (confirm(`Delete tag "${tag.name}"?`)) {
-                                                                router.delete(`/admin/template-tags/${tag.id}`);
+                                                            if (
+                                                                confirm(
+                                                                    `Delete tag "${tag.name}"?`,
+                                                                )
+                                                            ) {
+                                                                router.delete(
+                                                                    `/admin/template-tags/${tag.id}`,
+                                                                );
                                                             }
                                                         }}
                                                     >

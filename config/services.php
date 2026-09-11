@@ -34,7 +34,7 @@ return [
 
     'apple' => [
         'client_id' => env('APPLE_CLIENT_ID'),
-        'client_ids' => array_filter(array_map('trim', explode(',', env('APPLE_CLIENT_IDS', env('APPLE_CLIENT_ID', ''))))),
+        'client_ids' => array_filter(array_map('trim', explode(',', (string) env('APPLE_CLIENT_IDS', env('APPLE_CLIENT_ID', ''))))),
         'redirect' => env('APPLE_REDIRECT_URI'),
     ],
 

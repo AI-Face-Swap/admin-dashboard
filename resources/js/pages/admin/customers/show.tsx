@@ -103,8 +103,8 @@ export default function Show({
 
     const handleAddCoins = () => {
         if (!coinAmount || parseInt(coinAmount) <= 0) {
-return;
-}
+            return;
+        }
 
         setCoinLoading(true);
 
@@ -123,7 +123,11 @@ return;
     };
 
     const handleBan = () => {
-        if (confirm(`Ban "${customer.name}"? They will not be able to login or make API requests.`)) {
+        if (
+            confirm(
+                `Ban "${customer.name}"? They will not be able to login or make API requests.`,
+            )
+        ) {
             router.patch(`/admin/customers/${customer.id}/ban`);
         }
     };
@@ -177,21 +181,39 @@ return;
                                     </div>
                                 )}
                                 <div>
-                                    <h3 className="text-lg font-semibold">{customer.name}</h3>
-                                    <p className="text-sm text-muted-foreground">{customer.email}</p>
+                                    <h3 className="text-lg font-semibold">
+                                        {customer.name}
+                                    </h3>
+                                    <p className="text-sm text-muted-foreground">
+                                        {customer.email}
+                                    </p>
                                 </div>
                             </div>
 
                             {/* Badges */}
                             <div className="flex flex-wrap gap-2">
-                                <Badge variant={customer.customer_type === 'premium' ? 'default' : 'secondary'}>
+                                <Badge
+                                    variant={
+                                        customer.customer_type === 'premium'
+                                            ? 'default'
+                                            : 'secondary'
+                                    }
+                                >
                                     {customer.customer_type}
                                 </Badge>
-                                <Badge variant={customer.is_banned ? 'destructive' : 'outline'}>
+                                <Badge
+                                    variant={
+                                        customer.is_banned
+                                            ? 'destructive'
+                                            : 'outline'
+                                    }
+                                >
                                     {customer.is_banned ? 'Banned' : 'Active'}
                                 </Badge>
                                 {customer.auth_provider && (
-                                    <Badge variant="outline">{customer.auth_provider}</Badge>
+                                    <Badge variant="outline">
+                                        {customer.auth_provider}
+                                    </Badge>
                                 )}
                             </div>
 
@@ -199,44 +221,75 @@ return;
                             <div className="space-y-2 text-sm">
                                 <div className="flex items-center gap-2">
                                     <Coins className="size-4 text-muted-foreground" />
-                                    <span>🪙 {customer.coins.toLocaleString()} coins</span>
+                                    <span>
+                                        🪙 {customer.coins.toLocaleString()}{' '}
+                                        coins
+                                    </span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <Mail className="size-4 text-muted-foreground" />
                                     <span>
                                         Email:{' '}
                                         {customer.email_verified_at ? (
-                                            <span className="text-emerald-500">Verified ✅</span>
+                                            <span className="text-emerald-500">
+                                                Verified ✅
+                                            </span>
                                         ) : (
-                                            <span className="text-amber-500">Not verified ❌</span>
+                                            <span className="text-amber-500">
+                                                Not verified ❌
+                                            </span>
                                         )}
                                     </span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <Clock className="size-4 text-muted-foreground" />
-                                    <span>Last active: {customer.last_active_at ? new Date(customer.last_active_at).toLocaleString() : 'Never'}</span>
+                                    <span>
+                                        Last active:{' '}
+                                        {customer.last_active_at
+                                            ? new Date(
+                                                  customer.last_active_at,
+                                              ).toLocaleString()
+                                            : 'Never'}
+                                    </span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <ShieldCheck className="size-4 text-muted-foreground" />
-                                    <span>Joined: {new Date(customer.created_at).toLocaleDateString()}</span>
+                                    <span>
+                                        Joined:{' '}
+                                        {new Date(
+                                            customer.created_at,
+                                        ).toLocaleDateString()}
+                                    </span>
                                 </div>
                             </div>
 
                             {/* Actions */}
                             <div className="flex flex-col gap-2 pt-2">
-                                <AnimatedButton onClick={() => setShowCoinDialog(true)}>
+                                <AnimatedButton
+                                    onClick={() => setShowCoinDialog(true)}
+                                >
                                     <Coins className="mr-1 h-4 w-4" /> Add Coins
                                 </AnimatedButton>
                                 {customer.is_banned ? (
-                                    <AnimatedButton variant="outline" onClick={handleUnban}>
+                                    <AnimatedButton
+                                        variant="outline"
+                                        onClick={handleUnban}
+                                    >
                                         Unban Customer
                                     </AnimatedButton>
                                 ) : (
-                                    <Button variant="destructive" onClick={handleBan}>
-                                        <Ban className="mr-1 h-4 w-4" /> Ban Customer
+                                    <Button
+                                        variant="destructive"
+                                        onClick={handleBan}
+                                    >
+                                        <Ban className="mr-1 h-4 w-4" /> Ban
+                                        Customer
                                     </Button>
                                 )}
-                                <Button variant="destructive" onClick={() => setShowDeleteDialog(true)}>
+                                <Button
+                                    variant="destructive"
+                                    onClick={() => setShowDeleteDialog(true)}
+                                >
                                     <Trash2 className="mr-1 h-4 w-4" /> Delete
                                 </Button>
                             </div>
@@ -244,7 +297,7 @@ return;
                     </AnimatedCard>
 
                     {/* Right column — Stats + Generations */}
-                    <div className="xl:col-span-2 space-y-6">
+                    <div className="space-y-6 xl:col-span-2">
                         {/* Stats */}
                         <div className="grid gap-4 sm:grid-cols-4">
                             <AnimatedCard>
@@ -253,8 +306,12 @@ return;
                                         <Images className="size-5 text-primary" />
                                     </div>
                                     <div>
-                                        <p className="text-2xl font-bold">{generationStats.total}</p>
-                                        <p className="text-xs text-muted-foreground">Generations</p>
+                                        <p className="text-2xl font-bold">
+                                            {generationStats.total}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">
+                                            Generations
+                                        </p>
                                     </div>
                                 </CardContent>
                             </AnimatedCard>
@@ -264,8 +321,12 @@ return;
                                         <CheckCircle className="size-5 text-emerald-500" />
                                     </div>
                                     <div>
-                                        <p className="text-2xl font-bold">{generationStats.completed}</p>
-                                        <p className="text-xs text-muted-foreground">Completed</p>
+                                        <p className="text-2xl font-bold">
+                                            {generationStats.completed}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">
+                                            Completed
+                                        </p>
                                     </div>
                                 </CardContent>
                             </AnimatedCard>
@@ -275,8 +336,12 @@ return;
                                         <XCircle className="size-5 text-destructive" />
                                     </div>
                                     <div>
-                                        <p className="text-2xl font-bold">{generationStats.failed}</p>
-                                        <p className="text-xs text-muted-foreground">Failed</p>
+                                        <p className="text-2xl font-bold">
+                                            {generationStats.failed}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">
+                                            Failed
+                                        </p>
                                     </div>
                                 </CardContent>
                             </AnimatedCard>
@@ -286,8 +351,12 @@ return;
                                         <Coins className="size-5 text-blue-500" />
                                     </div>
                                     <div>
-                                        <p className="text-2xl font-bold">🪙 {totalCoinsSpent}</p>
-                                        <p className="text-xs text-muted-foreground">Coins Spent</p>
+                                        <p className="text-2xl font-bold">
+                                            🪙 {totalCoinsSpent}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">
+                                            Coins Spent
+                                        </p>
                                     </div>
                                 </CardContent>
                             </AnimatedCard>
@@ -296,7 +365,9 @@ return;
                         {/* Recent Generations */}
                         <AnimatedCard>
                             <CardContent>
-                                <p className="mb-3 font-medium">Recent Generations</p>
+                                <p className="mb-3 font-medium">
+                                    Recent Generations
+                                </p>
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
@@ -311,7 +382,10 @@ return;
                                     <TableBody>
                                         {generations.data.length === 0 && (
                                             <TableRow>
-                                                <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                                                <TableCell
+                                                    colSpan={6}
+                                                    className="h-24 text-center text-muted-foreground"
+                                                >
                                                     No generations yet.
                                                 </TableCell>
                                             </TableRow>
@@ -321,9 +395,11 @@ return;
                                                 <TableCell>
                                                     <Badge
                                                         variant={
-                                                            gen.status === 'completed'
+                                                            gen.status ===
+                                                            'completed'
                                                                 ? 'default'
-                                                                : gen.status === 'failed'
+                                                                : gen.status ===
+                                                                    'failed'
                                                                   ? 'destructive'
                                                                   : 'secondary'
                                                         }
@@ -331,33 +407,53 @@ return;
                                                         {gen.status}
                                                     </Badge>
                                                 </TableCell>
-                                                <TableCell className="text-sm">{gen.operation}</TableCell>
-                                                <TableCell className="text-sm">{gen.template?.name ?? '—'}</TableCell>
+                                                <TableCell className="text-sm">
+                                                    {gen.operation}
+                                                </TableCell>
+                                                <TableCell className="text-sm">
+                                                    {gen.template?.name ?? '—'}
+                                                </TableCell>
                                                 <TableCell className="text-sm">
                                                     <div className="flex flex-col gap-0.5">
-                                                        {gen.coins_spent !== null && gen.coins_spent !== undefined ? (
+                                                        {gen.coins_spent !==
+                                                            null &&
+                                                        gen.coins_spent !==
+                                                            undefined ? (
                                                             <span className="flex items-center gap-1 text-[var(--gold)]">
                                                                 <Coins className="h-3 w-3" />
-                                                                {gen.coins_spent} coins
+                                                                {
+                                                                    gen.coins_spent
+                                                                }{' '}
+                                                                coins
                                                             </span>
-                                                        ) : gen.template?.cost ? (
+                                                        ) : gen.template
+                                                              ?.cost ? (
                                                             <span className="flex items-center gap-1 text-[var(--gold)]">
                                                                 <Coins className="h-3 w-3" />
-                                                                {gen.template.cost} coins
+                                                                {
+                                                                    gen.template
+                                                                        .cost
+                                                                }{' '}
+                                                                coins
                                                             </span>
                                                         ) : null}
                                                         {gen.cost && (
                                                             <span className="text-xs text-muted-foreground">
-                                                                ${gen.cost} {gen.currency}
+                                                                ${gen.cost}{' '}
+                                                                {gen.currency}
                                                             </span>
                                                         )}
                                                     </div>
                                                 </TableCell>
                                                 <TableCell className="text-sm text-muted-foreground">
-                                                    {gen.duration_ms ? `${gen.duration_ms}ms` : '—'}
+                                                    {gen.duration_ms
+                                                        ? `${gen.duration_ms}ms`
+                                                        : '—'}
                                                 </TableCell>
                                                 <TableCell className="text-sm text-muted-foreground">
-                                                    {new Date(gen.created_at).toLocaleString()}
+                                                    {new Date(
+                                                        gen.created_at,
+                                                    ).toLocaleString()}
                                                 </TableCell>
                                             </TableRow>
                                         ))}
@@ -368,31 +464,52 @@ return;
                                 {generations.last_page > 1 && (
                                     <div className="mt-4 flex items-center justify-between">
                                         <p className="text-xs text-muted-foreground">
-                                            Page {generations.current_page} of {generations.last_page}
+                                            Page {generations.current_page} of{' '}
+                                            {generations.last_page}
                                         </p>
                                         <div className="flex gap-1">
-                                            {generations.links.map((link, index) => {
-                                                const path = link.url
-                                                    ? new URL(link.url).pathname + new URL(link.url).search
-                                                    : '';
+                                            {generations.links.map(
+                                                (link, index) => {
+                                                    const path = link.url
+                                                        ? new URL(link.url)
+                                                              .pathname +
+                                                          new URL(link.url)
+                                                              .search
+                                                        : '';
 
-                                                return (
-                                                    <AnimatedButton
-                                                        key={index}
-                                                        variant={link.active ? 'default' : 'outline'}
-                                                        size="sm"
-                                                        disabled={!link.url}
-                                                        onClick={() => link.url && router.get(path, {}, { preserveState: true })}
-                                                        className="h-8 text-xs"
-                                                    >
-                                                        {link.label === '&laquo; Previous'
-                                                            ? '← Prev'
-                                                            : link.label === 'Next &raquo;'
-                                                              ? 'Next →'
-                                                              : link.label}
-                                                    </AnimatedButton>
-                                                );
-                                            })}
+                                                    return (
+                                                        <AnimatedButton
+                                                            key={index}
+                                                            variant={
+                                                                link.active
+                                                                    ? 'default'
+                                                                    : 'outline'
+                                                            }
+                                                            size="sm"
+                                                            disabled={!link.url}
+                                                            onClick={() =>
+                                                                link.url &&
+                                                                router.get(
+                                                                    path,
+                                                                    {},
+                                                                    {
+                                                                        preserveState: true,
+                                                                    },
+                                                                )
+                                                            }
+                                                            className="h-8 text-xs"
+                                                        >
+                                                            {link.label ===
+                                                            '&laquo; Previous'
+                                                                ? '← Prev'
+                                                                : link.label ===
+                                                                    'Next &raquo;'
+                                                                  ? 'Next →'
+                                                                  : link.label}
+                                                        </AnimatedButton>
+                                                    );
+                                                },
+                                            )}
                                         </div>
                                     </div>
                                 )}
@@ -405,8 +522,13 @@ return;
                                 <div className="flex items-center gap-3 text-muted-foreground">
                                     <CreditCard className="size-5" />
                                     <div>
-                                        <p className="font-medium">Payment Logs</p>
-                                        <p className="text-sm">Coin request payment logs coming soon (KBZ, Stripe integration).</p>
+                                        <p className="font-medium">
+                                            Payment Logs
+                                        </p>
+                                        <p className="text-sm">
+                                            Coin request payment logs coming
+                                            soon (KBZ, Stripe integration).
+                                        </p>
                                     </div>
                                 </div>
                             </CardContent>
@@ -421,7 +543,8 @@ return;
                     <DialogHeader>
                         <DialogTitle>Add Coins</DialogTitle>
                         <DialogDescription>
-                            Add coins to {customer.name}'s balance. Current balance: 🪙 {customer.coins.toLocaleString()}
+                            Add coins to {customer.name}'s balance. Current
+                            balance: 🪙 {customer.coins.toLocaleString()}
                         </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4">
@@ -447,10 +570,16 @@ return;
                         </div>
                     </div>
                     <DialogFooter>
-                        <AnimatedButton variant="outline" onClick={() => setShowCoinDialog(false)}>
+                        <AnimatedButton
+                            variant="outline"
+                            onClick={() => setShowCoinDialog(false)}
+                        >
                             Cancel
                         </AnimatedButton>
-                        <AnimatedButton onClick={handleAddCoins} disabled={coinLoading || !coinAmount}>
+                        <AnimatedButton
+                            onClick={handleAddCoins}
+                            disabled={coinLoading || !coinAmount}
+                        >
                             {coinLoading ? 'Adding...' : 'Add Coins'}
                         </AnimatedButton>
                     </DialogFooter>
@@ -463,11 +592,16 @@ return;
                     <DialogHeader>
                         <DialogTitle>Delete Customer</DialogTitle>
                         <DialogDescription>
-                            Are you sure you want to delete "{customer.name}"? This will revoke all active tokens and cannot be undone.
+                            Are you sure you want to delete "{customer.name}"?
+                            This will revoke all active tokens and cannot be
+                            undone.
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
-                        <AnimatedButton variant="outline" onClick={() => setShowDeleteDialog(false)}>
+                        <AnimatedButton
+                            variant="outline"
+                            onClick={() => setShowDeleteDialog(false)}
+                        >
                             Cancel
                         </AnimatedButton>
                         <Button variant="destructive" onClick={handleDelete}>

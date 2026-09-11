@@ -37,8 +37,8 @@ class DashboardController extends Controller
                 'status' => $g->status,
                 'model' => $g->input_metadata['model'] ?? '—',
                 'cost' => $g->cost,
-                'customer_name' => $g->customer?->name ?? 'Admin',
-                'template_name' => $g->template?->name ?? null,
+                'customer_name' => $g->customer->name ?? 'Admin',
+                'template_name' => $g->template->name ?? null,
                 'created_at' => $g->created_at->toISOString(),
             ]);
 

@@ -1,8 +1,9 @@
 <?php
+
 $file = 'app/Http/Controllers/Admin/TemplateController.php';
 $content = file_get_contents($file);
 
-if (!str_contains($content, 'use App\Models\AIGeneration;')) {
+if (! str_contains($content, 'use App\Models\AIGeneration;')) {
     $content = str_replace("use App\Models\Template;", "use App\Models\AIGeneration;\nuse App\Models\Template;", $content);
 }
 

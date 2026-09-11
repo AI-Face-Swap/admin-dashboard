@@ -14,37 +14,48 @@ vi.mock('@inertiajs/react', () => ({
     usePage: () => ({
         props: {
             auth: {
-                user: { id: 1, name: 'Admin User' }
-            }
-        }
-    })
+                user: { id: 1, name: 'Admin User' },
+            },
+        },
+    }),
 }));
 
 const defaultProps = {
     generations: [],
     templates: [],
     sliders: [],
-    auth: { user: { id: 1, name: 'Admin User', email: 'test@example.com', email_verified_at: '' } },
+    auth: {
+        user: {
+            id: 1,
+            name: 'Admin User',
+            email: 'test@example.com',
+            email_verified_at: '',
+        },
+    },
 };
 
 describe('Admin AI Generation Page', () => {
     it('renders the AI Generation page with tabs', () => {
         render(<Index {...defaultProps} />);
-        
+
         // Assert the main tabs exist
         expect(screen.getByText('Image Face Swap')).toBeInTheDocument();
         expect(screen.getByText('Video Face Swap')).toBeInTheDocument();
         expect(screen.getByText('Image Generation')).toBeInTheDocument();
-        expect(screen.getAllByRole('button', { name: 'Image to Video' })[0]).toBeInTheDocument();
+        expect(
+            screen.getAllByRole('button', { name: 'Image to Video' })[0],
+        ).toBeInTheDocument();
     });
 
     it('switches to Image to Video tab and renders new fields', () => {
         render(<Index {...defaultProps} />);
-        
+
         // Click the Image to Video tab
-        const buttons = screen.getAllByRole('button', { name: 'Image to Video' });
+        const buttons = screen.getAllByRole('button', {
+            name: 'Image to Video',
+        });
         fireEvent.click(buttons[0]);
-        
+
         // Assert the new fields are visible
         expect(screen.getByText('Model')).toBeInTheDocument();
         expect(screen.getByText('Aspect Ratio')).toBeInTheDocument();

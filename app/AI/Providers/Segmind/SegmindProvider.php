@@ -463,7 +463,7 @@ class SegmindProvider implements AIProviderInterface
             }
 
             $body = $response->body();
-            $contentType = $response->header('Content-Type') ?? '';
+            $contentType = (string) $response->header('Content-Type');
 
             // Determine extension from content type or URL
             $extension = match (true) {

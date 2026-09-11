@@ -28,6 +28,7 @@ class VerifyEmail extends Notification implements ShouldQueue
      */
     public function toMail(object $notifiable): MailMessage
     {
+        /** @var \App\Models\Customer $notifiable */
         $verificationUrl = $this->verificationUrl($notifiable);
 
         return (new MailMessage)

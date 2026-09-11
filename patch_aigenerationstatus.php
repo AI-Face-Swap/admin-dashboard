@@ -1,4 +1,5 @@
 <?php
+
 $file = 'app/Http/Controllers/Api/AIGenerationStatusController.php';
 $content = file_get_contents($file);
 
@@ -10,8 +11,8 @@ use App\Models\User;
 IMPORTS;
 
 // Add imports
-if (!str_contains($content, 'use Illuminate\Http\Request;')) {
-    $content = str_replace("use Illuminate\Http\JsonResponse;", "use Illuminate\Http\JsonResponse;\n" . $imports, $content);
+if (! str_contains($content, 'use Illuminate\Http\Request;')) {
+    $content = str_replace("use Illuminate\Http\JsonResponse;", "use Illuminate\Http\JsonResponse;\n".$imports, $content);
 }
 
 $destroyMethod = <<<'METHOD'

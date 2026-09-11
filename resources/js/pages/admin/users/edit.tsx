@@ -18,7 +18,13 @@ type AdminUser = {
     roles: Role[];
 };
 
-export default function Edit({ user, roles }: { user: AdminUser; roles: Role[] }) {
+export default function Edit({
+    user,
+    roles,
+}: {
+    user: AdminUser;
+    roles: Role[];
+}) {
     const [name, setName] = useState(user.name);
     const [email, setEmail] = useState(user.email);
     const [password, setPassword] = useState('');
@@ -51,7 +57,10 @@ export default function Edit({ user, roles }: { user: AdminUser; roles: Role[] }
 
             <div className="flex flex-1 flex-col gap-6 p-4 md:p-6">
                 <div className="flex items-center justify-between">
-                    <Heading title={`Edit ${user.name}`} description="Update the admin user and their roles." />
+                    <Heading
+                        title={`Edit ${user.name}`}
+                        description="Update the admin user and their roles."
+                    />
                     <Link href="/admin/users">
                         <AnimatedButton variant="outline">Back</AnimatedButton>
                     </Link>
@@ -94,7 +103,9 @@ export default function Edit({ user, roles }: { user: AdminUser; roles: Role[] }
                                     id="password"
                                     type="password"
                                     value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
+                                    onChange={(e) =>
+                                        setPassword(e.target.value)
+                                    }
                                     placeholder="New password"
                                 />
                                 <InputError message={errors.password} />
@@ -104,14 +115,23 @@ export default function Edit({ user, roles }: { user: AdminUser; roles: Role[] }
                                 <Label>Roles</Label>
                                 <div className="flex flex-wrap gap-4">
                                     {roles.map((role) => (
-                                        <label key={role.id} className="flex items-center gap-2 text-sm">
+                                        <label
+                                            key={role.id}
+                                            className="flex items-center gap-2 text-sm"
+                                        >
                                             <Checkbox
-                                                checked={selectedRoles.includes(role.id)}
+                                                checked={selectedRoles.includes(
+                                                    role.id,
+                                                )}
                                                 onCheckedChange={(checked) =>
                                                     setSelectedRoles((prev) =>
                                                         checked
                                                             ? [...prev, role.id]
-                                                            : prev.filter((id) => id !== role.id),
+                                                            : prev.filter(
+                                                                  (id) =>
+                                                                      id !==
+                                                                      role.id,
+                                                              ),
                                                     )
                                                 }
                                             />

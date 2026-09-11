@@ -69,7 +69,7 @@ class FixSegmindUrls extends Command
                 }
 
                 $body = $response->body();
-                $contentType = $response->header('Content-Type') ?? '';
+                $contentType = (string) $response->header('Content-Type');
 
                 $extension = match (true) {
                     str_contains($contentType, 'image/png') => 'png',

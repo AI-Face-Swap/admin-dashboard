@@ -104,6 +104,7 @@ export default [
     },
     {
         ignores: [
+            '*.cjs',
             'vendor',
             'node_modules',
             'public',

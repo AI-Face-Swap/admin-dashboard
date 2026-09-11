@@ -26,7 +26,7 @@ class ProviderController extends Controller
             ->get();
 
         return Inertia::render('admin/providers/index', [
-            'providers' => $providers->map(fn (AIProvider $p) => [
+            'providers' => $providers->map(fn (AIProvider $p): array => [
                 'id' => $p->id,
                 'name' => $p->name,
                 'slug' => $p->slug,

@@ -21,13 +21,16 @@ export default function Create({ permissions }: { permissions: Permission[] }) {
     const [processing, setProcessing] = useState(false);
 
     const grouped = useMemo(() => {
-        return permissions.reduce<Record<string, Permission[]>>((acc, permission) => {
-            const group = permission.slug.split('.')[0];
-            acc[group] ??= [];
-            acc[group].push(permission);
+        return permissions.reduce<Record<string, Permission[]>>(
+            (acc, permission) => {
+                const group = permission.slug.split('.')[0];
+                acc[group] ??= [];
+                acc[group].push(permission);
 
-            return acc;
-        }, {});
+                return acc;
+            },
+            {},
+        );
     }, [permissions]);
 
     const toggle = (id: number) => {
@@ -59,7 +62,10 @@ export default function Create({ permissions }: { permissions: Permission[] }) {
 
             <div className="flex flex-1 flex-col gap-6 p-4 md:p-6">
                 <div className="flex items-center justify-between">
-                    <Heading title="Create Role" description="Create a role and choose its permissions." />
+                    <Heading
+                        title="Create Role"
+                        description="Create a role and choose its permissions."
+                    />
                     <Link href="/admin/roles">
                         <AnimatedButton variant="outline">Back</AnimatedButton>
                     </Link>
@@ -85,7 +91,9 @@ export default function Create({ permissions }: { permissions: Permission[] }) {
                                 <Textarea
                                     id="description"
                                     value={description}
-                                    onChange={(e) => setDescription(e.target.value)}
+                                    onChange={(e) =>
+                                        setDescription(e.target.value)
+                                    }
                                     placeholder="What this role is for"
                                     rows={2}
                                 />
@@ -93,22 +101,44 @@ export default function Create({ permissions }: { permissions: Permission[] }) {
 
                             <div className="grid gap-4">
                                 <Label>Permissions</Label>
-                                {Object.entries(grouped).map(([group, groupPermissions]) => (
-                                    <div key={group} className="rounded-lg border p-4">
-                                        <p className="mb-2 text-sm font-medium capitalize">{group}</p>
-                                        <div className="grid gap-2 sm:grid-cols-2">
-                                            {groupPermissions.map((permission) => (
-                                                <label key={permission.id} className="flex items-center gap-2 text-sm">
-                                                    <Checkbox
-                                                        checked={selected.includes(permission.id)}
-                                                        onCheckedChange={() => toggle(permission.id)}
-                                                    />
-                                                    <span className="font-mono text-xs">{permission.slug}</span>
-                                                </label>
-                                            ))}
+                                {Object.entries(grouped).map(
+                                    ([group, groupPermissions]) => (
+                                        <div
+                                            key={group}
+                                            className="rounded-lg border p-4"
+                                        >
+                                            <p className="mb-2 text-sm font-medium capitalize">
+                                                {group}
+                                            </p>
+                                            <div className="grid gap-2 sm:grid-cols-2">
+                                                {groupPermissions.map(
+                                                    (permission) => (
+                                                        <label
+                                                            key={permission.id}
+                                                            className="flex items-center gap-2 text-sm"
+                                                        >
+                                                            <Checkbox
+                                                                checked={selected.includes(
+                                                                    permission.id,
+                                                                )}
+                                                                onCheckedChange={() =>
+                                                                    toggle(
+                                                                        permission.id,
+                                                                    )
+                                                                }
+                                                            />
+                                                            <span className="font-mono text-xs">
+                                                                {
+                                                                    permission.slug
+                                                                }
+                                                            </span>
+                                                        </label>
+                                                    ),
+                                                )}
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    ),
+                                )}
                             </div>
 
                             <AnimatedButton type="submit" disabled={processing}>

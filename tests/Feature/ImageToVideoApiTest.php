@@ -5,10 +5,10 @@ namespace Tests\Feature;
 use App\Models\Customer;
 use Database\Seeders\AIProviderSeeder;
 use Database\Seeders\RolePermissionSeeder;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class ImageToVideoApiTest extends TestCase
@@ -50,13 +50,13 @@ class ImageToVideoApiTest extends TestCase
         // Actually, AIImageToVideoController does NOT dispatch jobs directly, it waits or it polls?
         // Let's check AIImageToVideoController. The route is synchronous for the provider, but the provider might be async.
         // Segmind provider usually returns COMPLETED or QUEUED.
-        // Wait, Segmind provider for video-face-swap is queued via `videoFaceSwap`. 
+        // Wait, Segmind provider for video-face-swap is queued via `videoFaceSwap`.
         // For `imageToVideo`, it does the same async polling loop inside SegmindProvider?
         // Whatever the status is, we just assert OK.
         $response->assertOk()->assertJsonStructure([
             'status',
             'generation' => [
-                'id', 'operation', 'status'
+                'id', 'operation', 'status',
             ],
         ]);
     }

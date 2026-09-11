@@ -21,6 +21,8 @@ import admin from '@/routes/admin';
 
 type TemplateCategory = { id: number; name: string; slug: string };
 type TemplateTag = { id: number; name: string; slug: string };
+type AIModelOption = { id: number; provider_name: string; model_name: string };
+type GenerationType = { id: number; name: string; slug: string };
 
 type Template = {
     id: number;
@@ -32,6 +34,8 @@ type Template = {
     thumbnail_path: string | null;
     cost: number;
     model: string | null;
+    ai_model_id: number | null;
+    generation_type_id: number | null;
     is_active: boolean;
     category: { id: number; name: string } | null;
     tags: { id: number; name: string }[];
@@ -47,10 +51,14 @@ export default function Edit({
     template,
     categories,
     tags,
+    aiModels,
+    generationTypes,
 }: {
     template: Template;
     categories: TemplateCategory[];
     tags: TemplateTag[];
+    aiModels: AIModelOption[];
+    generationTypes: GenerationType[];
 }) {
     const [name, setName] = useState(template.name);
     const [description, setDescription] = useState(template.description ?? '');
@@ -64,14 +72,20 @@ export default function Edit({
     const [aspectRatio, setAspectRatio] = useState(template.aspect_ratio ?? '');
     const [resolution, setResolution] = useState(template.resolution ?? '');
     const [seed, setSeed] = useState(template.seed ?? '');
-    const [categoryId, setCategoryId] = useState(
+    const [categoryId, setCategoryId] = useState<string>(
         template.category ? String(template.category.id) : '',
+    );
+    const [generationTypeId, setGenerationTypeId] = useState<string>(
+        template.generation_type_id ? String(template.generation_type_id) : '',
     );
     const [type, setType] = useState<'image' | 'video'>(template.type);
     const [file, setFile] = useState<File | null>(null);
     const [thumbnail, setThumbnail] = useState<File | null>(null);
-    const [cost, setCost] = useState(String(template.cost ?? 0));
-    const [model, setModel] = useState(template.model ?? '');
+    const [cost, setCost] = useState(String(template.cost));
+    const [model] = useState(template.model || '');
+    const [aiModelId, setAiModelId] = useState<string>(
+        template.ai_model_id ? String(template.ai_model_id) : '',
+    );
     const [isActive, setIsActive] = useState(template.is_active);
     const [selectedTags, setSelectedTags] = useState<number[]>(
         template.tags.map((t) => t.id),
@@ -95,11 +109,13 @@ export default function Edit({
                 name,
                 description,
                 category_id: categoryId || undefined,
+                generation_type_id: generationTypeId || undefined,
                 type,
                 cost: parseInt(cost, 10) || 0,
                 file,
                 thumbnail,
                 model,
+                ai_model_id: aiModelId ? parseInt(aiModelId, 10) : undefined,
                 is_active: isActive,
                 tags: selectedTags,
                 sort_order: parseInt(sortOrder, 10) || 1,
@@ -210,6 +226,30 @@ export default function Edit({
                                                         value={String(cat.id)}
                                                     >
                                                         {cat.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="generationType">
+                                            Generation Type
+                                        </Label>
+                                        <Select
+                                            value={generationTypeId}
+                                            onValueChange={setGenerationTypeId}
+                                        >
+                                            <SelectTrigger id="generationType">
+                                                <SelectValue placeholder="None" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {generationTypes.map((gt) => (
+                                                    <SelectItem
+                                                        key={gt.id}
+                                                        value={String(gt.id)}
+                                                    >
+                                                        {gt.name}
                                                     </SelectItem>
                                                 ))}
                                             </SelectContent>
@@ -374,16 +414,40 @@ export default function Edit({
                             <div className="space-y-6">
                                 <div className="grid gap-2">
                                     <Label htmlFor="model">
-                                        Model (optional)
+                                        AI Model (optional)
                                     </Label>
-                                    <Input
-                                        id="model"
-                                        value={model}
-                                        onChange={(e) =>
-                                            setModel(e.target.value)
-                                        }
-                                        placeholder="e.g. segmind/face-swap-model"
-                                    />
+                                    {aiModels.length === 0 ? (
+                                        <p className="text-sm text-muted-foreground">
+                                            No AI models yet —{' '}
+                                            <a
+                                                href="/admin/ai-models"
+                                                className="underline"
+                                            >
+                                                create some first
+                                            </a>
+                                            .
+                                        </p>
+                                    ) : (
+                                        <Select
+                                            value={aiModelId}
+                                            onValueChange={setAiModelId}
+                                        >
+                                            <SelectTrigger id="model">
+                                                <SelectValue placeholder="None" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {aiModels.map((m) => (
+                                                    <SelectItem
+                                                        key={m.id}
+                                                        value={String(m.id)}
+                                                    >
+                                                        {m.provider_name} —{' '}
+                                                        {m.model_name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    )}
                                 </div>
 
                                 <div className="grid gap-2">

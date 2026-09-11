@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Storage;
 /**
  * @property int $id
  * @property int|null $category_id
+ * @property int|null $ai_model_id
  * @property string $slug
  * @property string $name
  * @property string|null $description
@@ -31,7 +32,7 @@ use Illuminate\Support\Facades\Storage;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['category_id', 'slug', 'name', 'description', 'type', 'file_path', 'thumbnail_path', 'model', 'cost', 'is_active', 'sort_order', 'prompt', 'negative_prompt', 'aspect_ratio', 'resolution', 'seed'])]
+#[Fillable(['category_id', 'generation_type_id', 'ai_model_id', 'slug', 'name', 'description', 'type', 'file_path', 'thumbnail_path', 'model', 'cost', 'is_active', 'sort_order', 'prompt', 'negative_prompt', 'aspect_ratio', 'resolution', 'seed'])]
 class Template extends Model
 {
     use HasAutoSlug;
@@ -60,6 +61,26 @@ class Template extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(TemplateCategory::class, 'category_id');
+    }
+
+    /**
+     * The generation type this template belongs to.
+     *
+     * @return BelongsTo<GenerationType, $this>
+     */
+    public function generationType(): BelongsTo
+    {
+        return $this->belongsTo(GenerationType::class, 'generation_type_id');
+    }
+
+    /**
+     * The AI model assigned to this template.
+     *
+     * @return BelongsTo<AIModel, $this>
+     */
+    public function aiModel(): BelongsTo
+    {
+        return $this->belongsTo(AIModel::class, 'ai_model_id');
     }
 
     /**

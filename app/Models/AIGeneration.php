@@ -21,13 +21,15 @@ use Illuminate\Support\Carbon;
  * @property string|null $cost
  * @property string|null $currency
  * @property int|null $duration_ms
- * @property array<string, mixed>|null $input_metadata
- * @property array<string, mixed>|null $output_metadata
+ * @property array<int|string, mixed>|null $input_metadata
+ * @property array<int|string, mixed>|null $output_metadata
  * @property array<string, mixed>|null $output
  * @property array<string, mixed>|null $raw_response
  * @property string|null $error
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
+ * @property Customer|null $customer
+ * @property Template|null $template
  */
 #[Fillable([
     'user_id',
@@ -120,7 +122,7 @@ class AIGeneration extends Model
     /**
      * Accessor: alias output_metadata as output for frontend consumption.
      *
-     * @return array<string, mixed>|null
+     * @return array<int|string, mixed>|null
      */
     public function getOutputAttribute(): ?array
     {
@@ -129,8 +131,11 @@ class AIGeneration extends Model
 
     /**
      * Scope: find generations stuck in queued/processing for too long.
+     *
+     * @param \Illuminate\Database\Eloquent\Builder<self> $query
+     * @return \Illuminate\Database\Eloquent\Builder<self>
      */
-    public function scopeStuck($query)
+    public function scopeStuck(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
     {
         return $query->whereIn('status', [self::STATUS_QUEUED, self::STATUS_PROCESSING])
             ->where('created_at', '<', now()->subMinutes(self::TIMEOUT_MINUTES));

@@ -1,4 +1,5 @@
 <?php
+
 $file = 'tests/Feature/AIGenerationDeleteTest.php';
 $content = file_get_contents($file);
 

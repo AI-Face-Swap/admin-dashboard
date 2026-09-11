@@ -1,4 +1,5 @@
 <?php
+
 $file = 'app/Http/Controllers/Api/AIGenerationStatusController.php';
 $content = file_get_contents($file);
 

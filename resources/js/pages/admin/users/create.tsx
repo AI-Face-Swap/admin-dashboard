@@ -43,7 +43,10 @@ export default function Create({ roles }: { roles: Role[] }) {
 
             <div className="flex flex-1 flex-col gap-6 p-4 md:p-6">
                 <div className="flex items-center justify-between">
-                    <Heading title="Create User" description="Add a new admin user and assign roles." />
+                    <Heading
+                        title="Create User"
+                        description="Add a new admin user and assign roles."
+                    />
                     <Link href="/admin/users">
                         <AnimatedButton variant="outline">Back</AnimatedButton>
                     </Link>
@@ -83,7 +86,9 @@ export default function Create({ roles }: { roles: Role[] }) {
                                     id="password"
                                     type="password"
                                     value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
+                                    onChange={(e) =>
+                                        setPassword(e.target.value)
+                                    }
                                     placeholder="At least 8 characters"
                                     required
                                 />
@@ -94,14 +99,23 @@ export default function Create({ roles }: { roles: Role[] }) {
                                 <Label>Roles</Label>
                                 <div className="flex flex-wrap gap-4">
                                     {roles.map((role) => (
-                                        <label key={role.id} className="flex items-center gap-2 text-sm">
+                                        <label
+                                            key={role.id}
+                                            className="flex items-center gap-2 text-sm"
+                                        >
                                             <Checkbox
-                                                checked={selectedRoles.includes(role.id)}
+                                                checked={selectedRoles.includes(
+                                                    role.id,
+                                                )}
                                                 onCheckedChange={(checked) =>
                                                     setSelectedRoles((prev) =>
                                                         checked
                                                             ? [...prev, role.id]
-                                                            : prev.filter((id) => id !== role.id),
+                                                            : prev.filter(
+                                                                  (id) =>
+                                                                      id !==
+                                                                      role.id,
+                                                              ),
                                                     )
                                                 }
                                             />

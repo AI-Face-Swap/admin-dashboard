@@ -75,11 +75,17 @@ export default function Create() {
                                 <Input
                                     id="title"
                                     value={data.title}
-                                    onChange={(e) => setData('title', e.target.value)}
+                                    onChange={(e) =>
+                                        setData('title', e.target.value)
+                                    }
                                     placeholder="HappyHorse 1.0"
                                     required
                                 />
-                                {errors.title && <p className="text-sm text-destructive">{errors.title}</p>}
+                                {errors.title && (
+                                    <p className="text-sm text-destructive">
+                                        {errors.title}
+                                    </p>
+                                )}
                             </div>
 
                             {/* Description */}
@@ -88,11 +94,17 @@ export default function Create() {
                                 <Textarea
                                     id="description"
                                     value={data.description}
-                                    onChange={(e) => setData('description', e.target.value)}
+                                    onChange={(e) =>
+                                        setData('description', e.target.value)
+                                    }
                                     placeholder="Alibaba's #1-ranked video model..."
                                     rows={3}
                                 />
-                                {errors.description && <p className="text-sm text-destructive">{errors.description}</p>}
+                                {errors.description && (
+                                    <p className="text-sm text-destructive">
+                                        {errors.description}
+                                    </p>
+                                )}
                             </div>
 
                             {/* Badge */}
@@ -101,11 +113,17 @@ export default function Create() {
                                 <Input
                                     id="badge"
                                     value={data.badge}
-                                    onChange={(e) => setData('badge', e.target.value)}
+                                    onChange={(e) =>
+                                        setData('badge', e.target.value)
+                                    }
                                     placeholder="New, Featured, etc."
                                     className="w-[200px]"
                                 />
-                                {errors.badge && <p className="text-sm text-destructive">{errors.badge}</p>}
+                                {errors.badge && (
+                                    <p className="text-sm text-destructive">
+                                        {errors.badge}
+                                    </p>
+                                )}
                             </div>
 
                             {/* CTA */}
@@ -115,7 +133,9 @@ export default function Create() {
                                     <Input
                                         id="cta_text"
                                         value={data.cta_text}
-                                        onChange={(e) => setData('cta_text', e.target.value)}
+                                        onChange={(e) =>
+                                            setData('cta_text', e.target.value)
+                                        }
                                         placeholder="Try it →"
                                     />
                                 </div>
@@ -124,7 +144,9 @@ export default function Create() {
                                     <Input
                                         id="cta_url"
                                         value={data.cta_url}
-                                        onChange={(e) => setData('cta_url', e.target.value)}
+                                        onChange={(e) =>
+                                            setData('cta_url', e.target.value)
+                                        }
                                         placeholder="/ai/face-swap"
                                     />
                                 </div>
@@ -134,13 +156,22 @@ export default function Create() {
                             <div className="grid gap-4 sm:grid-cols-3">
                                 <div className="space-y-2">
                                     <Label>Type *</Label>
-                                    <Select value={data.type} onValueChange={(v) => setData('type', v)}>
+                                    <Select
+                                        value={data.type}
+                                        onValueChange={(v) =>
+                                            setData('type', v)
+                                        }
+                                    >
                                         <SelectTrigger>
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="image">Image</SelectItem>
-                                            <SelectItem value="video">Video</SelectItem>
+                                            <SelectItem value="image">
+                                                Image
+                                            </SelectItem>
+                                            <SelectItem value="video">
+                                                Video
+                                            </SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -152,17 +183,23 @@ export default function Create() {
                                         min={0}
                                         max={9999}
                                         value={data.sorting}
-                                        onChange={(e) => setData('sorting', e.target.value)}
+                                        onChange={(e) =>
+                                            setData('sorting', e.target.value)
+                                        }
                                         className="w-full"
                                     />
-                                    <p className="text-xs text-muted-foreground">Higher = shows first</p>
+                                    <p className="text-xs text-muted-foreground">
+                                        Higher = shows first
+                                    </p>
                                 </div>
                                 <div className="space-y-2">
                                     <Label>Active</Label>
                                     <div className="flex h-10 items-center">
                                         <Switch
                                             checked={data.is_active}
-                                            onCheckedChange={(checked) => setData('is_active', checked)}
+                                            onCheckedChange={(checked) =>
+                                                setData('is_active', checked)
+                                            }
                                         />
                                     </div>
                                 </div>
@@ -176,14 +213,28 @@ export default function Create() {
                                         <label className="flex h-32 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed bg-muted/50 transition-colors hover:bg-muted">
                                             {preview ? (
                                                 data.type === 'video' ? (
-                                                    <video src={preview} className="h-full rounded object-contain" muted controls />
+                                                    <video
+                                                        src={preview}
+                                                        className="h-full rounded object-contain"
+                                                        muted
+                                                        controls
+                                                    />
                                                 ) : (
-                                                    <img src={preview} alt="Preview" className="h-full rounded object-contain" />
+                                                    <img
+                                                        src={preview}
+                                                        alt="Preview"
+                                                        className="h-full rounded object-contain"
+                                                    />
                                                 )
                                             ) : (
                                                 <div className="text-center">
-                                                    <p className="text-sm text-muted-foreground">Click to upload</p>
-                                                    <p className="text-xs text-muted-foreground">JPG, PNG, WebP, GIF, MP4 (max 20MB)</p>
+                                                    <p className="text-sm text-muted-foreground">
+                                                        Click to upload
+                                                    </p>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        JPG, PNG, WebP, GIF, MP4
+                                                        (max 20MB)
+                                                    </p>
                                                 </div>
                                             )}
                                             <input
@@ -195,16 +246,28 @@ export default function Create() {
                                         </label>
                                     </div>
                                 </div>
-                                {errors.file && <p className="text-sm text-destructive">{errors.file}</p>}
+                                {errors.file && (
+                                    <p className="text-sm text-destructive">
+                                        {errors.file}
+                                    </p>
+                                )}
                             </div>
 
                             {/* Actions */}
                             <div className="flex items-center gap-3 border-t pt-4">
-                                <AnimatedButton type="submit" disabled={processing}>
-                                    {processing ? 'Creating...' : 'Create Slider'}
+                                <AnimatedButton
+                                    type="submit"
+                                    disabled={processing}
+                                >
+                                    {processing
+                                        ? 'Creating...'
+                                        : 'Create Slider'}
                                 </AnimatedButton>
                                 <Link href="/admin/sliders">
-                                    <AnimatedButton type="button" variant="outline">
+                                    <AnimatedButton
+                                        type="button"
+                                        variant="outline"
+                                    >
                                         Cancel
                                     </AnimatedButton>
                                 </Link>

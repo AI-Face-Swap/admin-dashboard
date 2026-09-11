@@ -34,6 +34,7 @@ class CustomerResetPassword extends Notification implements ShouldQueue
      */
     public function toMail(object $notifiable): MailMessage
     {
+        /** @var \App\Models\Customer $notifiable */
         $resetUrl = $this->resetUrl($notifiable);
 
         return (new MailMessage)
@@ -54,6 +55,7 @@ class CustomerResetPassword extends Notification implements ShouldQueue
      */
     protected function resetUrl(object $notifiable): string
     {
+        /** @var \App\Models\Customer $notifiable */
         $frontendUrl = config('app.frontend_url', 'http://localhost:5173');
 
         return "{$frontendUrl}/reset-password?token={$this->token}&email=".urlencode($notifiable->email);

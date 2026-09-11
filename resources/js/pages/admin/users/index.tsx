@@ -41,7 +41,11 @@ export default function Index({ users, filters }: Props) {
     const onSearch = (value: string) => {
         setSearch(value);
 
-        router.get('/admin/users', { search: value }, { preserveState: true, replace: true });
+        router.get(
+            '/admin/users',
+            { search: value },
+            { preserveState: true, replace: true },
+        );
     };
 
     return (
@@ -56,9 +60,7 @@ export default function Index({ users, filters }: Props) {
                     />
                     {can('users.manage') && (
                         <Link href="/admin/users/create">
-                            <AnimatedButton>
-                                Add Admin User
-                            </AnimatedButton>
+                            <AnimatedButton>Add Admin User</AnimatedButton>
                         </Link>
                     )}
                 </div>
@@ -81,41 +83,60 @@ export default function Index({ users, filters }: Props) {
                                     <TableHead>Email</TableHead>
                                     <TableHead>Roles</TableHead>
                                     <TableHead>Joined</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
+                                    <TableHead className="text-right">
+                                        Actions
+                                    </TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {users.data.length === 0 && (
                                     <TableRow>
-                                        <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                                        <TableCell
+                                            colSpan={5}
+                                            className="h-24 text-center text-muted-foreground"
+                                        >
                                             No users found.
                                         </TableCell>
                                     </TableRow>
                                 )}
                                 {users.data.map((user) => (
                                     <TableRow key={user.id}>
-                                        <TableCell className="font-medium">{user.name}</TableCell>
+                                        <TableCell className="font-medium">
+                                            {user.name}
+                                        </TableCell>
                                         <TableCell>{user.email}</TableCell>
                                         <TableCell>
                                             <div className="flex flex-wrap gap-1">
                                                 {user.roles.length === 0 && (
-                                                    <span className="text-xs text-muted-foreground">No roles</span>
+                                                    <span className="text-xs text-muted-foreground">
+                                                        No roles
+                                                    </span>
                                                 )}
                                                 {user.roles.map((role) => (
-                                                    <Badge key={role.id} variant="secondary">
+                                                    <Badge
+                                                        key={role.id}
+                                                        variant="secondary"
+                                                    >
                                                         {role.name}
                                                     </Badge>
                                                 ))}
                                             </div>
                                         </TableCell>
                                         <TableCell className="text-sm text-muted-foreground">
-                                            {new Date(user.created_at).toLocaleDateString()}
+                                            {new Date(
+                                                user.created_at,
+                                            ).toLocaleDateString()}
                                         </TableCell>
                                         <TableCell className="text-right">
                                             {can('users.manage') && (
                                                 <div className="flex justify-end gap-2">
-                                                    <Link href={`/admin/users/${user.id}/edit`}>
-                                                        <AnimatedButton variant="outline" size="sm">
+                                                    <Link
+                                                        href={`/admin/users/${user.id}/edit`}
+                                                    >
+                                                        <AnimatedButton
+                                                            variant="outline"
+                                                            size="sm"
+                                                        >
                                                             Edit
                                                         </AnimatedButton>
                                                     </Link>
@@ -123,8 +144,14 @@ export default function Index({ users, filters }: Props) {
                                                         variant="destructive"
                                                         size="sm"
                                                         onClick={() => {
-                                                            if (confirm('Delete this admin user?')) {
-                                                                router.delete(`/admin/users/${user.id}`);
+                                                            if (
+                                                                confirm(
+                                                                    'Delete this admin user?',
+                                                                )
+                                                            ) {
+                                                                router.delete(
+                                                                    `/admin/users/${user.id}`,
+                                                                );
                                                             }
                                                         }}
                                                     >
@@ -145,7 +172,5 @@ export default function Index({ users, filters }: Props) {
 }
 
 Index.layout = {
-    breadcrumbs: [
-        { title: 'Users', href: admin.users.index() },
-    ],
+    breadcrumbs: [{ title: 'Users', href: admin.users.index() }],
 };

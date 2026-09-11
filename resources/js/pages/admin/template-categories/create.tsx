@@ -41,7 +41,10 @@ export default function Create() {
 
             <div className="flex flex-1 flex-col gap-6 p-4 md:p-6">
                 <div className="flex items-center justify-between">
-                    <Heading title="Create Category" description="e.g. Superhero, Football, Anime." />
+                    <Heading
+                        title="Create Category"
+                        description="e.g. Superhero, Football, Anime."
+                    />
                     <Link href="/admin/template-categories">
                         <AnimatedButton variant="outline">Back</AnimatedButton>
                     </Link>
@@ -67,7 +70,9 @@ export default function Create() {
                                 <Textarea
                                     id="description"
                                     value={description}
-                                    onChange={(e) => setDescription(e.target.value)}
+                                    onChange={(e) =>
+                                        setDescription(e.target.value)
+                                    }
                                     rows={2}
                                 />
                             </div>
@@ -76,7 +81,8 @@ export default function Create() {
                                 <div>
                                     <Label htmlFor="is-active">Active</Label>
                                     <p className="text-sm text-muted-foreground">
-                                        Hidden categories are not shown to customers.
+                                        Hidden categories are not shown to
+                                        customers.
                                     </p>
                                 </div>
                                 <Switch

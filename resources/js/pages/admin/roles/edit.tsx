@@ -19,7 +19,13 @@ type Role = {
     permissions: Permission[];
 };
 
-export default function Edit({ role, permissions }: { role: Role; permissions: Permission[] }) {
+export default function Edit({
+    role,
+    permissions,
+}: {
+    role: Role;
+    permissions: Permission[];
+}) {
     const [name, setName] = useState(role.name);
     const [description, setDescription] = useState(role.description ?? '');
     const [selected, setSelected] = useState<number[]>(
@@ -29,13 +35,16 @@ export default function Edit({ role, permissions }: { role: Role; permissions: P
     const [processing, setProcessing] = useState(false);
 
     const grouped = useMemo(() => {
-        return permissions.reduce<Record<string, Permission[]>>((acc, permission) => {
-            const group = permission.slug.split('.')[0];
-            acc[group] ??= [];
-            acc[group].push(permission);
+        return permissions.reduce<Record<string, Permission[]>>(
+            (acc, permission) => {
+                const group = permission.slug.split('.')[0];
+                acc[group] ??= [];
+                acc[group].push(permission);
 
-            return acc;
-        }, {});
+                return acc;
+            },
+            {},
+        );
     }, [permissions]);
 
     const toggle = (id: number) => {
@@ -67,7 +76,10 @@ export default function Edit({ role, permissions }: { role: Role; permissions: P
 
             <div className="flex flex-1 flex-col gap-6 p-4 md:p-6">
                 <div className="flex items-center justify-between">
-                    <Heading title={`Edit ${role.name}`} description="Update the role and its permissions." />
+                    <Heading
+                        title={`Edit ${role.name}`}
+                        description="Update the role and its permissions."
+                    />
                     <Link href="/admin/roles">
                         <AnimatedButton variant="outline">Back</AnimatedButton>
                     </Link>
@@ -92,29 +104,53 @@ export default function Edit({ role, permissions }: { role: Role; permissions: P
                                 <Textarea
                                     id="description"
                                     value={description}
-                                    onChange={(e) => setDescription(e.target.value)}
+                                    onChange={(e) =>
+                                        setDescription(e.target.value)
+                                    }
                                     rows={2}
                                 />
                             </div>
 
                             <div className="grid gap-4">
                                 <Label>Permissions</Label>
-                                {Object.entries(grouped).map(([group, groupPermissions]) => (
-                                    <div key={group} className="rounded-lg border p-4">
-                                        <p className="mb-2 text-sm font-medium capitalize">{group}</p>
-                                        <div className="grid gap-2 sm:grid-cols-2">
-                                            {groupPermissions.map((permission) => (
-                                                <label key={permission.id} className="flex items-center gap-2 text-sm">
-                                                    <Checkbox
-                                                        checked={selected.includes(permission.id)}
-                                                        onCheckedChange={() => toggle(permission.id)}
-                                                    />
-                                                    <span className="font-mono text-xs">{permission.slug}</span>
-                                                </label>
-                                            ))}
+                                {Object.entries(grouped).map(
+                                    ([group, groupPermissions]) => (
+                                        <div
+                                            key={group}
+                                            className="rounded-lg border p-4"
+                                        >
+                                            <p className="mb-2 text-sm font-medium capitalize">
+                                                {group}
+                                            </p>
+                                            <div className="grid gap-2 sm:grid-cols-2">
+                                                {groupPermissions.map(
+                                                    (permission) => (
+                                                        <label
+                                                            key={permission.id}
+                                                            className="flex items-center gap-2 text-sm"
+                                                        >
+                                                            <Checkbox
+                                                                checked={selected.includes(
+                                                                    permission.id,
+                                                                )}
+                                                                onCheckedChange={() =>
+                                                                    toggle(
+                                                                        permission.id,
+                                                                    )
+                                                                }
+                                                            />
+                                                            <span className="font-mono text-xs">
+                                                                {
+                                                                    permission.slug
+                                                                }
+                                                            </span>
+                                                        </label>
+                                                    ),
+                                                )}
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    ),
+                                )}
                             </div>
 
                             <AnimatedButton type="submit" disabled={processing}>

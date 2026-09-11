@@ -22,9 +22,9 @@ class CustomerSocialAuthController extends Controller
      */
     public function redirectToGoogle(): RedirectResponse
     {
-        return Socialite::driver('google')
-            ->stateless()
-            ->redirect();
+        /** @var \Laravel\Socialite\Two\AbstractProvider $driver */
+        $driver = Socialite::driver('google');
+        return $driver->stateless()->redirect();
     }
 
     /**
@@ -33,9 +33,9 @@ class CustomerSocialAuthController extends Controller
     public function handleGoogleCallback(): RedirectResponse
     {
         try {
-            $googleUser = Socialite::driver('google')
-                ->stateless()
-                ->user();
+            /** @var \Laravel\Socialite\Two\AbstractProvider $driver */
+            $driver = Socialite::driver('google');
+            $googleUser = $driver->stateless()->user();
 
             $customer = $this->findOrCreateSocialCustomer('google', [
                 'provider_id' => (string) $googleUser->getId(),
@@ -238,6 +238,7 @@ class CustomerSocialAuthController extends Controller
         abort_if(! in_array($payload['aud'] ?? null, $allowedAudiences, true), 401, 'Apple identity token audience is invalid.');
         abort_if(blank($payload['sub'] ?? null), 401, 'Apple identity token subject is missing.');
 
+        /** @var array{sub: string, iss: string, aud: string, email?: string} $payload */
         return $payload;
     }
 

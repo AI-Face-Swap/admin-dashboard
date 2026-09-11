@@ -37,7 +37,10 @@ export default function Create() {
 
             <div className="flex flex-1 flex-col gap-6 p-4 md:p-6">
                 <div className="flex items-center justify-between">
-                    <Heading title="Create Tag" description="e.g. superman, anime, football, hd." />
+                    <Heading
+                        title="Create Tag"
+                        description="e.g. superman, anime, football, hd."
+                    />
                     <Link href="/admin/template-tags">
                         <AnimatedButton variant="outline">Back</AnimatedButton>
                     </Link>

@@ -45,6 +45,8 @@ class Customer extends Authenticatable implements MustVerifyEmail
 
     /**
      * Get the customer's AI generations.
+     *
+     * @return HasMany<AIGeneration, $this>
      */
     public function generations(): HasMany
     {
@@ -53,6 +55,9 @@ class Customer extends Authenticatable implements MustVerifyEmail
 
     /**
      * Scope: only banned customers.
+     *
+     * @param Builder<self> $query
+     * @return Builder<self>
      */
     public function scopeBanned(Builder $query): Builder
     {
@@ -61,6 +66,9 @@ class Customer extends Authenticatable implements MustVerifyEmail
 
     /**
      * Scope: only active (non-banned) customers.
+     *
+     * @param Builder<self> $query
+     * @return Builder<self>
      */
     public function scopeActive(Builder $query): Builder
     {

@@ -5,6 +5,7 @@ use App\Models\AIProvider;
 use App\Models\Customer;
 use App\Models\User;
 use Illuminate\Support\Facades\Storage;
+use Laravel\Sanctum\Sanctum;
 
 test('a customer can delete their own generation', function () {
     Storage::fake('spaces');
@@ -12,7 +13,7 @@ test('a customer can delete their own generation', function () {
 
     $customer = Customer::factory()->create();
     $provider = AIProvider::create(['name' => 'Test', 'slug' => 'test', 'is_active' => true]);
-    
+
     $generation = AIGeneration::create([
         'customer_id' => $customer->id,
         'provider_id' => $provider->id,
@@ -21,7 +22,7 @@ test('a customer can delete their own generation', function () {
         'output_metadata' => ['generations/dummy.mp4'],
     ]);
 
-    \Laravel\Sanctum\Sanctum::actingAs($customer);
+    Sanctum::actingAs($customer);
     $response = $this->deleteJson("/api/v1/ai/generations/{$generation->id}");
 
     $response->assertStatus(200);
@@ -36,7 +37,7 @@ test('an admin can delete any generation', function () {
     $customer = Customer::factory()->create();
     $admin = User::factory()->create();
     $provider = AIProvider::create(['name' => 'Test', 'slug' => 'test', 'is_active' => true]);
-    
+
     $generation = AIGeneration::create([
         'customer_id' => $customer->id,
         'provider_id' => $provider->id,
@@ -57,7 +58,7 @@ test('a customer cannot delete another customer generation', function () {
     $customer1 = Customer::factory()->create();
     $customer2 = Customer::factory()->create();
     $provider = AIProvider::create(['name' => 'Test', 'slug' => 'test', 'is_active' => true]);
-    
+
     $generation = AIGeneration::create([
         'customer_id' => $customer1->id,
         'provider_id' => $provider->id,
@@ -66,7 +67,8 @@ test('a customer cannot delete another customer generation', function () {
         'output_metadata' => [],
     ]);
 
-    \Laravel\Sanctum\Sanctum::actingAs($customer2); $response = $this->deleteJson("/api/v1/ai/generations/{$generation->id}");
+    Sanctum::actingAs($customer2);
+    $response = $this->deleteJson("/api/v1/ai/generations/{$generation->id}");
 
     $response->assertStatus(403);
     $this->assertDatabaseHas('ai_generations', ['id' => $generation->id]);

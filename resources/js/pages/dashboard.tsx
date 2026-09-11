@@ -78,19 +78,21 @@ function formatNumber(num: number): string {
 }
 
 function timeAgo(dateStr: string): string {
-    const seconds = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
+    const seconds = Math.floor(
+        (Date.now() - new Date(dateStr).getTime()) / 1000,
+    );
 
     if (seconds < 60) {
-return 'Just now';
-}
+        return 'Just now';
+    }
 
     if (seconds < 3600) {
-return `${Math.floor(seconds / 60)}m ago`;
-}
+        return `${Math.floor(seconds / 60)}m ago`;
+    }
 
     if (seconds < 86400) {
-return `${Math.floor(seconds / 3600)}h ago`;
-}
+        return `${Math.floor(seconds / 3600)}h ago`;
+    }
 
     return `${Math.floor(seconds / 86400)}d ago`;
 }
@@ -125,15 +127,24 @@ function BarChart({ data }: { data: MonthlyData[] }) {
     const maxGenerations = Math.max(...data.map((d) => d.generations), 1);
 
     return (
-        <div className="flex items-end gap-2 h-[180px]">
+        <div className="flex h-[180px] items-end gap-2">
             {data.map((d) => {
-                const height = maxGenerations > 0 ? (d.generations / maxGenerations) * 100 : 0;
+                const height =
+                    maxGenerations > 0
+                        ? (d.generations / maxGenerations) * 100
+                        : 0;
 
                 return (
-                    <div key={d.month} className="flex flex-1 flex-col items-center gap-1">
-                        <div className="w-full flex flex-col items-center justify-end" style={{ height: '140px' }}>
+                    <div
+                        key={d.month}
+                        className="flex flex-1 flex-col items-center gap-1"
+                    >
+                        <div
+                            className="flex w-full flex-col items-center justify-end"
+                            style={{ height: '140px' }}
+                        >
                             {d.generations > 0 && (
-                                <span className="text-[10px] text-muted-foreground mb-1">
+                                <span className="mb-1 text-[10px] text-muted-foreground">
                                     {d.generations}
                                 </span>
                             )}
@@ -142,7 +153,7 @@ function BarChart({ data }: { data: MonthlyData[] }) {
                                 style={{ height: `${Math.max(height, 2)}%` }}
                             />
                         </div>
-                        <span className="text-[11px] text-muted-foreground font-medium">
+                        <span className="text-[11px] font-medium text-muted-foreground">
                             {d.month}
                         </span>
                     </div>
@@ -158,19 +169,30 @@ function DonutChart({ data }: { data: OperationData[] }) {
 
     if (total === 0) {
         return (
-            <div className="flex h-[140px] items-center justify-center text-muted-foreground text-sm">
+            <div className="flex h-[140px] items-center justify-center text-sm text-muted-foreground">
                 No data yet
             </div>
         );
     }
 
     // Pre-calculate cumulative offsets using reduce
-    const positioned = data.reduce<{ offset: number; items: (typeof data)[number] & { offset: number; color: string; percent: number }[] }>(
+    const positioned = data.reduce<{
+        offset: number;
+        items: ((typeof data)[number] & { offset: number; color: string; percent: number })[];
+    }>(
         (acc, d, i) => {
             const percent = (d.value / total) * 100;
-            const item = { ...d, offset: acc.offset, color: colors[i], percent };
+            const item = {
+                ...d,
+                offset: acc.offset,
+                color: colors[i],
+                percent,
+            };
 
-            return { offset: acc.offset + percent, items: [...acc.items, item] };
+            return {
+                offset: acc.offset + percent,
+                items: [...acc.items, item],
+            };
         },
         { offset: 0, items: [] },
     ).items;
@@ -196,8 +218,12 @@ function DonutChart({ data }: { data: OperationData[] }) {
                     ))}
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-lg font-bold">{formatNumber(total)}</span>
-                    <span className="text-[10px] text-muted-foreground">total</span>
+                    <span className="text-lg font-bold">
+                        {formatNumber(total)}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground">
+                        total
+                    </span>
                 </div>
             </div>
 
@@ -206,8 +232,12 @@ function DonutChart({ data }: { data: OperationData[] }) {
                 {data.map((d, i) => (
                     <div key={d.name} className="flex items-center gap-2">
                         <div className={`size-2.5 rounded-full ${colors[i]}`} />
-                        <span className="text-sm text-muted-foreground">{d.name}</span>
-                        <span className="text-sm font-medium ml-auto">{d.value}</span>
+                        <span className="text-sm text-muted-foreground">
+                            {d.name}
+                        </span>
+                        <span className="ml-auto text-sm font-medium">
+                            {d.value}
+                        </span>
                     </div>
                 ))}
             </div>
@@ -215,14 +245,21 @@ function DonutChart({ data }: { data: OperationData[] }) {
     );
 }
 
-export default function Dashboard({ stats, recent, today, monthly, operations }: Props) {
+export default function Dashboard({
+    stats,
+    recent,
+    today,
+    monthly,
+    operations,
+}: Props) {
     const statCards = [
         {
             label: "Today's Cost",
             value: formatCost(stats.today_cost),
             icon: Coins,
             hint: `${today.generations} generations today`,
-            iconClassName: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+            iconClassName:
+                'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
         },
         {
             label: 'Total Generations',
@@ -235,7 +272,8 @@ export default function Dashboard({ stats, recent, today, monthly, operations }:
             value: formatNumber(stats.face_swaps),
             icon: Wand2,
             hint: 'All time',
-            iconClassName: 'bg-violet-500/10 text-violet-600 dark:text-violet-400',
+            iconClassName:
+                'bg-violet-500/10 text-violet-600 dark:text-violet-400',
         },
         {
             label: 'Video Generations',
@@ -299,7 +337,10 @@ export default function Dashboard({ stats, recent, today, monthly, operations }:
                         <CardContent className="space-y-2">
                             {recent.length === 0 ? (
                                 <div className="flex h-[100px] items-center justify-center text-muted-foreground">
-                                    <p className="text-sm">No generations yet. Create your first one.</p>
+                                    <p className="text-sm">
+                                        No generations yet. Create your first
+                                        one.
+                                    </p>
                                 </div>
                             ) : (
                                 recent.map((item) => {
@@ -316,12 +357,18 @@ export default function Dashboard({ stats, recent, today, monthly, operations }:
                                                 </div>
                                                 <div>
                                                     <p className="text-sm font-medium">
-                                                        {operationLabel(item.operation)}
+                                                        {operationLabel(
+                                                            item.operation,
+                                                        )}
                                                     </p>
                                                     <p className="flex items-center gap-1 text-xs text-muted-foreground">
                                                         <Clock className="size-3" />
-                                                        {timeAgo(item.created_at)}
-                                                        <span className="mx-1">·</span>
+                                                        {timeAgo(
+                                                            item.created_at,
+                                                        )}
+                                                        <span className="mx-1">
+                                                            ·
+                                                        </span>
                                                         {item.customer_name}
                                                     </p>
                                                 </div>
@@ -335,16 +382,23 @@ export default function Dashboard({ stats, recent, today, monthly, operations }:
                                                 <span className="hidden text-xs text-muted-foreground sm:block">
                                                     {item.model}
                                                 </span>
-                                                {item.cost && parseFloat(item.cost) > 0 && (
-                                                    <span className="text-xs font-medium text-muted-foreground">
-                                                        ${parseFloat(item.cost).toFixed(3)}
-                                                    </span>
-                                                )}
+                                                {item.cost &&
+                                                    parseFloat(item.cost) >
+                                                        0 && (
+                                                        <span className="text-xs font-medium text-muted-foreground">
+                                                            $
+                                                            {parseFloat(
+                                                                item.cost,
+                                                            ).toFixed(3)}
+                                                        </span>
+                                                    )}
                                                 <Badge
                                                     variant={
-                                                        item.status === 'completed'
+                                                        item.status ===
+                                                        'completed'
                                                             ? 'default'
-                                                            : item.status === 'failed'
+                                                            : item.status ===
+                                                                'failed'
                                                               ? 'destructive'
                                                               : 'secondary'
                                                     }
@@ -375,7 +429,9 @@ export default function Dashboard({ stats, recent, today, monthly, operations }:
                         <AnimatedCard>
                             <CardHeader className="pb-2">
                                 <div className="flex items-center justify-between">
-                                    <CardTitle className="text-sm">Monthly Generations</CardTitle>
+                                    <CardTitle className="text-sm">
+                                        Monthly Generations
+                                    </CardTitle>
                                     <TrendingUp className="size-4 text-muted-foreground" />
                                 </div>
                             </CardHeader>
@@ -387,7 +443,9 @@ export default function Dashboard({ stats, recent, today, monthly, operations }:
                         {/* Operation Breakdown */}
                         <AnimatedCard>
                             <CardHeader className="pb-2">
-                                <CardTitle className="text-sm">Operation Breakdown</CardTitle>
+                                <CardTitle className="text-sm">
+                                    Operation Breakdown
+                                </CardTitle>
                             </CardHeader>
                             <CardContent>
                                 <DonutChart data={operations} />

@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\AIGeneration;
+use App\Models\AIModel;
+use App\Models\GenerationType;
 use App\Models\Template;
 use App\Models\TemplateCategory;
 use App\Models\TemplateTag;
@@ -54,6 +56,8 @@ class TemplateController extends Controller
         return Inertia::render('admin/templates/create', [
             'categories' => TemplateCategory::orderBy('name')->get(['id', 'name', 'slug']),
             'tags' => TemplateTag::orderBy('name')->get(['id', 'name', 'slug']),
+            'aiModels' => AIModel::ordered()->get(['id', 'provider_name', 'model_name']),
+            'generationTypes' => GenerationType::orderBy('sort_order')->orderBy('name')->get(['id', 'name', 'slug']),
         ]);
     }
 
@@ -68,6 +72,8 @@ class TemplateController extends Controller
             'slug' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:1000'],
             'category_id' => ['nullable', 'integer', 'exists:template_categories,id'],
+            'generation_type_id' => ['nullable', 'integer', 'exists:generation_types,id'],
+            'ai_model_id' => ['nullable', 'integer', 'exists:ai_models,id'],
             'type' => ['required', Rule::in([Template::TYPE_IMAGE, Template::TYPE_VIDEO])],
             'file' => ['required', 'file', 'max:51200'], // 50 MB
             'thumbnail' => ['nullable', 'image', 'max:5120'],
@@ -84,6 +90,14 @@ class TemplateController extends Controller
             'tags.*' => ['integer', 'exists:template_tags,id'],
         ]);
 
+        // Auto-populate model string from AIModel when a model is selected
+        $modelName = $validated['model'] ?? null;
+        if (! empty($validated['ai_model_id'])) {
+            /** @var \App\Models\AIModel|null $aiModel */
+            $aiModel = AIModel::find((int) $validated['ai_model_id']);
+            $modelName = $aiModel ? $aiModel->model_name : $modelName;
+        }
+
         $filePath = $request->file('file')->store('templates', $this->disk);
         $thumbnailPath = $request->file('thumbnail')?->store('templates/thumbnails', $this->disk);
 
@@ -92,11 +106,13 @@ class TemplateController extends Controller
             'slug' => $validated['slug'] ?? Str::slug($validated['name']),
             'description' => $validated['description'] ?? null,
             'category_id' => $validated['category_id'] ?? null,
+            'generation_type_id' => $validated['generation_type_id'] ?? null,
+            'ai_model_id' => $validated['ai_model_id'] ?? null,
             'type' => $validated['type'],
             'cost' => $validated['cost'] ?? 0,
             'file_path' => $filePath,
             'thumbnail_path' => $thumbnailPath,
-            'model' => $validated['model'] ?? null,
+            'model' => $modelName,
             'is_active' => $validated['is_active'] ?? true,
             'sort_order' => $validated['sort_order'] ?? 1,
             'prompt' => $validated['prompt'] ?? null,
@@ -120,6 +136,8 @@ class TemplateController extends Controller
             'template' => $template->load(['category:id,name,slug', 'tags:id,name,slug']),
             'categories' => TemplateCategory::orderBy('name')->get(['id', 'name', 'slug']),
             'tags' => TemplateTag::orderBy('name')->get(['id', 'name', 'slug']),
+            'aiModels' => AIModel::ordered()->get(['id', 'provider_name', 'model_name']),
+            'generationTypes' => GenerationType::orderBy('sort_order')->orderBy('name')->get(['id', 'name', 'slug']),
         ]);
     }
 
@@ -133,6 +151,8 @@ class TemplateController extends Controller
             'slug' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:1000'],
             'category_id' => ['nullable', 'integer', 'exists:template_categories,id'],
+            'generation_type_id' => ['nullable', 'integer', 'exists:generation_types,id'],
+            'ai_model_id' => ['nullable', 'integer', 'exists:ai_models,id'],
             'type' => ['required', Rule::in([Template::TYPE_IMAGE, Template::TYPE_VIDEO])],
             'file' => ['nullable', 'file', 'max:51200'],
             'thumbnail' => ['nullable', 'image', 'max:5120'],
@@ -149,15 +169,25 @@ class TemplateController extends Controller
             'tags.*' => ['integer', 'exists:template_tags,id'],
         ]);
 
+        // Auto-populate model string from AIModel when a model is selected
+        $modelName = $validated['model'] ?? null;
+        if (! empty($validated['ai_model_id'])) {
+            /** @var \App\Models\AIModel|null $aiModel */
+            $aiModel = AIModel::find((int) $validated['ai_model_id']);
+            $modelName = $aiModel ? $aiModel->model_name : $modelName;
+        }
+
         $data = [
             'name' => $validated['name'],
             // Slugs stay stable once created — only change when explicitly provided.
             'slug' => $validated['slug'] ?? $template->slug,
             'description' => $validated['description'] ?? null,
             'category_id' => $validated['category_id'] ?? null,
+            'generation_type_id' => $validated['generation_type_id'] ?? null,
+            'ai_model_id' => $validated['ai_model_id'] ?? null,
             'type' => $validated['type'],
             'cost' => $validated['cost'] ?? $template->cost,
-            'model' => $validated['model'] ?? null,
+            'model' => $modelName,
             'is_active' => $validated['is_active'] ?? true,
             'sort_order' => $validated['sort_order'] ?? $template->sort_order ?? 1,
             'prompt' => $validated['prompt'] ?? $template->prompt,
@@ -213,8 +243,8 @@ class TemplateController extends Controller
 
         // If it's a full URL, parse the path
         if (filter_var($sourceUrl, FILTER_VALIDATE_URL)) {
-            $sourcePath = parse_url($sourceUrl, PHP_URL_PATH);
-            $sourcePath = ltrim($sourcePath, '/');
+            $sourcePath = parse_url((string) $sourceUrl, PHP_URL_PATH);
+            $sourcePath = ltrim((string) $sourcePath, '/');
         } else {
             $sourcePath = ltrim($sourceUrl, '/');
         }

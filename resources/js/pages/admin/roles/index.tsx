@@ -53,14 +53,18 @@ export default function Index({ roles }: { roles: Role[] }) {
                                     <TableHead>Role</TableHead>
                                     <TableHead>Permissions</TableHead>
                                     <TableHead>Users</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
+                                    <TableHead className="text-right">
+                                        Actions
+                                    </TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {roles.map((role) => (
                                     <TableRow key={role.id}>
                                         <TableCell>
-                                            <div className="font-medium">{role.name}</div>
+                                            <div className="font-medium">
+                                                {role.name}
+                                            </div>
                                             {role.description && (
                                                 <div className="text-xs text-muted-foreground">
                                                     {role.description}
@@ -68,26 +72,42 @@ export default function Index({ roles }: { roles: Role[] }) {
                                             )}
                                         </TableCell>
                                         <TableCell>
-                                            <Badge variant="secondary">{role.permissions_count}</Badge>
+                                            <Badge variant="secondary">
+                                                {role.permissions_count}
+                                            </Badge>
                                         </TableCell>
                                         <TableCell>
-                                            <Badge variant="outline">{role.users_count}</Badge>
+                                            <Badge variant="outline">
+                                                {role.users_count}
+                                            </Badge>
                                         </TableCell>
                                         <TableCell className="text-right">
                                             {can('roles.manage') && (
                                                 <div className="flex justify-end gap-2">
-                                                    <Link href={`/admin/roles/${role.id}/edit`}>
-                                                        <AnimatedButton variant="outline" size="sm">
+                                                    <Link
+                                                        href={`/admin/roles/${role.id}/edit`}
+                                                    >
+                                                        <AnimatedButton
+                                                            variant="outline"
+                                                            size="sm"
+                                                        >
                                                             Edit
                                                         </AnimatedButton>
                                                     </Link>
-                                                    {role.slug !== 'super-admin' && (
+                                                    {role.slug !==
+                                                        'super-admin' && (
                                                         <Button
                                                             variant="destructive"
                                                             size="sm"
                                                             onClick={() => {
-                                                                if (confirm(`Delete role "${role.name}"?`)) {
-                                                                    router.delete(`/admin/roles/${role.id}`);
+                                                                if (
+                                                                    confirm(
+                                                                        `Delete role "${role.name}"?`,
+                                                                    )
+                                                                ) {
+                                                                    router.delete(
+                                                                        `/admin/roles/${role.id}`,
+                                                                    );
                                                                 }
                                                             }}
                                                         >
@@ -109,7 +129,5 @@ export default function Index({ roles }: { roles: Role[] }) {
 }
 
 Index.layout = {
-    breadcrumbs: [
-        { title: 'Roles', href: admin.roles.index() },
-    ],
+    breadcrumbs: [{ title: 'Roles', href: admin.roles.index() }],
 };

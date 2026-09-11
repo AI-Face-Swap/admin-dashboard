@@ -54,14 +54,18 @@ export default function Index({ categories }: { categories: Category[] }) {
                                     <TableHead>Slug</TableHead>
                                     <TableHead>Templates</TableHead>
                                     <TableHead>Status</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
+                                    <TableHead className="text-right">
+                                        Actions
+                                    </TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {categories.map((category) => (
                                     <TableRow key={category.id}>
                                         <TableCell>
-                                            <div className="font-medium">{category.name}</div>
+                                            <div className="font-medium">
+                                                {category.name}
+                                            </div>
                                             {category.description && (
                                                 <div className="text-xs text-muted-foreground">
                                                     {category.description}
@@ -72,18 +76,33 @@ export default function Index({ categories }: { categories: Category[] }) {
                                             {category.slug}
                                         </TableCell>
                                         <TableCell>
-                                            <Badge variant="outline">{category.templates_count}</Badge>
+                                            <Badge variant="outline">
+                                                {category.templates_count}
+                                            </Badge>
                                         </TableCell>
                                         <TableCell>
-                                            <Badge variant={category.is_active ? 'default' : 'secondary'}>
-                                                {category.is_active ? 'active' : 'hidden'}
+                                            <Badge
+                                                variant={
+                                                    category.is_active
+                                                        ? 'default'
+                                                        : 'secondary'
+                                                }
+                                            >
+                                                {category.is_active
+                                                    ? 'active'
+                                                    : 'hidden'}
                                             </Badge>
                                         </TableCell>
                                         <TableCell className="text-right">
                                             {can('templates.manage') && (
                                                 <div className="flex justify-end gap-2">
-                                                    <Link href={`/admin/template-categories/${category.id}/edit`}>
-                                                        <AnimatedButton variant="outline" size="sm">
+                                                    <Link
+                                                        href={`/admin/template-categories/${category.id}/edit`}
+                                                    >
+                                                        <AnimatedButton
+                                                            variant="outline"
+                                                            size="sm"
+                                                        >
                                                             Edit
                                                         </AnimatedButton>
                                                     </Link>
@@ -91,8 +110,14 @@ export default function Index({ categories }: { categories: Category[] }) {
                                                         variant="destructive"
                                                         size="sm"
                                                         onClick={() => {
-                                                            if (confirm(`Delete category "${category.name}"?`)) {
-                                                                router.delete(`/admin/template-categories/${category.id}`);
+                                                            if (
+                                                                confirm(
+                                                                    `Delete category "${category.name}"?`,
+                                                                )
+                                                            ) {
+                                                                router.delete(
+                                                                    `/admin/template-categories/${category.id}`,
+                                                                );
                                                             }
                                                         }}
                                                     >

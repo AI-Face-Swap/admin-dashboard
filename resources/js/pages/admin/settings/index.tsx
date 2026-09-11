@@ -97,13 +97,17 @@ export default function Index({ coinCosts }: Props) {
                                 💰 AI Coin Costs
                             </h3>
                             <p className="text-sm text-muted-foreground">
-                                Default coin costs per operation. Templates can override with their own cost.
+                                Default coin costs per operation. Templates can
+                                override with their own cost.
                             </p>
                         </div>
 
                         <div className="space-y-4">
                             <div className="space-y-2">
-                                <Label htmlFor="image_generation" className="text-sm font-medium">
+                                <Label
+                                    htmlFor="image_generation"
+                                    className="text-sm font-medium"
+                                >
                                     Image Generation
                                 </Label>
                                 <div className="flex items-center gap-2">
@@ -114,7 +118,10 @@ export default function Index({ coinCosts }: Props) {
                                         max={1000}
                                         value={costs.image_generation}
                                         onChange={(e) =>
-                                            handleChange('image_generation', e.target.value)
+                                            handleChange(
+                                                'image_generation',
+                                                e.target.value,
+                                            )
                                         }
                                         className="w-[120px] font-mono text-sm"
                                     />
@@ -133,7 +140,10 @@ export default function Index({ coinCosts }: Props) {
                                 </p>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="image_to_video_480p" className="text-sm font-medium">
+                                    <Label
+                                        htmlFor="image_to_video_480p"
+                                        className="text-sm font-medium"
+                                    >
                                         480p Resolution
                                     </Label>
                                     <div className="flex items-center gap-2">
@@ -144,7 +154,10 @@ export default function Index({ coinCosts }: Props) {
                                             max={1000}
                                             value={costs.image_to_video_480p}
                                             onChange={(e) =>
-                                                handleChange('image_to_video_480p', e.target.value)
+                                                handleChange(
+                                                    'image_to_video_480p',
+                                                    e.target.value,
+                                                )
                                             }
                                             className="w-[120px] font-mono text-sm"
                                         />
@@ -158,7 +171,10 @@ export default function Index({ coinCosts }: Props) {
                                 </div>
 
                                 <div className="mt-3 space-y-2">
-                                    <Label htmlFor="image_to_video_720p" className="text-sm font-medium">
+                                    <Label
+                                        htmlFor="image_to_video_720p"
+                                        className="text-sm font-medium"
+                                    >
                                         720p Resolution
                                     </Label>
                                     <div className="flex items-center gap-2">
@@ -169,7 +185,10 @@ export default function Index({ coinCosts }: Props) {
                                             max={1000}
                                             value={costs.image_to_video_720p}
                                             onChange={(e) =>
-                                                handleChange('image_to_video_720p', e.target.value)
+                                                handleChange(
+                                                    'image_to_video_720p',
+                                                    e.target.value,
+                                                )
                                             }
                                             className="w-[120px] font-mono text-sm"
                                         />
@@ -214,13 +233,30 @@ export default function Index({ coinCosts }: Props) {
                 {/* Info Section */}
                 <AnimatedCard>
                     <CardContent className="space-y-3">
-                        <h3 className="text-sm font-semibold">ℹ️ How Coin Costs Work</h3>
+                        <h3 className="text-sm font-semibold">
+                            ℹ️ How Coin Costs Work
+                        </h3>
                         <ul className="space-y-1 text-xs text-muted-foreground">
-                            <li>• These are the <strong>default</strong> costs for each operation</li>
-                            <li>• Templates can override with their own cost (set in Templates page)</li>
-                            <li>• Template-level costs take priority over these defaults</li>
-                            <li>• Changes take effect immediately for new requests</li>
-                            <li>• Existing generations are not affected by cost changes</li>
+                            <li>
+                                • These are the <strong>default</strong> costs
+                                for each operation
+                            </li>
+                            <li>
+                                • Templates can override with their own cost
+                                (set in Templates page)
+                            </li>
+                            <li>
+                                • Template-level costs take priority over these
+                                defaults
+                            </li>
+                            <li>
+                                • Changes take effect immediately for new
+                                requests
+                            </li>
+                            <li>
+                                • Existing generations are not affected by cost
+                                changes
+                            </li>
                         </ul>
                     </CardContent>
                 </AnimatedCard>

@@ -67,22 +67,22 @@ type Props = {
 
 function timeAgo(date: string | null): string {
     if (!date) {
-return 'Never';
-}
+        return 'Never';
+    }
 
     const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
 
     if (seconds < 60) {
-return 'Just now';
-}
+        return 'Just now';
+    }
 
     if (seconds < 3600) {
-return `${Math.floor(seconds / 60)}m ago`;
-}
+        return `${Math.floor(seconds / 60)}m ago`;
+    }
 
     if (seconds < 86400) {
-return `${Math.floor(seconds / 3600)}h ago`;
-}
+        return `${Math.floor(seconds / 3600)}h ago`;
+    }
 
     return `${Math.floor(seconds / 86400)}d ago`;
 }
@@ -98,26 +98,29 @@ export default function Index({ customers, stats, filters }: Props) {
         const params: Record<string, string> = {};
 
         if (search) {
-params.search = search;
-}
+            params.search = search;
+        }
 
         if (typeFilter !== 'all') {
-params.type = typeFilter;
-}
+            params.type = typeFilter;
+        }
 
         if (statusFilter !== 'all') {
-params.status = statusFilter;
-}
+            params.status = statusFilter;
+        }
 
         if (coinsMin) {
-params.coins_min = coinsMin;
-}
+            params.coins_min = coinsMin;
+        }
 
         if (coinsMax) {
-params.coins_max = coinsMax;
-}
+            params.coins_max = coinsMax;
+        }
 
-        router.get('/admin/customers', params, { preserveState: true, replace: true });
+        router.get('/admin/customers', params, {
+            preserveState: true,
+            replace: true,
+        });
     };
 
     const clearFilters = () => {
@@ -126,11 +129,19 @@ params.coins_max = coinsMax;
         setStatusFilter('all');
         setCoinsMin('');
         setCoinsMax('');
-        router.get('/admin/customers', {}, { preserveState: true, replace: true });
+        router.get(
+            '/admin/customers',
+            {},
+            { preserveState: true, replace: true },
+        );
     };
 
     const handleBan = (customer: Customer) => {
-        if (confirm(`Ban "${customer.name}"? They will not be able to login or make API requests.`)) {
+        if (
+            confirm(
+                `Ban "${customer.name}"? They will not be able to login or make API requests.`,
+            )
+        ) {
             router.patch(`/admin/customers/${customer.id}/ban`);
         }
     };
@@ -159,8 +170,12 @@ params.coins_max = coinsMax;
                                 <Users className="size-5 text-primary" />
                             </div>
                             <div>
-                                <p className="text-2xl font-bold">{stats.total}</p>
-                                <p className="text-xs text-muted-foreground">Total</p>
+                                <p className="text-2xl font-bold">
+                                    {stats.total}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                    Total
+                                </p>
                             </div>
                         </CardContent>
                     </AnimatedCard>
@@ -170,8 +185,12 @@ params.coins_max = coinsMax;
                                 <UserCheck className="size-5 text-emerald-500" />
                             </div>
                             <div>
-                                <p className="text-2xl font-bold">{stats.free}</p>
-                                <p className="text-xs text-muted-foreground">Free</p>
+                                <p className="text-2xl font-bold">
+                                    {stats.free}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                    Free
+                                </p>
                             </div>
                         </CardContent>
                     </AnimatedCard>
@@ -181,8 +200,12 @@ params.coins_max = coinsMax;
                                 <UserCheck className="size-5 text-amber-500" />
                             </div>
                             <div>
-                                <p className="text-2xl font-bold">{stats.premium}</p>
-                                <p className="text-xs text-muted-foreground">Premium</p>
+                                <p className="text-2xl font-bold">
+                                    {stats.premium}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                    Premium
+                                </p>
                             </div>
                         </CardContent>
                     </AnimatedCard>
@@ -192,8 +215,12 @@ params.coins_max = coinsMax;
                                 <Coins className="size-5 text-blue-500" />
                             </div>
                             <div>
-                                <p className="text-2xl font-bold">{stats.total_coins.toLocaleString()}</p>
-                                <p className="text-xs text-muted-foreground">Total Coins</p>
+                                <p className="text-2xl font-bold">
+                                    {stats.total_coins.toLocaleString()}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                    Total Coins
+                                </p>
                             </div>
                         </CardContent>
                     </AnimatedCard>
@@ -203,8 +230,12 @@ params.coins_max = coinsMax;
                                 <Ban className="size-5 text-destructive" />
                             </div>
                             <div>
-                                <p className="text-2xl font-bold">{stats.banned}</p>
-                                <p className="text-xs text-muted-foreground">Banned</p>
+                                <p className="text-2xl font-bold">
+                                    {stats.banned}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                    Banned
+                                </p>
                             </div>
                         </CardContent>
                     </AnimatedCard>
@@ -214,63 +245,93 @@ params.coins_max = coinsMax;
                 <AnimatedCard>
                     <CardContent>
                         <div className="flex flex-wrap items-end gap-4">
-                            <div className="flex-1 space-y-1 min-w-[200px]">
-                                <Label className="text-xs font-medium text-muted-foreground">Search</Label>
+                            <div className="min-w-[200px] flex-1 space-y-1">
+                                <Label className="text-xs font-medium text-muted-foreground">
+                                    Search
+                                </Label>
                                 <Input
                                     placeholder="Name or email..."
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
-                                    onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
+                                    onKeyDown={(e) =>
+                                        e.key === 'Enter' && applyFilters()
+                                    }
                                     className="font-mono text-xs"
                                 />
                             </div>
 
                             <div className="space-y-1">
-                                <Label className="text-xs font-medium text-muted-foreground">Type</Label>
-                                <Select value={typeFilter} onValueChange={setTypeFilter}>
+                                <Label className="text-xs font-medium text-muted-foreground">
+                                    Type
+                                </Label>
+                                <Select
+                                    value={typeFilter}
+                                    onValueChange={setTypeFilter}
+                                >
                                     <SelectTrigger className="w-[120px]">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="all">All</SelectItem>
-                                        <SelectItem value="free">Free</SelectItem>
-                                        <SelectItem value="premium">Premium</SelectItem>
+                                        <SelectItem value="free">
+                                            Free
+                                        </SelectItem>
+                                        <SelectItem value="premium">
+                                            Premium
+                                        </SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
 
                             <div className="space-y-1">
-                                <Label className="text-xs font-medium text-muted-foreground">Status</Label>
-                                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                                <Label className="text-xs font-medium text-muted-foreground">
+                                    Status
+                                </Label>
+                                <Select
+                                    value={statusFilter}
+                                    onValueChange={setStatusFilter}
+                                >
                                     <SelectTrigger className="w-[120px]">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="all">All</SelectItem>
-                                        <SelectItem value="active">Active</SelectItem>
-                                        <SelectItem value="banned">Banned</SelectItem>
+                                        <SelectItem value="active">
+                                            Active
+                                        </SelectItem>
+                                        <SelectItem value="banned">
+                                            Banned
+                                        </SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
 
                             <div className="space-y-1">
-                                <Label className="text-xs font-medium text-muted-foreground">Coins Min</Label>
+                                <Label className="text-xs font-medium text-muted-foreground">
+                                    Coins Min
+                                </Label>
                                 <Input
                                     type="number"
                                     placeholder="0"
                                     value={coinsMin}
-                                    onChange={(e) => setCoinsMin(e.target.value)}
+                                    onChange={(e) =>
+                                        setCoinsMin(e.target.value)
+                                    }
                                     className="w-[100px] font-mono text-xs"
                                 />
                             </div>
 
                             <div className="space-y-1">
-                                <Label className="text-xs font-medium text-muted-foreground">Coins Max</Label>
+                                <Label className="text-xs font-medium text-muted-foreground">
+                                    Coins Max
+                                </Label>
                                 <Input
                                     type="number"
                                     placeholder="99999"
                                     value={coinsMax}
-                                    onChange={(e) => setCoinsMax(e.target.value)}
+                                    onChange={(e) =>
+                                        setCoinsMax(e.target.value)
+                                    }
                                     className="w-[100px] font-mono text-xs"
                                 />
                             </div>
@@ -279,7 +340,11 @@ params.coins_max = coinsMax;
                                 Filter
                             </AnimatedButton>
 
-                            <AnimatedButton onClick={clearFilters} variant="outline" size="sm">
+                            <AnimatedButton
+                                onClick={clearFilters}
+                                variant="outline"
+                                size="sm"
+                            >
                                 Clear
                             </AnimatedButton>
                         </div>
@@ -299,13 +364,18 @@ params.coins_max = coinsMax;
                                     <TableHead>Generations</TableHead>
                                     <TableHead>Last Active</TableHead>
                                     <TableHead>Joined</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
+                                    <TableHead className="text-right">
+                                        Actions
+                                    </TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {customers.data.length === 0 && (
                                     <TableRow>
-                                        <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
+                                        <TableCell
+                                            colSpan={8}
+                                            className="h-24 text-center text-muted-foreground"
+                                        >
                                             No customers found.
                                         </TableCell>
                                     </TableRow>
@@ -322,26 +392,50 @@ params.coins_max = coinsMax;
                                                     />
                                                 ) : (
                                                     <div className="flex size-8 items-center justify-center rounded-full bg-muted text-xs font-medium">
-                                                        {customer.name.charAt(0).toUpperCase()}
+                                                        {customer.name
+                                                            .charAt(0)
+                                                            .toUpperCase()}
                                                     </div>
                                                 )}
                                                 <div>
-                                                    <p className="font-medium">{customer.name}</p>
-                                                    <p className="text-xs text-muted-foreground">{customer.email}</p>
+                                                    <p className="font-medium">
+                                                        {customer.name}
+                                                    </p>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        {customer.email}
+                                                    </p>
                                                 </div>
                                             </div>
                                         </TableCell>
                                         <TableCell>
-                                            <Badge variant={customer.customer_type === 'premium' ? 'default' : 'secondary'}>
+                                            <Badge
+                                                variant={
+                                                    customer.customer_type ===
+                                                    'premium'
+                                                        ? 'default'
+                                                        : 'secondary'
+                                                }
+                                            >
                                                 {customer.customer_type}
                                             </Badge>
                                         </TableCell>
                                         <TableCell>
-                                            <span className="font-mono text-sm">🪙 {customer.coins.toLocaleString()}</span>
+                                            <span className="font-mono text-sm">
+                                                🪙{' '}
+                                                {customer.coins.toLocaleString()}
+                                            </span>
                                         </TableCell>
                                         <TableCell>
-                                            <Badge variant={customer.is_banned ? 'destructive' : 'outline'}>
-                                                {customer.is_banned ? 'Banned' : 'Active'}
+                                            <Badge
+                                                variant={
+                                                    customer.is_banned
+                                                        ? 'destructive'
+                                                        : 'outline'
+                                                }
+                                            >
+                                                {customer.is_banned
+                                                    ? 'Banned'
+                                                    : 'Active'}
                                             </Badge>
                                         </TableCell>
                                         <TableCell className="text-sm text-muted-foreground">
@@ -351,12 +445,19 @@ params.coins_max = coinsMax;
                                             {timeAgo(customer.last_active_at)}
                                         </TableCell>
                                         <TableCell className="text-sm text-muted-foreground">
-                                            {new Date(customer.created_at).toLocaleDateString()}
+                                            {new Date(
+                                                customer.created_at,
+                                            ).toLocaleDateString()}
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex justify-end gap-2">
-                                                <Link href={`/admin/customers/${customer.id}`}>
-                                                    <AnimatedButton variant="outline" size="sm">
+                                                <Link
+                                                    href={`/admin/customers/${customer.id}`}
+                                                >
+                                                    <AnimatedButton
+                                                        variant="outline"
+                                                        size="sm"
+                                                    >
                                                         View
                                                     </AnimatedButton>
                                                 </Link>
@@ -364,7 +465,11 @@ params.coins_max = coinsMax;
                                                     <Button
                                                         variant="outline"
                                                         size="sm"
-                                                        onClick={() => handleUnban(customer)}
+                                                        onClick={() =>
+                                                            handleUnban(
+                                                                customer,
+                                                            )
+                                                        }
                                                     >
                                                         Unban
                                                     </Button>
@@ -372,7 +477,9 @@ params.coins_max = coinsMax;
                                                     <Button
                                                         variant="destructive"
                                                         size="sm"
-                                                        onClick={() => handleBan(customer)}
+                                                        onClick={() =>
+                                                            handleBan(customer)
+                                                        }
                                                     >
                                                         Ban
                                                     </Button>
@@ -388,26 +495,42 @@ params.coins_max = coinsMax;
                         {customers.last_page > 1 && (
                             <div className="mt-4 flex items-center justify-between">
                                 <p className="text-xs text-muted-foreground">
-                                    Page {customers.current_page} of {customers.last_page} ({customers.total} entries)
+                                    Page {customers.current_page} of{' '}
+                                    {customers.last_page} ({customers.total}{' '}
+                                    entries)
                                 </p>
                                 <div className="flex gap-1">
                                     {customers.links.map((link, index) => {
                                         const path = link.url
-                                            ? new URL(link.url).pathname + new URL(link.url).search
+                                            ? new URL(link.url).pathname +
+                                              new URL(link.url).search
                                             : '';
 
                                         return (
                                             <AnimatedButton
                                                 key={index}
-                                                variant={link.active ? 'default' : 'outline'}
+                                                variant={
+                                                    link.active
+                                                        ? 'default'
+                                                        : 'outline'
+                                                }
                                                 size="sm"
                                                 disabled={!link.url}
-                                                onClick={() => link.url && router.get(path, {}, { preserveState: true })}
+                                                onClick={() =>
+                                                    link.url &&
+                                                    router.get(
+                                                        path,
+                                                        {},
+                                                        { preserveState: true },
+                                                    )
+                                                }
                                                 className="h-8 text-xs"
                                             >
-                                                {link.label === '&laquo; Previous'
+                                                {link.label ===
+                                                '&laquo; Previous'
                                                     ? '← Prev'
-                                                    : link.label === 'Next &raquo;'
+                                                    : link.label ===
+                                                        'Next &raquo;'
                                                       ? 'Next →'
                                                       : link.label}
                                             </AnimatedButton>

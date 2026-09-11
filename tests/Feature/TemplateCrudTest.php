@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\AIGeneration;
+use App\Models\AIProvider;
 use App\Models\Role;
 use App\Models\Template;
 use App\Models\TemplateCategory;
@@ -285,11 +287,11 @@ test('an admin can save a template from a completed generation', function () {
     // Create a dummy generation output file on the disk
     Storage::disk('spaces')->put('generations/dummy.mp4', 'dummy content');
 
-    $provider = \App\Models\AIProvider::create(['name' => 'Test', 'slug' => 'test', 'is_active' => true]);
-    $generation = App\Models\AIGeneration::create([
+    $provider = AIProvider::create(['name' => 'Test', 'slug' => 'test', 'is_active' => true]);
+    $generation = AIGeneration::create([
         'provider_id' => $provider->id,
-        'operation' => App\Models\AIGeneration::OPERATION_IMAGE_TO_VIDEO,
-        'status' => App\Models\AIGeneration::STATUS_COMPLETED,
+        'operation' => AIGeneration::OPERATION_IMAGE_TO_VIDEO,
+        'status' => AIGeneration::STATUS_COMPLETED,
         'output_metadata' => ['generations/dummy.mp4'],
         'input_metadata' => [
             'prompt' => 'Test prompt',

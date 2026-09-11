@@ -46,15 +46,21 @@ export default function Index({ permissions }: { permissions: Permission[] }) {
                             <TableBody>
                                 {permissions.map((permission) => (
                                     <TableRow key={permission.id}>
-                                        <TableCell className="font-medium">{permission.name}</TableCell>
+                                        <TableCell className="font-medium">
+                                            {permission.name}
+                                        </TableCell>
                                         <TableCell>
-                                            <span className="font-mono text-xs">{permission.slug}</span>
+                                            <span className="font-mono text-xs">
+                                                {permission.slug}
+                                            </span>
                                         </TableCell>
                                         <TableCell className="text-sm text-muted-foreground">
                                             {permission.description}
                                         </TableCell>
                                         <TableCell>
-                                            <Badge variant="outline">{permission.roles_count}</Badge>
+                                            <Badge variant="outline">
+                                                {permission.roles_count}
+                                            </Badge>
                                         </TableCell>
                                     </TableRow>
                                 ))}
@@ -68,7 +74,5 @@ export default function Index({ permissions }: { permissions: Permission[] }) {
 }
 
 Index.layout = {
-    breadcrumbs: [
-        { title: 'Permissions', href: admin.permissions.index() },
-    ],
+    breadcrumbs: [{ title: 'Permissions', href: admin.permissions.index() }],
 };

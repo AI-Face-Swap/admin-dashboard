@@ -16,6 +16,9 @@ use Illuminate\Support\Carbon;
  * @property string $slug
  * @property bool $is_active
  * @property array<string, mixed>|null $config
+ * @property int|null $completed_count
+ * @property int|null $failed_count
+ * @property string|float|null $total_cost
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */

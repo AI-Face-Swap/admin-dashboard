@@ -1,6 +1,7 @@
 import { Link } from '@inertiajs/react';
 import {
     BookOpen,
+    Cpu,
     LayoutGrid,
     LayoutTemplate,
     SlidersHorizontal,
@@ -48,6 +49,12 @@ const mainNavItems: NavItem[] = [
         permission: 'templates.view',
     },
     {
+        title: 'AI Models',
+        href: '/admin/ai-models',
+        icon: Cpu,
+        permission: 'templates.view',
+    },
+    {
         title: 'Sliders',
         href: '/admin/sliders',
         icon: SlidersHorizontal,
@@ -58,6 +65,12 @@ const mainNavItems: NavItem[] = [
         href: '/admin/providers',
         icon: Server,
         permission: 'providers.view',
+    },
+    {
+        title: 'Generation Types',
+        href: '/admin/generation-types',
+        icon: Sparkles,
+        permission: 'settings.manage',
     },
     {
         title: 'Users',

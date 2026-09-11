@@ -4,11 +4,11 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\AIGeneration;
+use App\Models\Customer;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-use App\Models\Customer;
-use App\Models\User;
 
 class AIGenerationStatusController extends Controller
 {
@@ -61,23 +61,23 @@ class AIGenerationStatusController extends Controller
      * Customers can delete their own generations.
      * Admins can delete any generation.
      */
-    public function destroy(AIGeneration $generation, Request $request)
+    public function destroy(AIGeneration $generation, Request $request): \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
     {
         $user = $request->user();
-        
+
         $isOwner = $user instanceof Customer && $generation->customer_id === $user->id;
         $isAdmin = $user instanceof User; // Assuming User model is the Admin model
 
-        if (!$isOwner && !$isAdmin) {
+        if (! $isOwner && ! $isAdmin) {
             abort(403, 'Unauthorized to delete this generation.');
         }
 
         // Delete output files from DO Spaces if they exist
-        if (!empty($generation->output_metadata) && is_array($generation->output_metadata)) {
+        if (! empty($generation->output_metadata)) {
             foreach ($generation->output_metadata as $sourceUrl) {
                 if (is_string($sourceUrl)) {
                     if (filter_var($sourceUrl, FILTER_VALIDATE_URL)) {
-                        $sourcePath = ltrim(parse_url($sourceUrl, PHP_URL_PATH), '/');
+                        $sourcePath = ltrim((string) parse_url($sourceUrl, PHP_URL_PATH), '/');
                     } else {
                         $sourcePath = ltrim($sourceUrl, '/');
                     }
@@ -91,10 +91,10 @@ class AIGenerationStatusController extends Controller
 
         $generation->delete();
 
-                if ($request->wantsJson() && !$request->hasHeader('X-Inertia')) {
+        if ($request->wantsJson() && ! $request->hasHeader('X-Inertia')) {
             return response()->json(['message' => 'Generation deleted successfully.']);
         }
-        
+
         return back()->with('success', 'Generation deleted successfully.');
     }
 }

@@ -9,7 +9,7 @@
  */
 
 // Use a temporary file-based SQLite database
-define('TEST_DB_PATH', sys_get_temp_dir() . '/htut_ai_test.sqlite');
+define('TEST_DB_PATH', sys_get_temp_dir().'/htut_ai_test.sqlite');
 
 // Clean slate before each test run
 if (file_exists(TEST_DB_PATH)) {
@@ -18,7 +18,7 @@ if (file_exists(TEST_DB_PATH)) {
 
 // Set DB vars BEFORE any Laravel/Dotenv code runs
 putenv('DB_CONNECTION=sqlite');
-putenv('DB_DATABASE=' . TEST_DB_PATH);
+putenv('DB_DATABASE='.TEST_DB_PATH);
 
 $_ENV['DB_CONNECTION'] = 'sqlite';
 $_ENV['DB_DATABASE'] = TEST_DB_PATH;

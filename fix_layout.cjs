@@ -13,7 +13,7 @@ function fix(file) {
     code = code.replace(/<div className="grid gap-2">\s*<Label htmlFor="name">/, '<div className="space-y-6">\n                                <div className="grid gap-2">\n                                    <Label htmlFor="name">');
     
     // End Group 1: after negative_prompt
-    code = code.replace(/<InputError message=\{errors.negative_prompt\} \/>\n                            <\/div>/, '<InputError message={errors.negative_prompt} />\n                            </div>\n                            </div>');
+    code = code.replace(/<InputError message=\{errors.negative_prompt\} \/>\n {28}<\/div>/, '<InputError message={errors.negative_prompt} />\n                            </div>\n                            </div>');
     
     // Group 2: Files & Settings
     code = code.replace(/<div className="grid gap-2">\s*<Label htmlFor="model">/, '<div className="space-y-6">\n                            <div className="grid gap-2">\n                                <Label htmlFor="model">');

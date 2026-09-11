@@ -1,10 +1,12 @@
 <?php
 
 use App\Http\Controllers\Admin\AIController;
+use App\Http\Controllers\Admin\AIModelController;
 use App\Http\Controllers\Admin\APIPlaygroundController;
 use App\Http\Controllers\Admin\APIRequestLogController;
 use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\GenerationTypeController;
 use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\ProviderController;
 use App\Http\Controllers\Admin\RoleController;
@@ -93,6 +95,21 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::get('sliders/{slider}/edit', [SliderController::class, 'edit'])->middleware('permission:templates.manage')->name('sliders.edit');
     Route::put('sliders/{slider}', [SliderController::class, 'update'])->middleware('permission:templates.manage')->name('sliders.update');
     Route::delete('sliders/{slider}', [SliderController::class, 'destroy'])->middleware('permission:templates.manage')->name('sliders.destroy');
+    // AI Models
+    Route::get('ai-models', [AIModelController::class, 'index'])->middleware('permission:templates.view')->name('ai-models.index');
+    Route::get('ai-models/create', [AIModelController::class, 'create'])->middleware('permission:templates.manage')->name('ai-models.create');
+    Route::post('ai-models', [AIModelController::class, 'store'])->middleware('permission:templates.manage')->name('ai-models.store');
+    Route::get('ai-models/{aiModel}/edit', [AIModelController::class, 'edit'])->middleware('permission:templates.manage')->name('ai-models.edit');
+    Route::put('ai-models/{aiModel}', [AIModelController::class, 'update'])->middleware('permission:templates.manage')->name('ai-models.update');
+    Route::delete('ai-models/{aiModel}', [AIModelController::class, 'destroy'])->middleware('permission:templates.manage')->name('ai-models.destroy');
+
+    // Generation Types
+    Route::get('generation-types', [GenerationTypeController::class, 'index'])->middleware('permission:settings.manage')->name('generation-types.index');
+    Route::get('generation-types/create', [GenerationTypeController::class, 'create'])->middleware('permission:settings.manage')->name('generation-types.create');
+    Route::post('generation-types', [GenerationTypeController::class, 'store'])->middleware('permission:settings.manage')->name('generation-types.store');
+    Route::get('generation-types/{generationType}/edit', [GenerationTypeController::class, 'edit'])->middleware('permission:settings.manage')->name('generation-types.edit');
+    Route::put('generation-types/{generationType}', [GenerationTypeController::class, 'update'])->middleware('permission:settings.manage')->name('generation-types.update');
+    Route::delete('generation-types/{generationType}', [GenerationTypeController::class, 'destroy'])->middleware('permission:settings.manage')->name('generation-types.destroy');
 });
 
 require __DIR__.'/settings.php';
