@@ -162,7 +162,10 @@ export default function Edit({ slider }: Props) {
                                     <Select
                                         value={data.type}
                                         onValueChange={(v) =>
-                                            setData('type', v as 'video' | 'image')
+                                            setData(
+                                                'type',
+                                                v as 'video' | 'image',
+                                            )
                                         }
                                     >
                                         <SelectTrigger>

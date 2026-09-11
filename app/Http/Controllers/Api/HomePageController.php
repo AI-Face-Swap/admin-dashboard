@@ -23,10 +23,13 @@ class HomePageController extends Controller
     public function features()
     {
         $features = HomeFeature::where('is_active', true)
+            ->with('aiModel')
             ->orderBy('order')
             ->get();
 
-        return response()->json(['data' => $features]);
+        $grouped = $features->groupBy(fn ($f) => $f->aiModel ? $f->aiModel->model_name : 'uncategorized');
+
+        return response()->json(['data' => $grouped]);
     }
 
     public function partners()

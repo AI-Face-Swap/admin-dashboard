@@ -61,6 +61,7 @@ function generateIndex(model) {
         if (f.type === 'boolean') {
             return `<TableCell><Badge variant={item.${f.name} ? 'default' : 'secondary'}>{item.${f.name} ? 'Active' : 'Inactive'}</Badge></TableCell>`;
         }
+
         if (f.type === 'file') {
             if (f.previewType === 'image') {
                 return `<TableCell>{item.${f.name} ? <img src={item.${f.name}} alt="img" className="h-10 w-10 object-contain rounded" /> : 'None'}</TableCell>`;
@@ -68,6 +69,7 @@ function generateIndex(model) {
                 return `<TableCell>{item.${f.name} ? 'Video Uploaded' : 'None'}</TableCell>`;
             }
         }
+
         return `<TableCell>{item.${f.name}}</TableCell>`;
     }).join('\n                                        ');
 
@@ -170,6 +172,7 @@ function generateFormFields(fields) {
                                 {errors.${f.name} && <p className="text-sm text-destructive">{errors.${f.name}}</p>}
                             </div>`;
         }
+
         if (f.type === 'number') {
             return `
                             <div className="space-y-2">
@@ -183,6 +186,7 @@ function generateFormFields(fields) {
                                 {errors.${f.name} && <p className="text-sm text-destructive">{errors.${f.name}}</p>}
                             </div>`;
         }
+
         if (f.type === 'textarea') {
             return `
                             <div className="space-y-2">
@@ -197,6 +201,7 @@ function generateFormFields(fields) {
                                 {errors.${f.name} && <p className="text-sm text-destructive">{errors.${f.name}}</p>}
                             </div>`;
         }
+
         if (f.type === 'select') {
             return `
                             <div className="space-y-2">
@@ -211,6 +216,7 @@ function generateFormFields(fields) {
                                 {errors.${f.name} && <p className="text-sm text-destructive">{errors.${f.name}}</p>}
                             </div>`;
         }
+
         if (f.type === 'boolean') {
             return `
                             <div className="space-y-2">
@@ -224,6 +230,7 @@ function generateFormFields(fields) {
                                 {errors.${f.name} && <p className="text-sm text-destructive">{errors.${f.name}}</p>}
                             </div>`;
         }
+
         if (f.type === 'file') {
             return `
                             <div className="space-y-2">
@@ -245,6 +252,7 @@ function generateFormFields(fields) {
                                 {errors.${f.name} && <p className="text-sm text-destructive">{errors.${f.name}}</p>}
                             </div>`;
         }
+
         return '';
     }).join('');
 }
@@ -256,7 +264,10 @@ function generateCreate(model) {
             initialData[f.name] = null;
         } else {
             initialData[f.name] = f.type === 'boolean' ? true : (f.type === 'number' ? 0 : '');
-            if (f.type === 'select') initialData[f.name] = f.options[0];
+
+            if (f.type === 'select') {
+initialData[f.name] = f.options[0];
+}
         }
     });
 
@@ -335,8 +346,10 @@ function generateEdit(model) {
     });
 
     let initStr = '{\n';
+
     for (let key in initialData) {
         let field = model.fields.find(fi=>fi.name===key);
+
         if (field.type === 'boolean') {
             initStr += `        ${key}: !!${model.singleVarName}.${key},\n`;
         } else if (field.type === 'file') {
@@ -345,6 +358,7 @@ function generateEdit(model) {
             initStr += `        ${key}: ${model.singleVarName}.${key} || '',\n`;
         }
     }
+
     initStr += '    }';
 
     return `import { Head, Link, useForm } from '@inertiajs/react';

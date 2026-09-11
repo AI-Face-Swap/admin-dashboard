@@ -226,97 +226,168 @@ export default function Index({ coinCosts, footerSettings }: Props) {
                             </div>
                         </div>
 
-                        
                         {/* Footer Settings */}
-                        <div className="border-t pt-6 mt-6">
-                            <h3 className="mb-4 text-lg font-semibold">Footer Settings</h3>
-                            
+                        <div className="mt-6 border-t pt-6">
+                            <h3 className="mb-4 text-lg font-semibold">
+                                Footer Settings
+                            </h3>
+
                             <div className="space-y-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="about_text">About Text</Label>
+                                    <Label htmlFor="about_text">
+                                        About Text
+                                    </Label>
                                     <textarea
                                         id="about_text"
-                                        className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                                        className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
                                         value={footer.about_text || ''}
-                                        onChange={(e) => handleFooterChange('about_text', e.target.value)}
+                                        onChange={(e) =>
+                                            handleFooterChange(
+                                                'about_text',
+                                                e.target.value,
+                                            )
+                                        }
                                         rows={3}
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="contact_email">Contact Email</Label>
+                                    <Label htmlFor="contact_email">
+                                        Contact Email
+                                    </Label>
                                     <Input
                                         id="contact_email"
                                         value={footer.contact_email || ''}
-                                        onChange={(e) => handleFooterChange('contact_email', e.target.value)}
+                                        onChange={(e) =>
+                                            handleFooterChange(
+                                                'contact_email',
+                                                e.target.value,
+                                            )
+                                        }
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="copyright_text">Copyright Text</Label>
+                                    <Label htmlFor="copyright_text">
+                                        Copyright Text
+                                    </Label>
                                     <Input
                                         id="copyright_text"
                                         value={footer.copyright_text || ''}
-                                        onChange={(e) => handleFooterChange('copyright_text', e.target.value)}
+                                        onChange={(e) =>
+                                            handleFooterChange(
+                                                'copyright_text',
+                                                e.target.value,
+                                            )
+                                        }
                                     />
                                 </div>
-                                
+
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
-                                        <Label htmlFor="social_facebook">Facebook URL</Label>
+                                        <Label htmlFor="social_facebook">
+                                            Facebook URL
+                                        </Label>
                                         <Input
                                             id="social_facebook"
                                             value={footer.social_facebook || ''}
-                                            onChange={(e) => handleFooterChange('social_facebook', e.target.value)}
+                                            onChange={(e) =>
+                                                handleFooterChange(
+                                                    'social_facebook',
+                                                    e.target.value,
+                                                )
+                                            }
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label htmlFor="social_twitter">Twitter URL</Label>
+                                        <Label htmlFor="social_twitter">
+                                            Twitter URL
+                                        </Label>
                                         <Input
                                             id="social_twitter"
                                             value={footer.social_twitter || ''}
-                                            onChange={(e) => handleFooterChange('social_twitter', e.target.value)}
+                                            onChange={(e) =>
+                                                handleFooterChange(
+                                                    'social_twitter',
+                                                    e.target.value,
+                                                )
+                                            }
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label htmlFor="social_discord">Discord URL</Label>
+                                        <Label htmlFor="social_discord">
+                                            Discord URL
+                                        </Label>
                                         <Input
                                             id="social_discord"
                                             value={footer.social_discord || ''}
-                                            onChange={(e) => handleFooterChange('social_discord', e.target.value)}
+                                            onChange={(e) =>
+                                                handleFooterChange(
+                                                    'social_discord',
+                                                    e.target.value,
+                                                )
+                                            }
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label htmlFor="social_youtube">YouTube URL</Label>
+                                        <Label htmlFor="social_youtube">
+                                            YouTube URL
+                                        </Label>
                                         <Input
                                             id="social_youtube"
                                             value={footer.social_youtube || ''}
-                                            onChange={(e) => handleFooterChange('social_youtube', e.target.value)}
+                                            onChange={(e) =>
+                                                handleFooterChange(
+                                                    'social_youtube',
+                                                    e.target.value,
+                                                )
+                                            }
                                         />
                                     </div>
                                 </div>
 
                                 <div className="grid grid-cols-3 gap-4">
                                     <div className="space-y-2">
-                                        <Label htmlFor="link_terms">Terms URL</Label>
+                                        <Label htmlFor="link_terms">
+                                            Terms URL
+                                        </Label>
                                         <Input
                                             id="link_terms"
                                             value={footer.link_terms || ''}
-                                            onChange={(e) => handleFooterChange('link_terms', e.target.value)}
+                                            onChange={(e) =>
+                                                handleFooterChange(
+                                                    'link_terms',
+                                                    e.target.value,
+                                                )
+                                            }
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label htmlFor="link_privacy">Privacy URL</Label>
+                                        <Label htmlFor="link_privacy">
+                                            Privacy URL
+                                        </Label>
                                         <Input
                                             id="link_privacy"
                                             value={footer.link_privacy || ''}
-                                            onChange={(e) => handleFooterChange('link_privacy', e.target.value)}
+                                            onChange={(e) =>
+                                                handleFooterChange(
+                                                    'link_privacy',
+                                                    e.target.value,
+                                                )
+                                            }
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label htmlFor="link_faq">FAQ URL</Label>
+                                        <Label htmlFor="link_faq">
+                                            FAQ URL
+                                        </Label>
                                         <Input
                                             id="link_faq"
                                             value={footer.link_faq || ''}
-                                            onChange={(e) => handleFooterChange('link_faq', e.target.value)}
+                                            onChange={(e) =>
+                                                handleFooterChange(
+                                                    'link_faq',
+                                                    e.target.value,
+                                                )
+                                            }
                                         />
                                     </div>
                                 </div>

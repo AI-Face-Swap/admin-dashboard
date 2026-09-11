@@ -1,11 +1,18 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { Pencil, Plus, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { AnimatedButton } from '@/components/animated/AnimatedButton';
 import { AnimatedCard } from '@/components/animated/AnimatedCard';
-import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { toast } from 'sonner';
+import { CardContent } from '@/components/ui/card';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
 
 export default function Index({ partners }: { partners: any }) {
     const handleDelete = (item: any) => {
@@ -23,8 +30,12 @@ export default function Index({ partners }: { partners: any }) {
             <div className="space-y-6">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-3xl font-bold tracking-tight">Partners</h1>
-                        <p className="text-muted-foreground">Manage your partners.</p>
+                        <h1 className="text-3xl font-bold tracking-tight">
+                            Partners
+                        </h1>
+                        <p className="text-muted-foreground">
+                            Manage your partners.
+                        </p>
                     </div>
                     <Link href={`/admin/partners/create`}>
                         <AnimatedButton>
@@ -40,29 +51,66 @@ export default function Index({ partners }: { partners: any }) {
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>Name</TableHead>
-                                        <TableHead>Logo Image</TableHead>
-                                        <TableHead>Website URL</TableHead>
-                                        <TableHead>Order</TableHead>
-                                        <TableHead>Active</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
+                                    <TableHead>Logo Image</TableHead>
+                                    <TableHead>Website URL</TableHead>
+                                    <TableHead>Order</TableHead>
+                                    <TableHead>Active</TableHead>
+                                    <TableHead className="text-right">
+                                        Actions
+                                    </TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {partners.data.map((item: any) => (
                                     <TableRow key={item.id}>
                                         <TableCell>{item.name}</TableCell>
-                                        <TableCell>{item.logo_url ? <img src={item.logo_url} alt="img" className="h-10 w-10 object-contain rounded" /> : 'None'}</TableCell>
-                                        <TableCell>{item.website_url}</TableCell>
+                                        <TableCell>
+                                            {item.logo_url ? (
+                                                <img
+                                                    src={item.logo_url}
+                                                    alt="img"
+                                                    className="h-10 w-10 rounded object-contain"
+                                                />
+                                            ) : (
+                                                'None'
+                                            )}
+                                        </TableCell>
+                                        <TableCell>
+                                            {item.website_url}
+                                        </TableCell>
                                         <TableCell>{item.order}</TableCell>
-                                        <TableCell><Badge variant={item.is_active ? 'default' : 'secondary'}>{item.is_active ? 'Active' : 'Inactive'}</Badge></TableCell>
+                                        <TableCell>
+                                            <Badge
+                                                variant={
+                                                    item.is_active
+                                                        ? 'default'
+                                                        : 'secondary'
+                                                }
+                                            >
+                                                {item.is_active
+                                                    ? 'Active'
+                                                    : 'Inactive'}
+                                            </Badge>
+                                        </TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex justify-end gap-2">
-                                                <Link href={`/admin/partners/${item.id}/edit`}>
-                                                    <AnimatedButton variant="outline" size="sm">
+                                                <Link
+                                                    href={`/admin/partners/${item.id}/edit`}
+                                                >
+                                                    <AnimatedButton
+                                                        variant="outline"
+                                                        size="sm"
+                                                    >
                                                         <Pencil className="size-4" />
                                                     </AnimatedButton>
                                                 </Link>
-                                                <AnimatedButton variant="destructive" size="sm" onClick={() => handleDelete(item)}>
+                                                <AnimatedButton
+                                                    variant="destructive"
+                                                    size="sm"
+                                                    onClick={() =>
+                                                        handleDelete(item)
+                                                    }
+                                                >
                                                     <Trash2 className="size-4" />
                                                 </AnimatedButton>
                                             </div>
@@ -71,7 +119,10 @@ export default function Index({ partners }: { partners: any }) {
                                 ))}
                                 {partners.data.length === 0 && (
                                     <TableRow>
-                                        <TableCell colSpan={6} className="text-center h-24">
+                                        <TableCell
+                                            colSpan={6}
+                                            className="h-24 text-center"
+                                        >
                                             No partners found.
                                         </TableCell>
                                     </TableRow>

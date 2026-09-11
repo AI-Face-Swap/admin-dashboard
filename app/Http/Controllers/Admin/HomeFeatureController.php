@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\HomeFeature;
+use App\Models\AIModel;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Str;
@@ -14,29 +15,37 @@ class HomeFeatureController extends Controller
     public function index()
     {
         return Inertia::render('admin/home-features/index', [
-            'features' => HomeFeature::orderBy('order')->paginate(15)
+            'features' => HomeFeature::with('aiModel')->orderBy('order')->paginate(15)
         ]);
     }
 
     public function create()
     {
-        return Inertia::render('admin/home-features/create');
+        return Inertia::render('admin/home-features/create', [
+            'aiModels' => AIModel::ordered()->get(),
+        ]);
     }
 
     public function store(Request $request)
     {
+        // Convert 'none' to null before validation so exists:ai_models,id doesn't fail
+        if ($request->input('ai_model_id') === 'none') {
+            $request->merge(['ai_model_id' => null]);
+        }
+
         $validated = $request->validate([
             'title' => 'required|string',
             'description' => 'required|string',
             'link' => 'nullable|string',
             'order' => 'required|integer',
             'is_active' => 'boolean',
+            'ai_model_id' => 'nullable|exists:ai_models,id',
             'icon_url' => 'nullable|file|mimes:jpg,jpeg,png,webp,svg|max:5120',
             'video_url' => 'nullable|file|mimes:mp4,mov,avi|max:20480'
         ]);
 
         $data = $validated;
-        
+
         if ($request->hasFile('icon_url')) {
             $file = $request->file('icon_url');
             $path = $file->storeAs('HomeFeature', \Illuminate\Support\Str::uuid().'.'.$file->getClientOriginalExtension(), 'spaces');
@@ -57,21 +66,28 @@ class HomeFeatureController extends Controller
         return redirect()->route('admin.home-features.index')->with('success', 'Created successfully.');
     }
 
-    public function edit(HomeFeature $item)
+    public function edit(HomeFeature $homeFeature)
     {
         return Inertia::render('admin/home-features/edit', [
-            'feature' => $item
+            'feature' => $homeFeature->load('aiModel'),
+            'aiModels' => AIModel::ordered()->get(),
         ]);
     }
 
-    public function update(Request $request, HomeFeature $item)
+    public function update(Request $request, HomeFeature $homeFeature)
     {
+        // Convert 'none' to null before validation so exists:ai_models,id doesn't fail
+        if ($request->input('ai_model_id') === 'none') {
+            $request->merge(['ai_model_id' => null]);
+        }
+
         $validated = $request->validate([
             'title' => 'required|string',
             'description' => 'required|string',
             'link' => 'nullable|string',
             'order' => 'required|integer',
             'is_active' => 'boolean',
+            'ai_model_id' => 'nullable|exists:ai_models,id',
             'icon_url' => 'nullable|file|mimes:jpg,jpeg,png,webp,svg|max:5120',
             'video_url' => 'nullable|file|mimes:mp4,mov,avi|max:20480'
         ]);
@@ -83,8 +99,8 @@ class HomeFeatureController extends Controller
                 unset($data[$f]);
             }
         }
-        
-        
+
+
         if ($request->hasFile('icon_url')) {
             $file = $request->file('icon_url');
             $path = $file->storeAs('HomeFeature', \Illuminate\Support\Str::uuid().'.'.$file->getClientOriginalExtension(), 'spaces');
@@ -96,18 +112,18 @@ class HomeFeatureController extends Controller
             $path = $file->storeAs('HomeFeature', \Illuminate\Support\Str::uuid().'.'.$file->getClientOriginalExtension(), 'spaces');
             $data['video_url'] = \Illuminate\Support\Facades\Storage::disk('spaces')->url($path);
         }
-        
+
         if (!isset($data['is_active'])) {
             $data['is_active'] = $request->boolean('is_active');
         }
 
-        $item->update($data);
+        $homeFeature->update($data);
         return redirect()->route('admin.home-features.index')->with('success', 'Updated successfully.');
     }
 
-    public function destroy(HomeFeature $item)
+    public function destroy(HomeFeature $homeFeature)
     {
-        $item->delete();
+        $homeFeature->delete();
         return redirect()->route('admin.home-features.index')->with('success', 'Deleted successfully.');
     }
 }

@@ -36,6 +36,11 @@ class AIModel extends Model
         return $this->hasMany(Template::class, 'ai_model_id');
     }
 
+    public function homeFeatures(): HasMany
+    {
+        return $this->hasMany(HomeFeature::class, 'ai_model_id');
+    }
+
     /**
      * Scope to order by sort_order then model_name.
      *

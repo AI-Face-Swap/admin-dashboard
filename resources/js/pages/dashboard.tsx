@@ -178,7 +178,11 @@ function DonutChart({ data }: { data: OperationData[] }) {
     // Pre-calculate cumulative offsets using reduce
     const positioned = data.reduce<{
         offset: number;
-        items: ((typeof data)[number] & { offset: number; color: string; percent: number })[];
+        items: ((typeof data)[number] & {
+            offset: number;
+            color: string;
+            percent: number;
+        })[];
     }>(
         (acc, d, i) => {
             const percent = (d.value / total) * 100;

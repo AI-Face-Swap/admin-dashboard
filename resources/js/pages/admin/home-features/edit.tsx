@@ -1,13 +1,26 @@
 import { Head, Link, useForm } from '@inertiajs/react';
+import { toast } from 'sonner';
 import { AnimatedButton } from '@/components/animated/AnimatedButton';
 import { AnimatedCard } from '@/components/animated/AnimatedCard';
 import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { toast } from 'sonner';
 
-export default function Edit({ feature }: { feature: any }) {
+export default function Edit({
+    feature,
+    aiModels,
+}: {
+    feature: any;
+    aiModels: any[];
+}) {
     const { data, setData, post, processing, errors } = useForm<any>({
         title: feature.title || '',
         description: feature.description || '',
@@ -16,6 +29,7 @@ export default function Edit({ feature }: { feature: any }) {
         link: feature.link || '',
         order: feature.order || '',
         is_active: !!feature.is_active,
+        ai_model_id: feature.ai_model_id ? String(feature.ai_model_id) : '',
     });
 
     const submit = (e: React.FormEvent) => {
@@ -32,7 +46,9 @@ export default function Edit({ feature }: { feature: any }) {
             <Head title="Edit HomeFeature" />
             <div className="mx-auto max-w-2xl space-y-6">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Edit HomeFeature</h1>
+                    <h1 className="text-3xl font-bold tracking-tight">
+                        Edit HomeFeature
+                    </h1>
                 </div>
 
                 <form onSubmit={submit}>
@@ -41,27 +57,38 @@ export default function Edit({ feature }: { feature: any }) {
                             <CardTitle>Details</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            
                             <div className="space-y-2">
                                 <Label htmlFor="title">Title</Label>
                                 <Input
                                     id="title"
                                     type="text"
                                     value={data.title}
-                                    onChange={(e) => setData('title', e.target.value)}
+                                    onChange={(e) =>
+                                        setData('title', e.target.value)
+                                    }
                                 />
-                                {errors.title && <p className="text-sm text-destructive">{errors.title}</p>}
+                                {errors.title && (
+                                    <p className="text-sm text-destructive">
+                                        {errors.title}
+                                    </p>
+                                )}
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="description">Description</Label>
                                 <textarea
                                     id="description"
-                                    className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                                    className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                                     value={data.description}
-                                    onChange={(e) => setData('description', e.target.value)}
+                                    onChange={(e) =>
+                                        setData('description', e.target.value)
+                                    }
                                     rows={3}
                                 />
-                                {errors.description && <p className="text-sm text-destructive">{errors.description}</p>}
+                                {errors.description && (
+                                    <p className="text-sm text-destructive">
+                                        {errors.description}
+                                    </p>
+                                )}
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="icon_url">Icon Image</Label>
@@ -69,15 +96,33 @@ export default function Edit({ feature }: { feature: any }) {
                                     id="icon_url"
                                     type="file"
                                     accept="image/*"
-                                    onChange={(e) => setData('icon_url', e.target.files ? e.target.files[0] : null)}
+                                    onChange={(e) =>
+                                        setData(
+                                            'icon_url',
+                                            e.target.files
+                                                ? e.target.files[0]
+                                                : null,
+                                        )
+                                    }
                                 />
-                                {typeof data.icon_url === 'string' && data.icon_url && (
-                                    <div className="mt-2">
-                                        <p className="text-xs text-muted-foreground mb-1">Current file:</p>
-                                        <img src={data.icon_url as string} className="h-32 rounded object-contain" alt="Current" />
-                                    </div>
+                                {typeof data.icon_url === 'string' &&
+                                    data.icon_url && (
+                                        <div className="mt-2">
+                                            <p className="mb-1 text-xs text-muted-foreground">
+                                                Current file:
+                                            </p>
+                                            <img
+                                                src={data.icon_url as string}
+                                                className="h-32 rounded object-contain"
+                                                alt="Current"
+                                            />
+                                        </div>
+                                    )}
+                                {errors.icon_url && (
+                                    <p className="text-sm text-destructive">
+                                        {errors.icon_url}
+                                    </p>
                                 )}
-                                {errors.icon_url && <p className="text-sm text-destructive">{errors.icon_url}</p>}
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="video_url">Video</Label>
@@ -85,15 +130,33 @@ export default function Edit({ feature }: { feature: any }) {
                                     id="video_url"
                                     type="file"
                                     accept="video/*"
-                                    onChange={(e) => setData('video_url', e.target.files ? e.target.files[0] : null)}
+                                    onChange={(e) =>
+                                        setData(
+                                            'video_url',
+                                            e.target.files
+                                                ? e.target.files[0]
+                                                : null,
+                                        )
+                                    }
                                 />
-                                {typeof data.video_url === 'string' && data.video_url && (
-                                    <div className="mt-2">
-                                        <p className="text-xs text-muted-foreground mb-1">Current video:</p>
-                                        <video src={data.video_url as string} className="h-32 rounded" controls />
-                                    </div>
+                                {typeof data.video_url === 'string' &&
+                                    data.video_url && (
+                                        <div className="mt-2">
+                                            <p className="mb-1 text-xs text-muted-foreground">
+                                                Current video:
+                                            </p>
+                                            <video
+                                                src={data.video_url as string}
+                                                className="h-32 rounded"
+                                                controls
+                                            />
+                                        </div>
+                                    )}
+                                {errors.video_url && (
+                                    <p className="text-sm text-destructive">
+                                        {errors.video_url}
+                                    </p>
                                 )}
-                                {errors.video_url && <p className="text-sm text-destructive">{errors.video_url}</p>}
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="link">Link</Label>
@@ -101,9 +164,15 @@ export default function Edit({ feature }: { feature: any }) {
                                     id="link"
                                     type="text"
                                     value={data.link}
-                                    onChange={(e) => setData('link', e.target.value)}
+                                    onChange={(e) =>
+                                        setData('link', e.target.value)
+                                    }
                                 />
-                                {errors.link && <p className="text-sm text-destructive">{errors.link}</p>}
+                                {errors.link && (
+                                    <p className="text-sm text-destructive">
+                                        {errors.link}
+                                    </p>
+                                )}
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="order">Order</Label>
@@ -111,27 +180,80 @@ export default function Edit({ feature }: { feature: any }) {
                                     id="order"
                                     type="number"
                                     value={data.order}
-                                    onChange={(e) => setData('order', parseInt(e.target.value) || 0)}
+                                    onChange={(e) =>
+                                        setData(
+                                            'order',
+                                            parseInt(e.target.value) || 0,
+                                        )
+                                    }
                                 />
-                                {errors.order && <p className="text-sm text-destructive">{errors.order}</p>}
+                                {errors.order && (
+                                    <p className="text-sm text-destructive">
+                                        {errors.order}
+                                    </p>
+                                )}
                             </div>
                             <div className="space-y-2">
                                 <Label>Active</Label>
                                 <div className="flex h-10 items-center">
                                     <Switch
                                         checked={data.is_active}
-                                        onCheckedChange={(checked) => setData('is_active', checked)}
+                                        onCheckedChange={(checked) =>
+                                            setData('is_active', checked)
+                                        }
                                     />
                                 </div>
-                                {errors.is_active && <p className="text-sm text-destructive">{errors.is_active}</p>}
+                                {errors.is_active && (
+                                    <p className="text-sm text-destructive">
+                                        {errors.is_active}
+                                    </p>
+                                )}
                             </div>
-                            
+                            <div className="space-y-2">
+                                <Label>AI Model</Label>
+                                <Select
+                                    value={data.ai_model_id}
+                                    onValueChange={(value) =>
+                                        setData('ai_model_id', value || '')
+                                    }
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select an AI model (optional)" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="none">
+                                            None
+                                        </SelectItem>
+                                        {aiModels.map((model: any) => (
+                                            <SelectItem
+                                                key={model.id}
+                                                value={String(model.id)}
+                                            >
+                                                {model.provider_name} /{' '}
+                                                {model.model_name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                {errors.ai_model_id && (
+                                    <p className="text-sm text-destructive">
+                                        {errors.ai_model_id}
+                                    </p>
+                                )}
+                            </div>
+
                             <div className="flex items-center gap-3 border-t pt-4">
-                                <AnimatedButton type="submit" disabled={processing}>
+                                <AnimatedButton
+                                    type="submit"
+                                    disabled={processing}
+                                >
                                     {processing ? 'Saving...' : 'Save Changes'}
                                 </AnimatedButton>
                                 <Link href="/admin/home-features">
-                                    <AnimatedButton type="button" variant="outline">
+                                    <AnimatedButton
+                                        type="button"
+                                        variant="outline"
+                                    >
                                         Cancel
                                     </AnimatedButton>
                                 </Link>

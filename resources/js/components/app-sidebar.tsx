@@ -14,7 +14,6 @@ import {
     UserCheck,
     Users,
     MonitorPlay,
-    Blocks,
     Handshake,
 } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
@@ -64,15 +63,9 @@ const mainNavItems: NavItem[] = [
         permission: 'templates.view',
     },
     {
-        title: 'Home Showcases',
+        title: 'Home Page',
         href: '/admin/home-showcases',
         icon: MonitorPlay,
-        permission: 'settings.manage',
-    },
-    {
-        title: 'Home Features',
-        href: '/admin/home-features',
-        icon: Blocks,
         permission: 'settings.manage',
     },
     {

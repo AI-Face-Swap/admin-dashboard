@@ -20,6 +20,7 @@ return new class extends Migration
             $table->string('link')->nullable();
             $table->integer('order')->default(0);
             $table->boolean('is_active')->default(true);
+            $table->foreignId('ai_model_id')->nullable()->constrained('ai_models')->nullOnDelete();
             $table->timestamps();
         });
     }

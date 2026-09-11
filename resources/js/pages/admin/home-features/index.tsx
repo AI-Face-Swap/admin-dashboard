@@ -1,11 +1,19 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { Pencil, Plus, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { AnimatedButton } from '@/components/animated/AnimatedButton';
 import { AnimatedCard } from '@/components/animated/AnimatedCard';
-import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import Heading from '@/components/heading';
 import { Badge } from '@/components/ui/badge';
-import { toast } from 'sonner';
+import { CardContent } from '@/components/ui/card';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
 
 export default function Index({ features }: { features: any }) {
     const handleDelete = (item: any) => {
@@ -20,18 +28,25 @@ export default function Index({ features }: { features: any }) {
     return (
         <>
             <Head title="Home Features" />
-            <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-3xl font-bold tracking-tight">Home Features</h1>
-                        <p className="text-muted-foreground">Manage your home features.</p>
+            <div className="flex flex-1 flex-col gap-6 p-4 md:p-6">
+                <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+                    <Heading
+                        title="Home Features"
+                        description="Manage your home page features."
+                    />
+                    <div className="flex gap-2">
+                        <Link href={`/admin/home-showcases`}>
+                            <AnimatedButton variant="outline">
+                                Showcases
+                            </AnimatedButton>
+                        </Link>
+                        <Link href={`/admin/home-features/create`}>
+                            <AnimatedButton>
+                                <Plus className="mr-2 size-4" />
+                                New Feature
+                            </AnimatedButton>
+                        </Link>
                     </div>
-                    <Link href={`/admin/home-features/create`}>
-                        <AnimatedButton>
-                            <Plus className="mr-2 size-4" />
-                            Add New
-                        </AnimatedButton>
-                    </Link>
                 </div>
 
                 <AnimatedCard>
@@ -40,33 +55,86 @@ export default function Index({ features }: { features: any }) {
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>Title</TableHead>
-                                        <TableHead>Description</TableHead>
-                                        <TableHead>Icon Image</TableHead>
-                                        <TableHead>Video</TableHead>
-                                        <TableHead>Link</TableHead>
-                                        <TableHead>Order</TableHead>
-                                        <TableHead>Active</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
+                                    <TableHead>Description</TableHead>
+                                    <TableHead>Icon Image</TableHead>
+                                    <TableHead>Video</TableHead>
+                                    <TableHead>AI Model</TableHead>
+                                    <TableHead>Link</TableHead>
+                                    <TableHead>Order</TableHead>
+                                    <TableHead>Active</TableHead>
+                                    <TableHead className="text-right">
+                                        Actions
+                                    </TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {features.data.map((item: any) => (
                                     <TableRow key={item.id}>
                                         <TableCell>{item.title}</TableCell>
-                                        <TableCell>{item.description}</TableCell>
-                                        <TableCell>{item.icon_url ? <img src={item.icon_url} alt="img" className="h-10 w-10 object-contain rounded" /> : 'None'}</TableCell>
-                                        <TableCell>{item.video_url ? <video src={item.video_url} className="h-10 w-10 object-contain rounded" controls /> : 'None'}</TableCell>
+                                        <TableCell>
+                                            {item.description}
+                                        </TableCell>
+                                        <TableCell>
+                                            {item.icon_url ? (
+                                                <img
+                                                    src={item.icon_url}
+                                                    alt="img"
+                                                    className="h-10 w-10 rounded object-contain"
+                                                />
+                                            ) : (
+                                                'None'
+                                            )}
+                                        </TableCell>
+                                        <TableCell>
+                                            {item.video_url ? (
+                                                <video
+                                                    src={item.video_url}
+                                                    className="h-10 w-10 rounded object-contain"
+                                                    controls
+                                                />
+                                            ) : (
+                                                'None'
+                                            )}
+                                        </TableCell>
+                                        <TableCell>
+                                            {item.ai_model
+                                                ? `${item.ai_model.provider_name} / ${item.ai_model.model_name}`
+                                                : '—'}
+                                        </TableCell>
                                         <TableCell>{item.link}</TableCell>
                                         <TableCell>{item.order}</TableCell>
-                                        <TableCell><Badge variant={item.is_active ? 'default' : 'secondary'}>{item.is_active ? 'Active' : 'Inactive'}</Badge></TableCell>
+                                        <TableCell>
+                                            <Badge
+                                                variant={
+                                                    item.is_active
+                                                        ? 'default'
+                                                        : 'secondary'
+                                                }
+                                            >
+                                                {item.is_active
+                                                    ? 'Active'
+                                                    : 'Inactive'}
+                                            </Badge>
+                                        </TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex justify-end gap-2">
-                                                <Link href={`/admin/home-features/${item.id}/edit`}>
-                                                    <AnimatedButton variant="outline" size="sm">
+                                                <Link
+                                                    href={`/admin/home-features/${item.id}/edit`}
+                                                >
+                                                    <AnimatedButton
+                                                        variant="outline"
+                                                        size="sm"
+                                                    >
                                                         <Pencil className="size-4" />
                                                     </AnimatedButton>
                                                 </Link>
-                                                <AnimatedButton variant="destructive" size="sm" onClick={() => handleDelete(item)}>
+                                                <AnimatedButton
+                                                    variant="destructive"
+                                                    size="sm"
+                                                    onClick={() =>
+                                                        handleDelete(item)
+                                                    }
+                                                >
                                                     <Trash2 className="size-4" />
                                                 </AnimatedButton>
                                             </div>
@@ -75,7 +143,10 @@ export default function Index({ features }: { features: any }) {
                                 ))}
                                 {features.data.length === 0 && (
                                     <TableRow>
-                                        <TableCell colSpan={8} className="text-center h-24">
+                                        <TableCell
+                                            colSpan={8}
+                                            className="h-24 text-center"
+                                        >
                                             No home features found.
                                         </TableCell>
                                     </TableRow>
@@ -90,5 +161,8 @@ export default function Index({ features }: { features: any }) {
 }
 
 Index.layout = {
-    breadcrumbs: [{ title: 'Home Features', href: '/admin/home-features' }],
+    breadcrumbs: [
+        { title: 'Home', href: '/admin/home-showcases' },
+        { title: 'Features', href: '/admin/home-features' },
+    ],
 };
