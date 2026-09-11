@@ -28,7 +28,7 @@ class Slider extends Model
     /**
      * Scope: active sliders ordered by sorting DESC, created_at DESC.
      *
-     * @param Builder<self> $query
+     * @param  Builder<self>  $query
      * @return Builder<self>
      */
     public function scopeActive(Builder $query): Builder
@@ -41,7 +41,7 @@ class Slider extends Model
     /**
      * Scope: all sliders ordered by sorting DESC, created_at DESC.
      *
-     * @param Builder<self> $query
+     * @param  Builder<self>  $query
      * @return Builder<self>
      */
     public function scopeOrdered(Builder $query): Builder

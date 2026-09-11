@@ -23,7 +23,7 @@ class SettingController extends Controller
         ];
 
         $footerSettings = Setting::group('footer');
-        
+
         return Inertia::render('admin/settings/index', [
             'coinCosts' => $coinCosts,
             'footerSettings' => $footerSettings,
@@ -39,7 +39,7 @@ class SettingController extends Controller
             'coin_costs.image_generation' => 'required|integer|min:0|max:1000',
             'coin_costs.image_to_video_480p' => 'required|integer|min:0|max:1000',
             'coin_costs.image_to_video_720p' => 'required|integer|min:0|max:1000',
-            
+
             'footer_settings.about_text' => 'nullable|string',
             'footer_settings.contact_email' => 'nullable|string',
             'footer_settings.social_facebook' => 'nullable|string',

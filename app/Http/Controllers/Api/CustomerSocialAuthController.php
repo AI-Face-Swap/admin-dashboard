@@ -12,6 +12,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Laravel\Socialite\Facades\Socialite;
+use Laravel\Socialite\Two\AbstractProvider;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Throwable;
 
@@ -22,8 +23,9 @@ class CustomerSocialAuthController extends Controller
      */
     public function redirectToGoogle(): RedirectResponse
     {
-        /** @var \Laravel\Socialite\Two\AbstractProvider $driver */
+        /** @var AbstractProvider $driver */
         $driver = Socialite::driver('google');
+
         return $driver->stateless()->redirect();
     }
 
@@ -33,7 +35,7 @@ class CustomerSocialAuthController extends Controller
     public function handleGoogleCallback(): RedirectResponse
     {
         try {
-            /** @var \Laravel\Socialite\Two\AbstractProvider $driver */
+            /** @var AbstractProvider $driver */
             $driver = Socialite::driver('google');
             $googleUser = $driver->stateless()->user();
 

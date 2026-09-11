@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Models\Customer;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -34,7 +35,7 @@ class CustomerResetPassword extends Notification implements ShouldQueue
      */
     public function toMail(object $notifiable): MailMessage
     {
-        /** @var \App\Models\Customer $notifiable */
+        /** @var Customer $notifiable */
         $resetUrl = $this->resetUrl($notifiable);
 
         return (new MailMessage)
@@ -55,7 +56,7 @@ class CustomerResetPassword extends Notification implements ShouldQueue
      */
     protected function resetUrl(object $notifiable): string
     {
-        /** @var \App\Models\Customer $notifiable */
+        /** @var Customer $notifiable */
         $frontendUrl = config('app.frontend_url', 'http://localhost:5173');
 
         return "{$frontendUrl}/reset-password?token={$this->token}&email=".urlencode($notifiable->email);

@@ -5,20 +5,20 @@ $controllers = [
         'model' => 'HomeShowcase',
         'var' => 'showcases',
         'single' => 'showcase',
-        'view' => 'admin/home-showcases'
+        'view' => 'admin/home-showcases',
     ],
     'HomeFeature' => [
         'model' => 'HomeFeature',
         'var' => 'features',
         'single' => 'feature',
-        'view' => 'admin/home-features'
+        'view' => 'admin/home-features',
     ],
     'Partner' => [
         'model' => 'Partner',
         'var' => 'partners',
         'single' => 'partner',
-        'view' => 'admin/partners'
-    ]
+        'view' => 'admin/partners',
+    ],
 ];
 
 foreach ($controllers as $name => $c) {

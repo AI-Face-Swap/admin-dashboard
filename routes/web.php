@@ -7,6 +7,9 @@ use App\Http\Controllers\Admin\APIRequestLogController;
 use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\GenerationTypeController;
+use App\Http\Controllers\Admin\HomeFeatureController;
+use App\Http\Controllers\Admin\HomeShowcaseController;
+use App\Http\Controllers\Admin\PartnerController;
 use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\ProviderController;
 use App\Http\Controllers\Admin\RoleController;
@@ -85,9 +88,9 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::delete('customers/{customer}', [CustomerController::class, 'destroy'])->middleware('permission:customers.manage')->name('customers.destroy');
 
     // Home Page Settings
-    Route::resource('home-showcases', \App\Http\Controllers\Admin\HomeShowcaseController::class)->except(['show'])->middleware('permission:settings.manage');
-    Route::resource('home-features', \App\Http\Controllers\Admin\HomeFeatureController::class)->except(['show'])->middleware('permission:settings.manage');
-    Route::resource('partners', \App\Http\Controllers\Admin\PartnerController::class)->except(['show'])->middleware('permission:settings.manage');
+    Route::resource('home-showcases', HomeShowcaseController::class)->except(['show'])->middleware('permission:settings.manage');
+    Route::resource('home-features', HomeFeatureController::class)->except(['show'])->middleware('permission:settings.manage');
+    Route::resource('partners', PartnerController::class)->except(['show'])->middleware('permission:settings.manage');
 
     // Settings
     Route::get('settings', [SettingController::class, 'index'])->middleware('permission:settings.manage')->name('settings.index');

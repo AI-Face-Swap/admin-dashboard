@@ -5,8 +5,8 @@ $controllers = [
         'varPlural' => 'showcases',
         'varSingle' => 'showcase',
         'files' => [
-            'video_url' => "mimes:mp4,webm,mov|max:51200",
-            'image_fallback_url' => "mimes:jpg,jpeg,png,webp|max:10240"
+            'video_url' => 'mimes:mp4,webm,mov|max:51200',
+            'image_fallback_url' => 'mimes:jpg,jpeg,png,webp|max:10240',
         ],
         'fields' => [
             "'section_name' => 'nullable|string'",
@@ -15,13 +15,13 @@ $controllers = [
             "'alignment' => 'required|in:left,right'",
             "'order' => 'required|integer'",
             "'is_active' => 'boolean'",
-        ]
+        ],
     ],
     'HomeFeature' => [
         'varPlural' => 'features',
         'varSingle' => 'feature',
         'files' => [
-            'icon_url' => "mimes:jpg,jpeg,png,webp,svg|max:5120"
+            'icon_url' => 'mimes:jpg,jpeg,png,webp,svg|max:5120',
         ],
         'fields' => [
             "'title' => 'required|string'",
@@ -29,21 +29,21 @@ $controllers = [
             "'link' => 'nullable|string'",
             "'order' => 'required|integer'",
             "'is_active' => 'boolean'",
-        ]
+        ],
     ],
     'Partner' => [
         'varPlural' => 'partners',
         'varSingle' => 'partner',
         'files' => [
-            'logo_url' => "mimes:jpg,jpeg,png,webp,svg|max:5120"
+            'logo_url' => 'mimes:jpg,jpeg,png,webp,svg|max:5120',
         ],
         'fields' => [
             "'name' => 'required|string'",
             "'website_url' => 'nullable|string'",
             "'order' => 'required|integer'",
             "'is_active' => 'boolean'",
-        ]
-    ]
+        ],
+    ],
 ];
 
 foreach ($controllers as $name => $c) {
@@ -51,12 +51,12 @@ foreach ($controllers as $name => $c) {
     foreach ($c['files'] as $f => $rule) {
         $fileRules[] = "'{$f}' => 'nullable|file|{$rule}'";
     }
-    
+
     $validationRules = implode(",\n            ", array_merge($c['fields'], $fileRules));
-    
-    $uploadLogicStore = "";
-    $uploadLogicUpdate = "";
-    
+
+    $uploadLogicStore = '';
+    $uploadLogicUpdate = '';
+
     foreach ($c['files'] as $f => $rule) {
         $uploadLogicStore .= "
         if (\$request->hasFile('{$f}')) {
@@ -64,7 +64,7 @@ foreach ($controllers as $name => $c) {
             \$path = \$file->storeAs('{$name}', \\Illuminate\\Support\\Str::uuid().'.'.\$file->getClientOriginalExtension(), 'spaces');
             \$data['{$f}'] = \\Illuminate\\Support\\Facades\\Storage::disk('spaces')->url(\$path);
         }";
-        
+
         $uploadLogicUpdate .= "
         if (\$request->hasFile('{$f}')) {
             \$file = \$request->file('{$f}');

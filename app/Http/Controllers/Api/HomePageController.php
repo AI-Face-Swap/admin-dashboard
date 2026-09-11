@@ -3,11 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\HomeShowcase;
 use App\Models\HomeFeature;
+use App\Models\HomeShowcase;
 use App\Models\Partner;
 use App\Models\Setting;
-use Illuminate\Http\Request;
 
 class HomePageController extends Controller
 {
@@ -44,7 +43,7 @@ class HomePageController extends Controller
     public function footerSettings()
     {
         $settings = Setting::group('footer');
-        
+
         $data = [
             'about_text' => $settings['about_text'] ?? 'HTUT AI is the leading platform for generating...',
             'contact_email' => $settings['contact_email'] ?? 'support@htut.ai',
@@ -59,7 +58,7 @@ class HomePageController extends Controller
                 ['label' => 'Privacy Policy', 'url' => $settings['link_privacy'] ?? '/privacy'],
                 ['label' => 'FAQ', 'url' => $settings['link_faq'] ?? '/faq'],
             ],
-            'copyright_text' => $settings['copyright_text'] ?? '© ' . date('Y') . ' HTUT AI. All rights reserved.',
+            'copyright_text' => $settings['copyright_text'] ?? '© '.date('Y').' HTUT AI. All rights reserved.',
         ];
 
         return response()->json(['data' => $data]);

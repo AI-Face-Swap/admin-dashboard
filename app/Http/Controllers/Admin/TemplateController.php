@@ -93,7 +93,7 @@ class TemplateController extends Controller
         // Auto-populate model string from AIModel when a model is selected
         $modelName = $validated['model'] ?? null;
         if (! empty($validated['ai_model_id'])) {
-            /** @var \App\Models\AIModel|null $aiModel */
+            /** @var AIModel|null $aiModel */
             $aiModel = AIModel::find((int) $validated['ai_model_id']);
             $modelName = $aiModel ? $aiModel->model_name : $modelName;
         }
@@ -172,7 +172,7 @@ class TemplateController extends Controller
         // Auto-populate model string from AIModel when a model is selected
         $modelName = $validated['model'] ?? null;
         if (! empty($validated['ai_model_id'])) {
-            /** @var \App\Models\AIModel|null $aiModel */
+            /** @var AIModel|null $aiModel */
             $aiModel = AIModel::find((int) $validated['ai_model_id']);
             $modelName = $aiModel ? $aiModel->model_name : $modelName;
         }

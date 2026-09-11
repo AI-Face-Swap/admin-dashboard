@@ -37,7 +37,7 @@ class ProcessVideoFaceSwap implements ShouldQueue
     /**
      * Create a new job instance.
      *
-     * @param array<string, mixed> $payload
+     * @param  array<string, mixed>  $payload
      */
     public function __construct(
         private readonly int $generationId,

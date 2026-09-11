@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Database\Factories\AIGenerationFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -132,10 +133,10 @@ class AIGeneration extends Model
     /**
      * Scope: find generations stuck in queued/processing for too long.
      *
-     * @param \Illuminate\Database\Eloquent\Builder<self> $query
-     * @return \Illuminate\Database\Eloquent\Builder<self>
+     * @param  Builder<self>  $query
+     * @return Builder<self>
      */
-    public function scopeStuck(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
+    public function scopeStuck(Builder $query): Builder
     {
         return $query->whereIn('status', [self::STATUS_QUEUED, self::STATUS_PROCESSING])
             ->where('created_at', '<', now()->subMinutes(self::TIMEOUT_MINUTES));

@@ -28,6 +28,7 @@ class Setting extends Model
             ['group' => $group, 'key' => $key],
             ['value' => (string) $value],
         );
+
         return $model;
     }
 

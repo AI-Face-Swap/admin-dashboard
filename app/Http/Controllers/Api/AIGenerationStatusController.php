@@ -7,6 +7,7 @@ use App\Models\AIGeneration;
 use App\Models\Customer;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -61,7 +62,7 @@ class AIGenerationStatusController extends Controller
      * Customers can delete their own generations.
      * Admins can delete any generation.
      */
-    public function destroy(AIGeneration $generation, Request $request): \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
+    public function destroy(AIGeneration $generation, Request $request): JsonResponse|RedirectResponse
     {
         $user = $request->user();
 

@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\CoinCostController;
 use App\Http\Controllers\Api\CustomerAuthController;
 use App\Http\Controllers\Api\CustomerGenerationController;
 use App\Http\Controllers\Api\CustomerSocialAuthController;
+use App\Http\Controllers\Api\HomePageController;
 use App\Http\Controllers\Api\SliderController;
 use App\Http\Controllers\Api\TemplateCategoryController;
 use App\Http\Controllers\Api\TemplateController;
@@ -55,10 +56,10 @@ Route::prefix('v1')->group(function () {
     Route::get('coin-costs', [CoinCostController::class, 'index']);
 
     // Home Page Dynamic Content
-    Route::get('home-showcases', [\App\Http\Controllers\Api\HomePageController::class, 'showcases']);
-    Route::get('home-features', [\App\Http\Controllers\Api\HomePageController::class, 'features']);
-    Route::get('partners', [\App\Http\Controllers\Api\HomePageController::class, 'partners']);
-    Route::get('settings/footer', [\App\Http\Controllers\Api\HomePageController::class, 'footerSettings']);
+    Route::get('home-showcases', [HomePageController::class, 'showcases']);
+    Route::get('home-features', [HomePageController::class, 'features']);
+    Route::get('partners', [HomePageController::class, 'partners']);
+    Route::get('settings/footer', [HomePageController::class, 'footerSettings']);
 });
 
 Route::prefix('v1')->middleware(['auth:sanctum', 'customer.not-banned'])->group(function () {
