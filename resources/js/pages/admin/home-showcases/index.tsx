@@ -34,13 +34,23 @@ export default function Index({ showcases }: { showcases: any }) {
                         title="Home Showcases"
                         description="Manage your home page showcases."
                     />
-                    <div className="flex gap-2">
-                        <Link href={`/admin/home-features`}>
+                    <div className="flex flex-wrap gap-2">
+                        <Link href="/admin/home-heroes">
+                            <AnimatedButton variant="outline">
+                                Hero Section
+                            </AnimatedButton>
+                        </Link>
+                        <Link href="/admin/home-showcases">
+                            <AnimatedButton variant="secondary">
+                                Showcases
+                            </AnimatedButton>
+                        </Link>
+                        <Link href="/admin/home-features">
                             <AnimatedButton variant="outline">
                                 Features
                             </AnimatedButton>
                         </Link>
-                        <Link href={`/admin/home-showcases/create`}>
+                        <Link href="/admin/home-showcases/create">
                             <AnimatedButton>
                                 <Plus className="mr-2 size-4" />
                                 New Showcase

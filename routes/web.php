@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\GenerationTypeController;
 use App\Http\Controllers\Admin\HomeFeatureController;
+use App\Http\Controllers\Admin\HomeHeroController;
 use App\Http\Controllers\Admin\HomeShowcaseController;
 use App\Http\Controllers\Admin\PartnerController;
 use App\Http\Controllers\Admin\PermissionController;
@@ -88,6 +89,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::delete('customers/{customer}', [CustomerController::class, 'destroy'])->middleware('permission:customers.manage')->name('customers.destroy');
 
     // Home Page Settings
+    Route::resource('home-heroes', HomeHeroController::class)->except(['show'])->middleware('permission:settings.manage');
     Route::resource('home-showcases', HomeShowcaseController::class)->except(['show'])->middleware('permission:settings.manage');
     Route::resource('home-features', HomeFeatureController::class)->except(['show'])->middleware('permission:settings.manage');
     Route::resource('partners', PartnerController::class)->except(['show'])->middleware('permission:settings.manage');

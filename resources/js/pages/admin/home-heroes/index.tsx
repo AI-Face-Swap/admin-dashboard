@@ -1,5 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { Pencil, Plus, Trash2 } from 'lucide-react';
+import { Pencil, Plus, Trash2, Video } from 'lucide-react';
 import { toast } from 'sonner';
 import { AnimatedButton } from '@/components/animated/AnimatedButton';
 import { AnimatedCard } from '@/components/animated/AnimatedCard';
@@ -15,28 +15,49 @@ import {
     TableRow,
 } from '@/components/ui/table';
 
-export default function Index({ features }: { features: any }) {
-    const handleDelete = (item: any) => {
-        if (confirm('Are you sure you want to delete this item?')) {
-            router.delete(`/admin/home-features/${item.id}`, {
+interface HomeHeroItem {
+    id: number;
+    title: string;
+    description: string | null;
+    video: string | null;
+    images: string[] | null;
+    sort_order: number;
+    is_active: boolean;
+    created_at: string;
+}
+
+interface IndexProps {
+    heroes: {
+        data: HomeHeroItem[];
+        current_page: number;
+        last_page: number;
+        total: number;
+    };
+}
+
+export default function Index({ heroes }: IndexProps) {
+    const handleDelete = (item: HomeHeroItem) => {
+        if (confirm(`Are you sure you want to delete "${item.title}"?`)) {
+            router.delete(`/admin/home-heroes/${item.id}`, {
                 preserveScroll: true,
-                onSuccess: () => toast.success('Deleted successfully'),
+                onSuccess: () =>
+                    toast.success('Hero section deleted successfully'),
             });
         }
     };
 
     return (
         <>
-            <Head title="Home Features" />
+            <Head title="Home Hero Sections" />
             <div className="flex flex-1 flex-col gap-6 p-4 md:p-6">
                 <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
                     <Heading
-                        title="Home Features"
-                        description="Manage your home page features."
+                        title="Home Hero Sections"
+                        description="Manage the top hero section of your landing page."
                     />
                     <div className="flex flex-wrap gap-2">
                         <Link href="/admin/home-heroes">
-                            <AnimatedButton variant="outline">
+                            <AnimatedButton variant="secondary">
                                 Hero Section
                             </AnimatedButton>
                         </Link>
@@ -46,14 +67,14 @@ export default function Index({ features }: { features: any }) {
                             </AnimatedButton>
                         </Link>
                         <Link href="/admin/home-features">
-                            <AnimatedButton variant="secondary">
+                            <AnimatedButton variant="outline">
                                 Features
                             </AnimatedButton>
                         </Link>
-                        <Link href="/admin/home-features/create">
+                        <Link href="/admin/home-heroes/create">
                             <AnimatedButton>
                                 <Plus className="mr-2 size-4" />
-                                New Feature
+                                New Hero Section
                             </AnimatedButton>
                         </Link>
                     </div>
@@ -64,55 +85,77 @@ export default function Index({ features }: { features: any }) {
                         <Table>
                             <TableHeader>
                                 <TableRow>
+                                    <TableHead className="w-20">Sort</TableHead>
                                     <TableHead>Title</TableHead>
                                     <TableHead>Description</TableHead>
-                                    <TableHead>Icon Image</TableHead>
                                     <TableHead>Video</TableHead>
-                                    <TableHead>AI Model</TableHead>
-                                    <TableHead>Link</TableHead>
-                                    <TableHead>Order</TableHead>
-                                    <TableHead>Active</TableHead>
+                                    <TableHead>Images</TableHead>
+                                    <TableHead>Status</TableHead>
                                     <TableHead className="text-right">
                                         Actions
                                     </TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {features.data.map((item: any) => (
+                                {heroes.data.map((item) => (
                                     <TableRow key={item.id}>
-                                        <TableCell>{item.title}</TableCell>
-                                        <TableCell>
-                                            {item.description}
+                                        <TableCell className="font-medium">
+                                            {item.sort_order}
+                                        </TableCell>
+                                        <TableCell className="max-w-[200px] truncate font-semibold">
+                                            {item.title}
+                                        </TableCell>
+                                        <TableCell className="max-w-[240px] truncate text-muted-foreground">
+                                            {item.description || '—'}
                                         </TableCell>
                                         <TableCell>
-                                            {item.icon_url ? (
-                                                <img
-                                                    src={item.icon_url}
-                                                    alt="img"
-                                                    className="h-10 w-10 rounded object-contain"
-                                                />
+                                            {item.video ? (
+                                                <a
+                                                    href={item.video}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                                                >
+                                                    <Video className="size-3.5" />
+                                                    View Video
+                                                </a>
                                             ) : (
-                                                'None'
+                                                <span className="text-xs text-muted-foreground">
+                                                    None
+                                                </span>
                                             )}
                                         </TableCell>
                                         <TableCell>
-                                            {item.video_url ? (
-                                                <video
-                                                    src={item.video_url}
-                                                    className="h-10 w-10 rounded object-contain"
-                                                    controls
-                                                />
+                                            {item.images &&
+                                            item.images.length > 0 ? (
+                                                <div className="flex max-w-[180px] items-center gap-1.5 overflow-x-auto">
+                                                    {item.images
+                                                        .slice(0, 3)
+                                                        .map((imgUrl, idx) => (
+                                                            <img
+                                                                key={idx}
+                                                                src={imgUrl}
+                                                                alt={`hero-${idx}`}
+                                                                className="h-9 w-9 shrink-0 rounded border border-border object-cover"
+                                                            />
+                                                        ))}
+                                                    {item.images.length > 3 && (
+                                                        <Badge
+                                                            variant="outline"
+                                                            className="shrink-0 text-xs"
+                                                        >
+                                                            +
+                                                            {item.images
+                                                                .length - 3}
+                                                        </Badge>
+                                                    )}
+                                                </div>
                                             ) : (
-                                                'None'
+                                                <span className="text-xs text-muted-foreground">
+                                                    No images
+                                                </span>
                                             )}
                                         </TableCell>
-                                        <TableCell>
-                                            {item.ai_model
-                                                ? `${item.ai_model.provider_name} / ${item.ai_model.model_name}`
-                                                : '—'}
-                                        </TableCell>
-                                        <TableCell>{item.link}</TableCell>
-                                        <TableCell>{item.order}</TableCell>
                                         <TableCell>
                                             <Badge
                                                 variant={
@@ -129,7 +172,7 @@ export default function Index({ features }: { features: any }) {
                                         <TableCell className="text-right">
                                             <div className="flex justify-end gap-2">
                                                 <Link
-                                                    href={`/admin/home-features/${item.id}/edit`}
+                                                    href={`/admin/home-heroes/${item.id}/edit`}
                                                 >
                                                     <AnimatedButton
                                                         variant="outline"
@@ -151,13 +194,13 @@ export default function Index({ features }: { features: any }) {
                                         </TableCell>
                                     </TableRow>
                                 ))}
-                                {features.data.length === 0 && (
+                                {heroes.data.length === 0 && (
                                     <TableRow>
                                         <TableCell
-                                            colSpan={8}
-                                            className="h-24 text-center"
+                                            colSpan={7}
+                                            className="h-24 text-center text-muted-foreground"
                                         >
-                                            No home features found.
+                                            No home hero sections found.
                                         </TableCell>
                                     </TableRow>
                                 )}
@@ -172,7 +215,7 @@ export default function Index({ features }: { features: any }) {
 
 Index.layout = {
     breadcrumbs: [
-        { title: 'Home', href: '/admin/home-showcases' },
-        { title: 'Features', href: '/admin/home-features' },
+        { title: 'Home Page', href: '/admin/home-heroes' },
+        { title: 'Hero Sections', href: '/admin/home-heroes' },
     ],
 };

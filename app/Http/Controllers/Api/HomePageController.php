@@ -4,12 +4,22 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\HomeFeature;
+use App\Models\HomeHero;
 use App\Models\HomeShowcase;
 use App\Models\Partner;
 use App\Models\Setting;
 
 class HomePageController extends Controller
 {
+    public function heroes()
+    {
+        $heroes = HomeHero::query()
+            ->active()
+            ->get();
+
+        return response()->json(['data' => $heroes]);
+    }
+
     public function showcases()
     {
         $showcases = HomeShowcase::where('is_active', true)

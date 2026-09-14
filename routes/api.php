@@ -56,6 +56,7 @@ Route::prefix('v1')->group(function () {
     Route::get('coin-costs', [CoinCostController::class, 'index']);
 
     // Home Page Dynamic Content
+    Route::get('home-heroes', [HomePageController::class, 'heroes']);
     Route::get('home-showcases', [HomePageController::class, 'showcases']);
     Route::get('home-features', [HomePageController::class, 'features']);
     Route::get('partners', [HomePageController::class, 'partners']);
