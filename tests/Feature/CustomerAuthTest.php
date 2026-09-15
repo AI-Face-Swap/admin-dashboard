@@ -32,7 +32,7 @@ function fakeCustomerFaceSwap(): void
     ]);
 }
 
-test('a customer can register and receives no token (must verify email first)', function () {
+test('a customer can register and receives a token', function () {
     $response = $this->postJson('/api/v1/auth/register', [
         'name' => 'John Doe',
         'email' => 'john@example.com',
@@ -44,14 +44,13 @@ test('a customer can register and receives no token (must verify email first)', 
         ->assertJsonPath('customer.email', 'john@example.com')
         ->assertJsonPath('customer.customer_type', 'free')
         ->assertJsonPath('customer.coins', 100)
-        ->assertJsonStructure(['customer', 'message']);
+        ->assertJsonStructure(['customer', 'token']);
 
     $customer = Customer::where('email', 'john@example.com')->first();
 
     expect($customer)->not->toBeNull()
         ->and($customer->isFree())->toBeTrue()
-        ->and($customer->coins)->toBe(100)
-        ->and($customer->hasVerifiedEmail())->toBeFalse();
+        ->and($customer->coins)->toBe(100);
 });
 
 test('registering with a duplicate email is rejected', function () {
@@ -87,7 +86,7 @@ test('a verified customer can log in and use the token on me', function () {
         ->assertJsonPath('customer.email', 'john@example.com');
 });
 
-test('unverified customer cannot log in', function () {
+test('unverified customer can log in', function () {
     Customer::factory()->unverified()->create([
         'email' => 'john@example.com',
         'password' => 'password123',
@@ -96,8 +95,8 @@ test('unverified customer cannot log in', function () {
     $this->postJson('/api/v1/auth/login', [
         'email' => 'john@example.com',
         'password' => 'password123',
-    ])->assertStatus(403)
-        ->assertJson(['message' => 'Please verify your email before logging in.']);
+    ])->assertOk()
+        ->assertJsonStructure(['customer', 'token']);
 });
 
 test('login with wrong credentials is rejected', function () {

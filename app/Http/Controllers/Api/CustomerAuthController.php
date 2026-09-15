@@ -22,11 +22,10 @@ class CustomerAuthController extends Controller
     /**
      * Register a new customer.
      *
-     * Creates a new customer account with 100 free coins and sends a
-     * verification email. Does NOT return a token — the customer must
-     * verify their email before they can log in.
+     * Creates a new customer account with 100 free coins.
+     * Returns a Bearer token for subsequent API calls.
      *
-     * @response 201 {"customer": {"id": 1, "name": "John", "email": "john@example.com", "coins": 100}, "message": "Verification email sent."}
+     * @response 201 {"customer": {"id": 1, "name": "John", "email": "john@example.com", "coins": 100}, "token": "1|abc..."}
      */
     public function register(RegisterRequest $request): JsonResponse
     {
@@ -36,12 +35,11 @@ class CustomerAuthController extends Controller
             'password' => $request->string('password')->toString(),
         ])->refresh(); // load DB defaults (customer_type, coins)
 
-        // Send email verification notification
-        $customer->notify(new VerifyEmail);
+        $token = $customer->createToken('mobile')->plainTextToken;
 
         return response()->json([
             'customer' => $customer,
-            'message' => 'Verification email sent. Please verify your email before logging in.',
+            'token' => $token,
         ], 201);
     }
 
@@ -49,11 +47,9 @@ class CustomerAuthController extends Controller
      * Log in an existing customer.
      *
      * Returns a Bearer token for subsequent API calls.
-     * Rejects unverified emails — customer must verify before logging in.
      * Updates last_active_at timestamp.
      *
      * @response 200 {"customer": {"id": 1, "name": "John", "coins": 50}, "token": "2|xyz..."}
-     * @response 403 {"message": "Please verify your email before logging in."}
      */
     public function login(LoginRequest $request): JsonResponse
     {
@@ -63,12 +59,6 @@ class CustomerAuthController extends Controller
             throw ValidationException::withMessages([
                 'email' => ['These credentials do not match our records.'],
             ]);
-        }
-
-        if (! $customer->hasVerifiedEmail()) {
-            return response()->json([
-                'message' => 'Please verify your email before logging in.',
-            ], 403);
         }
 
         $customer->update(['last_active_at' => now()]);

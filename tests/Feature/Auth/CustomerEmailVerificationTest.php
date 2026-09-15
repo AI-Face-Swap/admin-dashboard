@@ -104,7 +104,7 @@ test('already verified email returns success without re-verifying', function () 
         ->assertJson(['message' => 'Email is already verified.']);
 });
 
-test('registration sends verification email', function () {
+test('registration does not send verification email', function () {
     Notification::fake();
 
     $this->postJson('/api/v1/auth/register', [
@@ -116,5 +116,5 @@ test('registration sends verification email', function () {
 
     $customer = Customer::where('email', 'test@example.com')->first();
 
-    Notification::assertSentTo($customer, VerifyEmail::class);
+    Notification::assertNothingSent();
 });
