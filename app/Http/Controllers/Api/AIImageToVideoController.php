@@ -7,6 +7,7 @@ use App\AI\Exceptions\AIGenerationFailedException;
 use App\AI\Exceptions\AIGenerationTimeoutException;
 use App\AI\Services\AIService;
 use App\Http\Controllers\Controller;
+use App\Models\AIModel;
 use App\Models\Customer;
 use App\Models\Setting;
 use Illuminate\Http\JsonResponse;
@@ -52,34 +53,49 @@ class AIImageToVideoController extends Controller
             'image' => 'required_without:image_url|file|image|max:10240',
             'image_url' => 'required_without:image|url',
             'negative_prompt' => 'nullable|string|max:1000',
-            'model' => 'nullable|string|in:seedance-2.5,wan2.7-r2v,kling-o1-reference-image-to-video',
+            'model' => 'nullable|string|max:255',
             'aspect_ratio' => 'nullable|string|in:1:1,9:16,16:9,4:3,3:4',
             'resolution' => 'nullable|string|in:480p,720p,1080p',
+            'duration' => 'nullable|string|max:50',
             'prompt_extend' => 'nullable|string|in:true,false,0,1',
             'seed' => 'nullable|integer|min:0',
             'watermark' => 'nullable|string|in:true,false,0,1',
         ]);
 
         $requester = $request->user();
-
-        // Determine cost based on resolution
         $resolution = $request->string('resolution', '720p')->toString();
-        $costKey = match ($resolution) {
-            '480p' => 'coin_cost_image_to_video_480p',
-            '1080p' => 'coin_cost_image_to_video_1080p',
-            default => 'coin_cost_image_to_video_720p',
-        };
-        $configKey = match ($resolution) {
-            '480p' => 'ai.coin_costs.image_to_video_480p',
-            '1080p' => 'ai.coin_costs.image_to_video_1080p',
-            default => 'ai.coin_costs.image_to_video_720p',
-        };
-        $defaultCost = match ($resolution) {
-            '480p' => 10,
-            '1080p' => 30,
-            default => 20,
-        };
-        $templateCost = (int) Setting::get('ai', $costKey, config($configKey, $defaultCost));
+        $modelName = $request->string('model', 'wan-2.2-i2v-flash')->toString();
+
+        $aiModel = AIModel::where('model_name', $modelName)->where('is_active', true)->first();
+
+        if ($aiModel) {
+            $cost = $aiModel->coin_cost;
+            if (! empty($aiModel->resolution_costs[$resolution])) {
+                $cost = (int) $aiModel->resolution_costs[$resolution];
+            }
+            $durKey = $request->string('duration')->toString();
+            if (! empty($durKey) && ! empty($aiModel->duration_costs[$durKey])) {
+                $cost = (int) $aiModel->duration_costs[$durKey];
+            }
+            $templateCost = $cost;
+        } else {
+            $costKey = match ($resolution) {
+                '480p' => 'coin_cost_image_to_video_480p',
+                '1080p' => 'coin_cost_image_to_video_1080p',
+                default => 'coin_cost_image_to_video_720p',
+            };
+            $configKey = match ($resolution) {
+                '480p' => 'ai.coin_costs.image_to_video_480p',
+                '1080p' => 'ai.coin_costs.image_to_video_1080p',
+                default => 'ai.coin_costs.image_to_video_720p',
+            };
+            $defaultCost = match ($resolution) {
+                '480p' => 10,
+                '1080p' => 30,
+                default => 20,
+            };
+            $templateCost = (int) Setting::get('ai', $costKey, config($configKey, $defaultCost));
+        }
 
         if ($requester instanceof Customer) {
             $this->authorizeCustomerCoins($requester, $templateCost);

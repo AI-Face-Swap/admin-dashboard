@@ -56,7 +56,7 @@ class TemplateController extends Controller
         return Inertia::render('admin/templates/create', [
             'categories' => TemplateCategory::orderBy('name')->get(['id', 'name', 'slug']),
             'tags' => TemplateTag::orderBy('name')->get(['id', 'name', 'slug']),
-            'aiModels' => AIModel::ordered()->get(['id', 'provider_name', 'model_name']),
+            'aiModels' => AIModel::ordered()->get(['id', 'name', 'provider_name', 'model_name', 'coin_cost', 'generation_type_id']),
             'generationTypes' => GenerationType::orderBy('sort_order')->orderBy('name')->get(['id', 'name', 'slug']),
         ]);
     }
@@ -78,6 +78,7 @@ class TemplateController extends Controller
             'file' => ['required', 'file', 'max:51200'], // 50 MB
             'thumbnail' => ['nullable', 'image', 'max:5120'],
             'cost' => ['sometimes', 'integer', 'min:0'],
+            'discount_cost' => ['sometimes', 'nullable', 'integer', 'min:0'],
             'model' => ['nullable', 'string', 'max:255'],
             'is_active' => ['sometimes', 'boolean'],
             'sort_order' => ['sometimes', 'integer'],
@@ -110,6 +111,7 @@ class TemplateController extends Controller
             'ai_model_id' => $validated['ai_model_id'] ?? null,
             'type' => $validated['type'],
             'cost' => $validated['cost'] ?? 0,
+            'discount_cost' => $validated['discount_cost'] ?? 0,
             'file_path' => $filePath,
             'thumbnail_path' => $thumbnailPath,
             'model' => $modelName,
@@ -133,10 +135,10 @@ class TemplateController extends Controller
     public function edit(Template $template): Response
     {
         return Inertia::render('admin/templates/edit', [
-            'template' => $template->load(['category:id,name,slug', 'tags:id,name,slug']),
+            'template' => $template->load(['category:id,name,slug', 'tags:id,name,slug', 'aiModel:id,name,provider_name,model_name,coin_cost']),
             'categories' => TemplateCategory::orderBy('name')->get(['id', 'name', 'slug']),
             'tags' => TemplateTag::orderBy('name')->get(['id', 'name', 'slug']),
-            'aiModels' => AIModel::ordered()->get(['id', 'provider_name', 'model_name']),
+            'aiModels' => AIModel::ordered()->get(['id', 'name', 'provider_name', 'model_name', 'coin_cost', 'generation_type_id']),
             'generationTypes' => GenerationType::orderBy('sort_order')->orderBy('name')->get(['id', 'name', 'slug']),
         ]);
     }
@@ -157,6 +159,7 @@ class TemplateController extends Controller
             'file' => ['nullable', 'file', 'max:51200'],
             'thumbnail' => ['nullable', 'image', 'max:5120'],
             'cost' => ['sometimes', 'integer', 'min:0'],
+            'discount_cost' => ['sometimes', 'nullable', 'integer', 'min:0'],
             'model' => ['nullable', 'string', 'max:255'],
             'is_active' => ['sometimes', 'boolean'],
             'sort_order' => ['sometimes', 'integer'],
@@ -187,6 +190,7 @@ class TemplateController extends Controller
             'ai_model_id' => $validated['ai_model_id'] ?? null,
             'type' => $validated['type'],
             'cost' => $validated['cost'] ?? $template->cost,
+            'discount_cost' => $validated['discount_cost'] ?? $template->discount_cost ?? 0,
             'model' => $modelName,
             'is_active' => $validated['is_active'] ?? true,
             'sort_order' => $validated['sort_order'] ?? $template->sort_order ?? 1,
@@ -283,16 +287,38 @@ class TemplateController extends Controller
             default => 'AI Generation',
         };
 
+        // Default generation type: Video Face Swap or Image Face Swap
+        $defaultGenTypeSlug = $isVideo ? 'video-faceswap' : 'image-faceswap';
+        $generationType = GenerationType::where('slug', $defaultGenTypeSlug)->first();
+
+        // Match AI model from the generation, or fallback to default model
+        $aiModel = null;
+        if (! empty($generation->model)) {
+            $aiModel = AIModel::where('model_name', $generation->model)->first();
+        }
+        if (! $aiModel && $generationType) {
+            $aiModel = AIModel::where('generation_type_id', $generationType->id)
+                ->where('is_default', true)
+                ->first()
+                ?? AIModel::where('generation_type_id', $generationType->id)->first();
+        }
+
+        $cost = $aiModel?->coin_cost ?? ($isVideo ? 20 : 5);
+
         // Create the template
         $template = Template::create([
+            'generation_type_id' => $generationType?->id,
+            'ai_model_id' => $aiModel?->id,
+            'model' => $generation->model ?? $aiModel?->model_name,
             'name' => "{$typeName} Template {$generation->id}",
             'slug' => strtolower($typeName).'-'.$generation->id, // HasAutoSlug will suffix if needed
             'description' => "Generated from {$operationLabel}",
             'type' => $type,
-            'cost' => $isVideo ? 20 : 5,
+            'cost' => $cost,
+            'discount_cost' => 0,
             'file_path' => $newPath,
             'thumbnail_path' => $isVideo ? null : $newPath,
-            'is_active' => false,
+            'is_active' => true,
             'sort_order' => 1,
             'prompt' => $input['prompt'] ?? null,
             'negative_prompt' => $input['negative_prompt'] ?? null,
@@ -301,6 +327,7 @@ class TemplateController extends Controller
             'seed' => isset($input['seed']) ? (string) $input['seed'] : null,
         ]);
 
-        return back()->with('success', 'Generation saved to templates successfully.');
+        return to_route('admin.templates.edit', $template->id)
+            ->with('success', 'Template created successfully from generation! You can now adjust its details.');
     }
 }

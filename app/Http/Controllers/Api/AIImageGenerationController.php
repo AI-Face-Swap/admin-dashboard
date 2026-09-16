@@ -8,6 +8,7 @@ use App\AI\Exceptions\AIGenerationTimeoutException;
 use App\AI\Services\AIService;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\ImageGenerationRequest;
+use App\Models\AIModel;
 use App\Models\Customer;
 use App\Models\Setting;
 use Illuminate\Http\JsonResponse;
@@ -20,8 +21,6 @@ class AIImageGenerationController extends Controller
 
     /**
      * Generate an image from a text prompt.
-     *
-     * Uses Segmind AI models to generate images from text descriptions.
      *
      * **Cost:** 5 coins per generation (configurable in admin settings).
      *
@@ -37,7 +36,13 @@ class AIImageGenerationController extends Controller
     public function store(ImageGenerationRequest $request): JsonResponse
     {
         $requester = $request->user();
-        $templateCost = (int) Setting::get('ai', 'coin_cost_image_generation', config('ai.coin_costs.image_generation', 5));
+        $modelName = $request->string('model')->toString();
+
+        $aiModel = null;
+        if (! empty($modelName)) {
+            $aiModel = AIModel::where('model_name', $modelName)->where('is_active', true)->first();
+        }
+        $templateCost = $aiModel?->coin_cost ?? (int) Setting::get('ai', 'coin_cost_image_generation', config('ai.coin_costs.image_generation', 5));
 
         if ($requester instanceof Customer) {
             $this->authorizeCustomerCoins($requester, $templateCost);

@@ -52,7 +52,7 @@ class AIFaceSwapController extends Controller
                 ?? throw new ModelNotFoundException('Image template not found.');
 
             $targetUrl = $template->file_url;
-            $templateCost = $template->cost;
+            $templateCost = $template->effective_cost;
         } else {
             $targetUrl = $request->string('target_image_url')->toString();
         }

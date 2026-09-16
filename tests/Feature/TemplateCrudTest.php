@@ -302,13 +302,15 @@ test('an admin can save a template from a completed generation', function () {
         ],
     ]);
 
-    $this->post(route('admin.templates.from-generation', $generation))
-        ->assertRedirect()
-        ->assertSessionHas('success', 'Generation saved to templates successfully.');
+    $response = $this->post(route('admin.templates.from-generation', $generation));
 
     $template = Template::where('type', Template::TYPE_VIDEO)->first();
 
+    $response->assertRedirect(route('admin.templates.edit', $template->id))
+        ->assertSessionHas('success', 'Template created successfully from generation! You can now adjust its details.');
+
     expect($template)->not->toBeNull()
+        ->and($template->is_active)->toBeTrue()
         ->and($template->prompt)->toBe('Test prompt')
         ->and($template->negative_prompt)->toBe('No blur')
         ->and($template->aspect_ratio)->toBe('16:9')
@@ -321,4 +323,34 @@ test('an admin can save a template from a completed generation', function () {
     Storage::disk('spaces')->assertExists($template->file_path);
     expect($template->file_path)->toStartWith('templates/')
         ->and($template->file_path)->not->toBe('generations/dummy.mp4');
+});
+
+test('an admin can create and update a template with cost and discount_cost', function () {
+    $this->actingAs($this->admin);
+
+    $this->post(route('admin.templates.store'), [
+        'name' => 'Discount Template',
+        'type' => Template::TYPE_IMAGE,
+        'cost' => 20,
+        'discount_cost' => 5,
+        'file' => UploadedFile::fake()->image('test.jpg', 600, 800),
+    ])->assertRedirect(route('admin.templates.index'));
+
+    $template = Template::where('name', 'Discount Template')->first();
+    expect($template)->not->toBeNull()
+        ->and($template->cost)->toBe(20)
+        ->and($template->discount_cost)->toBe(5)
+        ->and($template->effective_cost)->toBe(15);
+
+    $this->put(route('admin.templates.update', $template), [
+        'name' => 'Discount Template Updated',
+        'type' => Template::TYPE_IMAGE,
+        'cost' => 30,
+        'discount_cost' => 10,
+    ])->assertRedirect(route('admin.templates.index'));
+
+    $template->refresh();
+    expect($template->cost)->toBe(30)
+        ->and($template->discount_cost)->toBe(10)
+        ->and($template->effective_cost)->toBe(20);
 });

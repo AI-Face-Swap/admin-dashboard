@@ -43,6 +43,12 @@ class GenerationTypeSeeder extends Seeder
                 'description' => 'Generate a video from a text prompt.',
                 'sort_order' => 5,
             ],
+            [
+                'name' => 'Image Editing',
+                'slug' => 'image-editing',
+                'description' => 'Edit, restyle, or modify images using AI models.',
+                'sort_order' => 6,
+            ],
         ];
 
         foreach ($types as $type) {

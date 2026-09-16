@@ -8,6 +8,7 @@ use App\AI\Exceptions\AIGenerationTimeoutException;
 use App\AI\Services\AIService;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\ImageEditRequest;
+use App\Models\AIModel;
 use App\Models\Customer;
 use App\Models\Setting;
 use Illuminate\Http\JsonResponse;
@@ -32,13 +33,26 @@ class AIImageEditController extends Controller
     public function store(ImageEditRequest $request): JsonResponse
     {
         $requester = $request->user();
-        $coinCost = (int) Setting::get('ai', 'coin_cost_image_edit', config('ai.coin_costs.image_edit', 10));
+        $model = $request->string('model')->toString();
+
+        $aiModel = AIModel::where('model_name', $model)->where('is_active', true)->first();
+        $coinCost = $aiModel?->coin_cost ?? (int) Setting::get('ai', 'coin_cost_image_edit', config('ai.coin_costs.image_edit', 10));
+
+        if ($aiModel && ! empty($aiModel->resolution_costs)) {
+            $resKey = $request->string('size')->toString()
+                ?: $request->string('quality')->toString()
+                ?: $request->string('resolution')->toString()
+                ?: $request->string('output_resolution')->toString();
+
+            if (! empty($resKey) && isset($aiModel->resolution_costs[$resKey])) {
+                $coinCost = (int) $aiModel->resolution_costs[$resKey];
+            }
+        }
 
         if ($requester instanceof Customer) {
             $this->authorizeCustomerCoins($requester, $coinCost);
         }
 
-        $model = $request->string('model')->toString();
         $payload = $this->buildPayload($request, $model);
 
         try {

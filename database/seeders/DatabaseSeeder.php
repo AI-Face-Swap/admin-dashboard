@@ -18,6 +18,8 @@ class DatabaseSeeder extends Seeder
     {
         $this->call(RolePermissionSeeder::class);
         $this->call(AIProviderSeeder::class);
+        $this->call(GenerationTypeSeeder::class);
+        $this->call(AIModelSeeder::class);
 
         User::firstOrCreate(
             ['email' => 'test@example.com'],

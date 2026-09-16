@@ -74,8 +74,8 @@ class SegmindProvider implements AIProviderInterface
      */
     public function generateImage(GenerationRequest $request): AIResponse
     {
-        $endpoint = $this->operations['image-generation']
-            ?? throw new UnsupportedOperationException('Segmind image generation endpoint is not configured.');
+        $endpoint = $request->model ?: ($this->operations['image-generation']
+            ?? throw new UnsupportedOperationException('Segmind image generation endpoint is not configured.'));
 
         $startedAt = hrtime(true);
 
@@ -230,8 +230,8 @@ class SegmindProvider implements AIProviderInterface
      */
     public function imageToVideo(GenerationRequest $request): AIResponse
     {
-        $endpoint = $this->operations['image-to-video']
-            ?? throw new UnsupportedOperationException('Segmind image-to-video endpoint is not configured.');
+        $endpoint = $request->model ?: ($this->operations['image-to-video']
+            ?? throw new UnsupportedOperationException('Segmind image-to-video endpoint is not configured.'));
 
         $startedAt = hrtime(true);
 

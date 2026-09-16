@@ -48,7 +48,7 @@ class AIVideoFaceSwapController extends Controller
                 ?? throw new ModelNotFoundException('Video template not found.');
 
             $targetUrl = $template->file_url;
-            $templateCost = $template->cost;
+            $templateCost = $template->effective_cost;
         } else {
             $targetUrl = $request->string('target_video_url')->toString();
         }

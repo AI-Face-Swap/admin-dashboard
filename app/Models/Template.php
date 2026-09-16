@@ -22,6 +22,8 @@ use Illuminate\Support\Facades\Storage;
  * @property string|null $thumbnail_path
  * @property string|null $model
  * @property int $cost
+ * @property int $discount_cost
+ * @property-read int $effective_cost
  * @property bool $is_active
  * @property int $sort_order
  * @property string|null $prompt
@@ -32,7 +34,7 @@ use Illuminate\Support\Facades\Storage;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['category_id', 'generation_type_id', 'ai_model_id', 'slug', 'name', 'description', 'type', 'file_path', 'thumbnail_path', 'model', 'cost', 'is_active', 'sort_order', 'prompt', 'negative_prompt', 'aspect_ratio', 'resolution', 'seed'])]
+#[Fillable(['category_id', 'generation_type_id', 'ai_model_id', 'slug', 'name', 'description', 'type', 'file_path', 'thumbnail_path', 'model', 'cost', 'discount_cost', 'is_active', 'sort_order', 'prompt', 'negative_prompt', 'aspect_ratio', 'resolution', 'seed'])]
 class Template extends Model
 {
     use HasAutoSlug;
@@ -51,7 +53,7 @@ class Template extends Model
      *
      * @var list<string>
      */
-    protected $appends = ['file_url', 'thumbnail_url'];
+    protected $appends = ['file_url', 'thumbnail_url', 'effective_cost'];
 
     /**
      * The category this template belongs to.
@@ -114,6 +116,16 @@ class Template extends Model
     }
 
     /**
+     * Get the final coin cost for the customer after discount.
+     */
+    public function getEffectiveCostAttribute(): int
+    {
+        $baseCost = $this->cost > 0 ? $this->cost : ($this->aiModel?->coin_cost ?? 0);
+
+        return max(0, $baseCost - ($this->discount_cost ?? 0));
+    }
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>
@@ -121,6 +133,8 @@ class Template extends Model
     protected function casts(): array
     {
         return [
+            'cost' => 'integer',
+            'discount_cost' => 'integer',
             'is_active' => 'boolean',
         ];
     }

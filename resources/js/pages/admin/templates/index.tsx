@@ -27,6 +27,8 @@ type Template = {
     file_url: string;
     thumbnail_url: string | null;
     cost: number;
+    discount_cost?: number;
+    effective_cost?: number;
     is_active: boolean;
     category: { id: number; name: string } | null;
     tags: { id: number; name: string }[];
@@ -186,9 +188,16 @@ export default function Index({ templates, categories, filters }: Props) {
                                     <Badge variant="outline">
                                         {template.type}
                                     </Badge>
-                                    <Badge variant="outline">
-                                        🪙 {template.cost}
-                                    </Badge>
+                                    {(template.discount_cost ?? 0) > 0 ? (
+                                        <Badge variant="outline" className="border-amber-500/40 bg-amber-500/10 text-amber-300">
+                                            <span className="line-through text-muted-foreground mr-1">🪙 {template.cost}</span>
+                                            <span>🪙 {template.effective_cost ?? Math.max(0, template.cost - (template.discount_cost ?? 0))}</span>
+                                        </Badge>
+                                    ) : (
+                                        <Badge variant="outline">
+                                            🪙 {template.cost}
+                                        </Badge>
+                                    )}
                                     {template.category && (
                                         <span className="text-xs text-muted-foreground">
                                             {template.category.name}
