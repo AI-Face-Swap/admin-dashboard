@@ -10,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AIGenerationStatusController extends Controller
 {
@@ -54,6 +55,49 @@ class AIGenerationStatusController extends Controller
             'created_at' => $generation->created_at,
             'updated_at' => $generation->updated_at,
         ]);
+    }
+
+    /**
+     * Download an output file of an AI generation.
+     */
+    public function download(AIGeneration $generation, Request $request): StreamedResponse|RedirectResponse
+    {
+        $user = $request->user();
+
+        $isOwner = $user instanceof Customer && $generation->customer_id === $user->id;
+        $isAdmin = $user instanceof User;
+
+        if (! $isOwner && ! $isAdmin) {
+            abort(403, 'Unauthorized to download this generation.');
+        }
+
+        $outputs = $generation->output_metadata ?? [];
+        $index = (int) $request->input('index', 0);
+
+        if (! isset($outputs[$index]) || ! is_string($outputs[$index])) {
+            abort(404, 'Output file not found.');
+        }
+
+        $sourceUrl = $outputs[$index];
+        if (filter_var($sourceUrl, FILTER_VALIDATE_URL)) {
+            $sourcePath = ltrim((string) parse_url($sourceUrl, PHP_URL_PATH), '/');
+        } else {
+            $sourcePath = ltrim($sourceUrl, '/');
+        }
+
+        $disk = Storage::disk('spaces');
+        if ($disk->exists($sourcePath)) {
+            $ext = pathinfo($sourcePath, PATHINFO_EXTENSION);
+            $filename = "{$generation->operation}-{$generation->id}".($index > 0 ? "-{$index}" : '').'.'.($ext ?: 'png');
+
+            return $disk->download($sourcePath, $filename);
+        }
+
+        if (filter_var($sourceUrl, FILTER_VALIDATE_URL)) {
+            return redirect()->away($sourceUrl);
+        }
+
+        abort(404, 'File not found on storage.');
     }
 
     /**

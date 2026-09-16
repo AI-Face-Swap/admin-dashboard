@@ -252,6 +252,87 @@ const ENDPOINT_TEMPLATES: EndpointTemplate[] = [
         ],
     },
     {
+        label: 'Image Edit - Flux (URL)',
+        group: 'ai',
+        method: 'POST',
+        url: '/api/v1/ai/image-edit',
+        bodyType: 'json',
+        body: '{\n  "model": "flux-kontext-dev",\n  "prompt": "Replace the background with a bokeh light effect, zooming in on the subject, keeping the person’s pose identical.",\n  "input_image_url": "https://images.segmind.com/generations/901b78cd-381a-4284-8391-306d4c7409e1/6852c6602b5db2d623cc373cfa699b55.webp",\n  "aspect_ratio": "match_input_image",\n  "guidance": 7,\n  "num_inference_steps": 35,\n  "output_format": "png",\n  "output_quality": 90\n}',
+        headers: [
+            { key: 'Content-Type', value: 'application/json' },
+            { key: 'Accept', value: 'application/json' },
+        ],
+    },
+    {
+        label: 'Image Edit - Multi-Image (URL)',
+        group: 'ai',
+        method: 'POST',
+        url: '/api/v1/ai/image-edit',
+        bodyType: 'json',
+        body: '{\n  "model": "multi-image-kontext-max",\n  "prompt": "put the green dress on the woman while maintaining the pose of the woman as it is",\n  "input_image_1_url": "https://segmind-resources.s3.amazonaws.com/output/9cb479d3-5c5f-4d5d-a782-972acbc42598-c1.jpg",\n  "input_image_2_url": "https://segmind-resources.s3.amazonaws.com/output/79feee7b-d09f-4bde-bec3-c8e8a8703f04-d2.png",\n  "aspect_ratio": "1:1",\n  "output_format": "jpg",\n  "safety_tolerance": 1\n}',
+        headers: [
+            { key: 'Content-Type', value: 'application/json' },
+            { key: 'Accept', value: 'application/json' },
+        ],
+    },
+    {
+        label: 'Image Edit - Seedream (URL)',
+        group: 'ai',
+        method: 'POST',
+        url: '/api/v1/ai/image-edit',
+        bodyType: 'json',
+        body: '{\n  "model": "seedream-v5-lite-image-to-image",\n  "prompt": "Editorial street style fashion photograph of the model standing against a textured gray stone wall.",\n  "image_input": [\n    "https://images.segmind.com/generations/901b78cd-381a-4284-8391-306d4c7409e1/6852c6602b5db2d623cc373cfa699b55.webp"\n  ],\n  "aspect_ratio": "16:9",\n  "size": "3K",\n  "max_images": 1,\n  "optimize_prompt": "fast",\n  "watermark": false\n}',
+        headers: [
+            { key: 'Content-Type', value: 'application/json' },
+            { key: 'Accept', value: 'application/json' },
+        ],
+    },
+    {
+        label: 'Image Edit - GPT Image (URL)',
+        group: 'ai',
+        method: 'POST',
+        url: '/api/v1/ai/image-edit',
+        bodyType: 'json',
+        body: '{\n  "model": "gpt-image-1.5-edit",\n  "prompt": "Add soft natural daylight with gentle shadow play across the wall.",\n  "image_urls": [\n    "https://images.segmind.com/generations/901b78cd-381a-4284-8391-306d4c7409e1/6852c6602b5db2d623cc373cfa699b55.webp"\n  ],\n  "size": "auto",\n  "quality": "high",\n  "background": "opaque",\n  "output_compression": 100,\n  "output_format": "png",\n  "moderation": "auto"\n}',
+        headers: [
+            { key: 'Content-Type', value: 'application/json' },
+            { key: 'Accept', value: 'application/json' },
+        ],
+    },
+    {
+        label: 'Image Edit - Kling 3 (URL)',
+        group: 'ai',
+        method: 'POST',
+        url: '/api/v1/ai/image-edit',
+        bodyType: 'json',
+        body: '{\n  "model": "kling-3-image2image",\n  "prompt": "Cinematic portrait with soft studio lighting and clean background.",\n  "image_url": "https://images.segmind.com/generations/901b78cd-381a-4284-8391-306d4c7409e1/6852c6602b5db2d623cc373cfa699b55.webp",\n  "resolution": "1K",\n  "aspect_ratio": "16:9",\n  "output_format": "png"\n}',
+        headers: [
+            { key: 'Content-Type', value: 'application/json' },
+            { key: 'Accept', value: 'application/json' },
+        ],
+    },
+    {
+        label: 'Image Edit - Nano Banana (URL)',
+        group: 'ai',
+        method: 'POST',
+        url: '/api/v1/ai/image-edit',
+        bodyType: 'json',
+        body: '{\n  "model": "nano-banana-pro",\n  "prompt": "Transform the portrait with a warm vintage film aesthetic and soft grain.",\n  "image_urls": [\n    "https://images.segmind.com/generations/901b78cd-381a-4284-8391-306d4c7409e1/6852c6602b5db2d623cc373cfa699b55.webp"\n  ],\n  "aspect_ratio": "1:1",\n  "output_resolution": "4K",\n  "output_format": "jpg",\n  "response_modalities": "TEXT_AND_IMAGE"\n}',
+        headers: [
+            { key: 'Content-Type', value: 'application/json' },
+            { key: 'Accept', value: 'application/json' },
+        ],
+    },
+    {
+        label: 'Image Edit (Upload)',
+        group: 'ai',
+        method: 'POST',
+        url: '/api/v1/ai/image-edit',
+        bodyType: 'form-data',
+        body: '',
+        headers: [{ key: 'Accept', value: 'application/json' }],
+    },
+    {
         label: 'Check Generation Status',
         group: 'ai',
         method: 'GET',
@@ -500,11 +581,22 @@ export default function APIPlayground() {
             setShowRawBody(false);
 
             if (template.bodyType === 'form-data') {
+                const isImageEdit = template.url.includes('image-edit');
                 const isImageToVideo = template.url.includes('image-to-video');
                 const isVideoFaceSwap =
                     template.url.includes('video-face-swap');
 
-                if (isImageToVideo) {
+                if (isImageEdit) {
+                    setFormDataFields([
+                        { key: 'model', value: 'flux-kontext-dev' },
+                        {
+                            key: 'prompt',
+                            value: 'Replace the background with a bokeh light effect',
+                        },
+                        { key: 'aspect_ratio', value: 'match_input_image' },
+                    ]);
+                    setFormFileFields([{ key: 'input_image', file: null }]);
+                } else if (isImageToVideo) {
                     // Image-to-video: prompt + image file
                     setFormDataFields([
                         {

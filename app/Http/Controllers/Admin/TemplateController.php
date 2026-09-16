@@ -249,29 +249,49 @@ class TemplateController extends Controller
             $sourcePath = ltrim($sourceUrl, '/');
         }
 
+        if (str_starts_with($sourcePath, 'storage/') && ! Storage::disk($this->disk)->exists($sourcePath)) {
+            $sourcePath = substr($sourcePath, 8);
+        }
+
         // Check if the file exists
         if (! Storage::disk($this->disk)->exists($sourcePath)) {
             return back()->with('error', 'Source file does not exist on storage.');
         }
 
         // Create new unique path for the template
-        $extension = pathinfo($sourcePath, PATHINFO_EXTENSION);
-        $newPath = 'templates/'.Str::uuid().'.'.($extension ?: 'mp4');
+        $extension = strtolower(pathinfo($sourcePath, PATHINFO_EXTENSION));
+        $isVideo = in_array($extension, ['mp4', 'webm', 'mov'])
+            || $generation->operation === AIGeneration::OPERATION_IMAGE_TO_VIDEO
+            || $generation->operation === AIGeneration::OPERATION_VIDEO_FACE_SWAP;
+
+        $type = $isVideo ? Template::TYPE_VIDEO : Template::TYPE_IMAGE;
+        $defaultExtension = $isVideo ? ($extension ?: 'mp4') : ($extension ?: 'png');
+        $newPath = 'templates/'.Str::uuid().'.'.$defaultExtension;
 
         // Copy file
         Storage::disk($this->disk)->copy($sourcePath, $newPath);
 
         $input = $generation->input_metadata ?? [];
 
+        $typeName = $isVideo ? 'Video' : 'Image';
+        $operationLabel = match ($generation->operation) {
+            AIGeneration::OPERATION_IMAGE_EDIT => 'Image Editing',
+            AIGeneration::OPERATION_IMAGE => 'Image Generation',
+            AIGeneration::OPERATION_IMAGE_TO_VIDEO => 'Image-to-Video',
+            AIGeneration::OPERATION_FACE_SWAP => 'Face Swap',
+            AIGeneration::OPERATION_VIDEO_FACE_SWAP => 'Video Face Swap',
+            default => 'AI Generation',
+        };
+
         // Create the template
         $template = Template::create([
-            'name' => 'Video Template '.$generation->id,
-            'slug' => 'video-'.$generation->id, // HasAutoSlug will suffix if needed
-            'description' => 'Generated from Image-to-Video',
-            'type' => Template::TYPE_VIDEO,
-            'cost' => 20,
+            'name' => "{$typeName} Template {$generation->id}",
+            'slug' => strtolower($typeName).'-'.$generation->id, // HasAutoSlug will suffix if needed
+            'description' => "Generated from {$operationLabel}",
+            'type' => $type,
+            'cost' => $isVideo ? 20 : 5,
             'file_path' => $newPath,
-            'thumbnail_path' => null,
+            'thumbnail_path' => $isVideo ? null : $newPath,
             'is_active' => false,
             'sort_order' => 1,
             'prompt' => $input['prompt'] ?? null,

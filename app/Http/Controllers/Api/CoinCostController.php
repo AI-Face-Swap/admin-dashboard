@@ -26,6 +26,9 @@ class CoinCostController extends Controller
             'image_to_video_480p' => (int) Setting::get('ai', 'coin_cost_image_to_video_480p', config('ai.coin_costs.image_to_video_480p', 10)),
             'image_to_video_720p' => (int) Setting::get('ai', 'coin_cost_image_to_video_720p', config('ai.coin_costs.image_to_video_720p', 20)),
 
+            // Image editing: fixed cost per request
+            'image_edit' => (int) Setting::get('ai', 'coin_cost_image_edit', config('ai.coin_costs.image_edit', 10)),
+
             // Note: face_swap and video_face_swap costs come from template.cost (not here)
         ]);
     }

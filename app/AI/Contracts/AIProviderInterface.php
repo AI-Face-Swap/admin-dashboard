@@ -50,4 +50,12 @@ interface AIProviderInterface
      * @throws AIGenerationFailedException
      */
     public function imageToVideo(GenerationRequest $request): AIResponse;
+
+    /**
+     * Edit an image using an AI model.
+     *
+     * @throws UnsupportedOperationException
+     * @throws AIGenerationFailedException
+     */
+    public function editImage(GenerationRequest $request): AIResponse;
 }

@@ -52,6 +52,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::patch('providers/{provider}/toggle', [ProviderController::class, 'toggle'])->middleware('permission:providers.manage')->name('providers.toggle');
 
     Route::get('ai', [AIController::class, 'index'])->middleware('permission:ai.view')->name('ai.index');
+    Route::get('ai/generations/{generation}/download', [AIController::class, 'download'])->middleware('permission:ai.view')->name('ai.download');
 
     Route::get('api-playground', [APIPlaygroundController::class, 'index'])->middleware('permission:api.playground')->name('api-playground.index');
 

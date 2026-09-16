@@ -53,6 +53,7 @@ Laravel backend + admin dashboard for AI media generation (image generation, fac
 | — | Production Docker stack: multi-stage image, host-nginx reverse proxy (`127.0.0.1:8080`), queue + scheduler containers, GHCR CI/CD | ✅ |
 | — | Google customer login (web redirect + mobile ID-token flow) | ✅ |
 | — | Apple customer login (web redirect/form-post + mobile identity-token flow) | ✅ |
+| — | Image Editing API (6 Segmind models: multi-image-kontext-max, flux-kontext-dev, seedream-v5-lite, gpt-image-1.5-edit, kling-3-image2image, nano-banana-pro) + Admin AI tab + Save to Templates | ✅ |
 
 ## Pending phases
 
@@ -108,6 +109,7 @@ Laravel backend + admin dashboard for AI media generation (image generation, fac
 | `POST /api/v1/ai/video-face-swap` | sanctum | Video face-swap (queued) |
 | `POST /api/v1/ai/images` | sanctum | Text-to-image generation |
 | `POST /api/v1/ai/image-to-video` | sanctum | Image-to-video (Wan 2.2) — accepts `image` (file) OR `image_url` (URL) |
+| `POST /api/v1/ai/image-edit` | sanctum | Image editing (multi-image-kontext-max & flux-kontext-dev) |
 | `GET /api/v1/ai/generations/{id}` | sanctum | Poll generation status |
 | `GET /api/v1/customer/generations` | sanctum | Customer's generations |
 | `GET /api/v1/sliders` | public | Active sliders |
