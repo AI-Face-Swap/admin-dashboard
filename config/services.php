@@ -51,4 +51,12 @@ return [
         ],
     ],
 
+    'htut_central_auth' => [
+        'url' => env('HTUT_CENTRAL_AUTH_URL', 'http://localhost:8000'),
+        'project_id' => env('HTUT_CENTRAL_AUTH_PROJECT_ID', 'htut_ai'),
+        'project_secret' => env('HTUT_CENTRAL_AUTH_PROJECT_SECRET', 'sec_htut_ai_dev_secret_2026'),
+        'api_key' => env('HTUT_CENTRAL_AUTH_API_KEY', 's2s_htut_ai_live_key_2026'),
+        'redirect_uri' => env('HTUT_CENTRAL_AUTH_REDIRECT_URI', 'http://localhost:8001/v1/auth/htut/callback'),
+    ],
+
 ];

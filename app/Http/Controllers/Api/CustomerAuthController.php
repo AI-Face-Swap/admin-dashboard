@@ -98,7 +98,14 @@ class CustomerAuthController extends Controller
      */
     public function me(Request $request): JsonResponse
     {
-        return response()->json(['customer' => $request->user()]);
+        /** @var \App\Models\Customer $customer */
+        $customer = $request->user();
+        if ($customer) {
+            $customer->syncCoinExpiry();
+            $customer->refresh();
+        }
+
+        return response()->json(['customer' => $customer]);
     }
 
     /**

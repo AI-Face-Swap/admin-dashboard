@@ -15,6 +15,7 @@ define('TEST_DB_PATH', sys_get_temp_dir().'/htut_ai_test.sqlite');
 if (file_exists(TEST_DB_PATH)) {
     @unlink(TEST_DB_PATH);
 }
+touch(TEST_DB_PATH);
 
 // Set DB vars BEFORE any Laravel/Dotenv code runs
 putenv('DB_CONNECTION=sqlite');

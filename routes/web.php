@@ -24,6 +24,11 @@ use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'welcome')->name('home');
 
+// HTUT Central Auth SSO Web Aliases
+Route::get('v1/auth/htut/redirect', [App\Http\Controllers\Api\HtutCentralAuthController::class, 'redirect']);
+Route::get('v1/auth/htut/callback', [App\Http\Controllers\Api\HtutCentralAuthController::class, 'callback']);
+Route::post('v1/htut/customer/sync', [App\Http\Controllers\Api\HtutCentralAuthController::class, 'syncCustomerWebhook']);
+
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 

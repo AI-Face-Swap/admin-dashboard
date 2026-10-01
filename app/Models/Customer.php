@@ -17,13 +17,16 @@ use Laravel\Sanctum\HasApiTokens;
 
 /**
  * @property int $id
+ * @property string|null $central_auth_uuid
  * @property string $name
  * @property string $email
+ * @property string|null $phone
  * @property string|null $password
  * @property string|null $avatar
  * @property string|null $auth_provider
  * @property string|null $auth_provider_id
  * @property string $customer_type
+ * @property Carbon|null $expired_at
  * @property int $coins
  * @property bool $is_banned
  * @property Carbon|null $email_verified_at
@@ -32,7 +35,7 @@ use Laravel\Sanctum\HasApiTokens;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'email', 'password', 'avatar', 'auth_provider', 'auth_provider_id', 'customer_type', 'coins', 'is_banned', 'email_verified_at', 'last_active_at'])]
+#[Fillable(['central_auth_uuid', 'name', 'email', 'phone', 'password', 'avatar', 'auth_provider', 'auth_provider_id', 'customer_type', 'expired_at', 'coins', 'is_banned', 'email_verified_at', 'last_active_at'])]
 #[Hidden(['password', 'remember_token'])]
 class Customer extends Authenticatable implements MustVerifyEmail
 {
@@ -100,10 +103,32 @@ class Customer extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Check if SSO project access / trial has expired.
+     * Free customers who exceed their 1-week trial have their coins reset to 0.
+     */
+    public function syncCoinExpiry(?bool $isSsoExpired = null, ?Carbon $ssoExpiredAt = null): void
+    {
+        if ($ssoExpiredAt) {
+            $this->expired_at = $ssoExpiredAt;
+        }
+
+        $hasExpired = $isSsoExpired ?? ($this->expired_at && now()->greaterThan($this->expired_at));
+
+        if ($this->customer_type !== self::TYPE_PREMIUM) {
+            if ($hasExpired && $this->coins > 0) {
+                $this->coins = 0;
+                $this->save();
+            }
+        }
+    }
+
+    /**
      * Determine if the customer can afford a coin cost.
      */
     public function hasEnoughCoins(int $cost): bool
     {
+        $this->syncCoinExpiry();
+
         return $this->coins >= $cost;
     }
 
@@ -112,6 +137,8 @@ class Customer extends Authenticatable implements MustVerifyEmail
      */
     public function spendCoins(int $cost): void
     {
+        $this->syncCoinExpiry();
+
         $this->decrement('coins', max(0, $cost));
     }
 
@@ -132,6 +159,7 @@ class Customer extends Authenticatable implements MustVerifyEmail
     {
         return [
             'email_verified_at' => 'datetime',
+            'expired_at' => 'datetime',
             'password' => 'hashed',
             'last_active_at' => 'datetime',
             'is_banned' => 'boolean',
