@@ -59,4 +59,9 @@ return [
         'redirect_uri' => env('HTUT_CENTRAL_AUTH_REDIRECT_URI', 'http://localhost:8001/v1/auth/htut/callback'),
     ],
 
+    'walmae' => [
+        'url' => env('WALMAE_URL', 'https://cp.walmae.net'),
+        'token' => env('WALMAE_TOKEN', ''),
+    ],
+
 ];

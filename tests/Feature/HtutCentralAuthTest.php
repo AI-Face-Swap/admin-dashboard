@@ -182,3 +182,91 @@ it('uploads and updates customer avatar to spaces disk', function () {
     expect($customer->fresh()->avatar)->toBe($avatarUrl);
 });
 
+it('fetches payment packages list for htut_ai', function () {
+    Http::fake([
+        '*/api/v1/s2s/projects/htut_ai/packages' => Http::response([
+            'status' => 'success',
+            'total' => 1,
+            'packages' => [
+                [
+                    'id' => 6,
+                    'name' => 'HTUT AI Pro Monthly',
+                    'slug' => 'htut-ai-pro-monthly',
+                    'price' => 15000,
+                    'currency' => 'MMK',
+                    'duration' => 1,
+                    'duration_unit' => 'months',
+                    'features' => [
+                        ['key' => 'ai_credits_500', 'name' => '500 AI Monthly Credits'],
+                    ],
+                ],
+            ],
+        ], 200),
+    ]);
+
+    $response = $this->getJson('/api/v1/packages?refresh=1');
+    $response->assertSuccessful();
+    expect($response->json('status'))->toBe('success');
+    expect($response->json('packages'))->toBeArray()->not->toBeEmpty();
+    expect($response->json('packages.0.slug'))->toBe('htut-ai-pro-monthly');
+});
+
+it('initiates package checkout session for authenticated customer with KBZPay', function () {
+    Http::fake([
+        '*/api/merchant/kbzpay/precreate-payment' => Http::response([
+            'merchant_order_id' => '2026100199999',
+            'payment_url' => 'https://wap.kbzpay.com/pgw/pwa/?test=1',
+        ], 200),
+    ]);
+
+    $customer = Customer::create([
+        'central_auth_uuid' => 'checkout_test_user_uuid',
+        'name' => 'Checkout Tester',
+        'email' => 'checkout_test@example.com',
+        'customer_type' => Customer::TYPE_FREE,
+        'coins' => 100,
+    ]);
+
+    $response = $this->actingAs($customer, 'sanctum')
+        ->postJson('/api/v1/packages/checkout', [
+            'package_slug' => 'htut-ai-pro-monthly',
+            'payment_method' => 'kbzpay',
+        ]);
+
+    $response->assertSuccessful();
+    expect($response->json('status'))->toBe('success');
+    expect($response->json('checkout_url'))->toContain('walmae.net/kbzpay/checkout?url=');
+    expect($response->json('order_reference'))->toBe('2026100199999');
+});
+
+it('initiates package checkout session for authenticated customer with MMQR', function () {
+    Http::fake([
+        '*/api/merchant/mmqr/precreate-payment' => Http::response([
+            'merchant_order_id' => '2026100188888',
+            'qr_code' => '00020101021226480015com.mmqrpay...',
+            'mmqr_logo' => 'https://cp.walmae.net/mmqrLogo.jpg',
+        ], 200),
+    ]);
+
+    $customer = Customer::create([
+        'central_auth_uuid' => 'checkout_test_user_mmqr_uuid',
+        'name' => 'Checkout MMQR Tester',
+        'email' => 'checkout_mmqr@example.com',
+        'customer_type' => Customer::TYPE_FREE,
+        'coins' => 100,
+    ]);
+
+    $response = $this->actingAs($customer, 'sanctum')
+        ->postJson('/api/v1/packages/checkout', [
+            'package_slug' => 'htut-ai-pro-monthly',
+            'payment_method' => 'mmqr',
+        ]);
+
+    $response->assertSuccessful();
+    expect($response->json('status'))->toBe('success');
+    expect($response->json('order_reference'))->toBe('2026100188888');
+    expect($response->json('qr_code'))->toBe('00020101021226480015com.mmqrpay...');
+    expect($response->json('receiver_name'))->toBe('WalMae Traders');
+});
+
+

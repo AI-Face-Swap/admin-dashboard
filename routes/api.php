@@ -51,6 +51,7 @@ Route::prefix('v1')->group(function () {
     Route::get('home-showcases', [HomePageController::class, 'showcases']);
     Route::get('home-features', [HomePageController::class, 'features']);
     Route::get('partners', [HomePageController::class, 'partners']);
+    Route::get('packages', [App\Http\Controllers\Api\PaymentPackageController::class, 'index']);
     Route::get('settings/footer', [HomePageController::class, 'footerSettings']);
 });
 
@@ -58,6 +59,7 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'customer.not-banned'])->group(
     Route::post('auth/logout', [CustomerAuthController::class, 'logout']);
     Route::get('auth/me', [CustomerAuthController::class, 'me']);
     Route::post('customer/avatar', [CustomerAuthController::class, 'updateAvatar']);
+    Route::post('packages/checkout', [App\Http\Controllers\Api\PaymentPackageController::class, 'checkout']);
 
     Route::post('ai/face-swap', [AIFaceSwapController::class, 'store'])->middleware('throttle:30,1');
     Route::post('ai/video-face-swap', [AIVideoFaceSwapController::class, 'store'])->middleware('throttle:10,1');
