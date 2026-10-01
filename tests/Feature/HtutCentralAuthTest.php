@@ -159,3 +159,26 @@ it('resets coins to 0 via artisan command when 1-week trial expires', function (
     expect($customer->fresh()->coins)->toBe(0);
 });
 
+it('uploads and updates customer avatar to spaces disk', function () {
+    Storage::fake('spaces');
+
+    $customer = Customer::create([
+        'name' => 'Avatar Test User',
+        'email' => 'avatar_test@example.com',
+        'customer_type' => Customer::TYPE_FREE,
+        'coins' => 100,
+    ]);
+
+    $file = Illuminate\Http\UploadedFile::fake()->image('my_avatar.png', 200, 200);
+
+    $response = $this->actingAs($customer, 'sanctum')
+        ->postJson('/api/v1/customer/avatar', [
+            'avatar' => $file,
+        ]);
+
+    $response->assertSuccessful();
+    $avatarUrl = $response->json('avatar');
+    expect($avatarUrl)->toContain('avatars/');
+    expect($customer->fresh()->avatar)->toBe($avatarUrl);
+});
+

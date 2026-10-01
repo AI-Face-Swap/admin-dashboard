@@ -57,6 +57,7 @@ Route::prefix('v1')->group(function () {
 Route::prefix('v1')->middleware(['auth:sanctum', 'customer.not-banned'])->group(function () {
     Route::post('auth/logout', [CustomerAuthController::class, 'logout']);
     Route::get('auth/me', [CustomerAuthController::class, 'me']);
+    Route::post('customer/avatar', [CustomerAuthController::class, 'updateAvatar']);
 
     Route::post('ai/face-swap', [AIFaceSwapController::class, 'store'])->middleware('throttle:30,1');
     Route::post('ai/video-face-swap', [AIVideoFaceSwapController::class, 'store'])->middleware('throttle:10,1');

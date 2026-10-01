@@ -15,6 +15,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class CustomerAuthController extends Controller
@@ -106,6 +108,47 @@ class CustomerAuthController extends Controller
         }
 
         return response()->json(['customer' => $customer]);
+    }
+
+    /**
+     * Upload and update customer's avatar directly to DigitalOcean Spaces.
+     *
+     * @response 200 {"message": "Profile picture updated successfully.", "avatar": "https://...", "customer": {...}}
+     */
+    public function updateAvatar(Request $request): JsonResponse
+    {
+        $request->validate([
+            'avatar' => ['required', 'image', 'mimes:jpeg,png,jpg,webp,gif', 'max:5120'], // max 5MB
+        ]);
+
+        /** @var Customer $customer */
+        $customer = $request->user();
+
+        $file = $request->file('avatar');
+        $extension = $file->getClientOriginalExtension() ?: 'jpg';
+        $filename = Str::uuid() . '.' . $extension;
+
+        // Store directly to DigitalOcean Spaces
+        $path = $file->storeAs('avatars', $filename, 'spaces');
+
+        if ($path === false) {
+            return response()->json([
+                'message' => 'Failed to upload profile picture to cloud storage.',
+            ], 500);
+        }
+
+        $avatarUrl = Storage::disk('spaces')->url($path);
+
+        $customer->update([
+            'avatar' => $avatarUrl,
+        ]);
+        $customer->refresh();
+
+        return response()->json([
+            'message' => 'Profile picture updated successfully.',
+            'avatar' => $avatarUrl,
+            'customer' => $customer,
+        ]);
     }
 
     /**
