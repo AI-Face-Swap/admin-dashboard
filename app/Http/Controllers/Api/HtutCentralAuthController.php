@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Customer;
+use App\Services\CentralAuthPackageService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -121,6 +122,47 @@ class HtutCentralAuthController extends Controller
             Log::error('HTUT Central Auth Callback Exception: ' . $e->getMessage());
             return redirect("{$frontendUrl}/auth/callback?error=Server+error+during+authentication");
         }
+    }
+
+    /**
+     * S2S Webhook: Invalidate and refresh Central Auth package catalog cache
+     */
+    public function clearPackageCache(Request $request): JsonResponse
+    {
+        if ($request->input('event') === 'customer.entitlements.updated') {
+            return $this->syncCustomerWebhook($request);
+        }
+
+        $expectedSecret = (string) config('services.htut_central_auth.project_secret');
+        $expectedApiKey = (string) config('services.htut_central_auth.api_key');
+
+        $providedSecret = $request->header('X-Project-Secret') ?? $request->input('project_secret');
+        $providedApiKey = $request->header('X-Api-Key') ?? $request->input('api_key');
+
+        $authorized = false;
+        if (! empty($expectedSecret) && ! empty($providedSecret) && hash_equals($expectedSecret, (string) $providedSecret)) {
+            $authorized = true;
+        }
+        if (! empty($expectedApiKey) && ! empty($providedApiKey) && hash_equals($expectedApiKey, (string) $providedApiKey)) {
+            $authorized = true;
+        }
+
+        if (! $authorized) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized S2S credentials.',
+            ], 401);
+        }
+
+        // Force refresh packages from Central Auth
+        $packages = CentralAuthPackageService::getPackages(forceRefresh: true);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Central Auth package cache cleared and refreshed successfully.',
+            'packages_count' => count($packages),
+            'timestamp' => now()->toIso8601String(),
+        ]);
     }
 
     /**

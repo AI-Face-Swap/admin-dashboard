@@ -27,9 +27,9 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
 
-        // API routes use Bearer token auth (Sanctum), not session cookies.
-        // CSRF is not needed — skip it for all /api/* routes.
-        $middleware->validateCsrfTokens(except: ['api/*']);
+        // API and S2S webhook routes use Bearer tokens or S2S credentials, not session cookies.
+        // CSRF is not needed — skip it for all /api/* and /v1/* routes.
+        $middleware->validateCsrfTokens(except: ['api/*', 'v1/*']);
 
         $middleware->alias([
             'permission' => EnsureUserHasPermission::class,

@@ -269,4 +269,50 @@ it('initiates package checkout session for authenticated customer with MMQR', fu
     expect($response->json('receiver_name'))->toBe('WalMae Traders');
 });
 
+it('rejects package cache-clear webhook with invalid credentials', function () {
+    $response = $this->postJson('/v1/htut/packages/cache-clear', [], [
+        'X-Project-Secret' => 'wrong_secret',
+    ]);
+
+    $response->assertStatus(401);
+    expect($response->json('message'))->toBe('Unauthorized S2S credentials.');
+});
+
+it('clears and refreshes package cache via S2S webhook with valid secret', function () {
+    config([
+        'services.htut_central_auth.project_secret' => 'test_s2s_secret_key',
+        'services.htut_central_auth.project_id' => 'htut_ai',
+        'services.htut_central_auth.url' => 'http://central-auth.test',
+    ]);
+
+    Http::fake([
+        'http://central-auth.test/api/v1/s2s/projects/htut_ai/packages' => Http::response([
+            'status' => 'success',
+            'packages' => [
+                [
+                    'id' => 10,
+                    'name' => 'HTUT AI Enterprise',
+                    'slug' => 'htut-ai-enterprise',
+                    'price' => 50000,
+                    'currency' => 'MMK',
+                    'duration' => 1,
+                    'duration_unit' => 'months',
+                    'features' => [],
+                ],
+            ],
+        ], 200),
+    ]);
+
+    $response = $this->postJson('/v1/htut/packages/cache-clear', [
+        'event' => 'packages.updated',
+    ], [
+        'X-Project-Secret' => 'test_s2s_secret_key',
+    ]);
+
+    $response->assertSuccessful();
+    expect($response->json('success'))->toBe(true);
+    expect($response->json('packages_count'))->toBe(1);
+});
+
+
 

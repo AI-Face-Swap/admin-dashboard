@@ -37,6 +37,7 @@ Route::prefix('v1')->group(function () {
     Route::get('auth/htut/redirect', [HtutCentralAuthController::class, 'redirect'])->name('api.v1.auth.htut.redirect');
     Route::get('auth/htut/callback', [HtutCentralAuthController::class, 'callback'])->name('api.v1.auth.htut.callback');
     Route::post('htut/customer/sync', [HtutCentralAuthController::class, 'syncCustomerWebhook'])->name('api.v1.htut.customer.sync');
+    Route::post('htut/packages/cache-clear', [HtutCentralAuthController::class, 'clearPackageCache'])->name('api.v1.htut.packages.cache-clear');
 });
 
 Route::prefix('v1')->group(function () {

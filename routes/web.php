@@ -28,6 +28,7 @@ Route::inertia('/', 'welcome')->name('home');
 Route::get('v1/auth/htut/redirect', [App\Http\Controllers\Api\HtutCentralAuthController::class, 'redirect']);
 Route::get('v1/auth/htut/callback', [App\Http\Controllers\Api\HtutCentralAuthController::class, 'callback']);
 Route::post('v1/htut/customer/sync', [App\Http\Controllers\Api\HtutCentralAuthController::class, 'syncCustomerWebhook']);
+Route::post('v1/htut/packages/cache-clear', [App\Http\Controllers\Api\HtutCentralAuthController::class, 'clearPackageCache']);
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
