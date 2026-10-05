@@ -27,6 +27,10 @@ class AIController extends Controller
                 ->latest()
                 ->limit(20)
                 ->get(),
+            'aiModels' => \App\Models\AIModel::where('is_active', true)
+                ->with('generationType')
+                ->ordered()
+                ->get(),
         ]);
     }
 

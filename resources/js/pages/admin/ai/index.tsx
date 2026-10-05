@@ -1350,6 +1350,24 @@ function ImageGeneration() {
                                     <SelectItem value="qwen-image-3">
                                         Qwen Image 3
                                     </SelectItem>
+                                    <SelectItem value="flux-schnell">
+                                        FLUX.1 Schnell
+                                    </SelectItem>
+                                    <SelectItem value="sdxl">
+                                        Stable Diffusion XL
+                                    </SelectItem>
+                                    <SelectItem value="flux-dev">
+                                        FLUX.1 Dev
+                                    </SelectItem>
+                                    <SelectItem value="ideogram-4.5">
+                                        Ideogram 4.5
+                                    </SelectItem>
+                                    <SelectItem value="recraft-v4-pro">
+                                        Recraft V4 Pro
+                                    </SelectItem>
+                                    <SelectItem value="grok-imagine-image-2">
+                                        Grok Imagine 2
+                                    </SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -1764,14 +1782,23 @@ function ImageToVideo() {
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="kling-o1-reference-image-to-video">
-                                        Kling (Default)
+                                    <SelectItem value="wan-2.2-i2v-flash">
+                                        Wan 2.2 I2V Flash
                                     </SelectItem>
-                                    <SelectItem value="wan2.7-r2v">
-                                        Wan 2.7 R2V
+                                    <SelectItem value="kling-o1-reference-image-to-video">
+                                        Kling Reference I2V
                                     </SelectItem>
                                     <SelectItem value="seedance-2.5">
                                         Seedance 2.5
+                                    </SelectItem>
+                                    <SelectItem value="wan3.0-video-prime">
+                                        Wan 3.0 Video Prime
+                                    </SelectItem>
+                                    <SelectItem value="ltx-2.5-pro">
+                                        LTX 2.5 Pro
+                                    </SelectItem>
+                                    <SelectItem value="minimax-h3-max-reference-to-video">
+                                        MiniMax H3 Max I2V
                                     </SelectItem>
                                 </SelectContent>
                             </Select>
@@ -1978,7 +2005,9 @@ type EditModel =
     | 'seedream-v5-lite-image-to-image'
     | 'gpt-image-1.5-edit'
     | 'kling-3-image2image'
-    | 'nano-banana-pro';
+    | 'nano-banana-pro'
+    | 'ideogram-4.5-edit'
+    | 'bria-extract-object';
 
 function ImageEditing() {
     const [model, setModel] = useState<EditModel>('multi-image-kontext-max');
@@ -2035,6 +2064,9 @@ function ImageEditing() {
     const [systemPrompt, setSystemPrompt] = useState('');
     const [responseModalities, setResponseModalities] = useState('TEXT_AND_IMAGE');
 
+    // Ideogram 4.5 Edit
+    const [ideogramQuality, setIdeogramQuality] = useState('medium');
+
     const onImg1Change = (file: File | null) => {
         setImg1File(file);
         setImg1Preview(file ? URL.createObjectURL(file) : null);
@@ -2045,7 +2077,11 @@ function ImageEditing() {
         setImg2Preview(file ? URL.createObjectURL(file) : null);
     };
 
-    const isSingleImageModel = model === 'flux-kontext-dev' || model === 'kling-3-image2image';
+    const isSingleImageModel =
+        model === 'flux-kontext-dev' ||
+        model === 'kling-3-image2image' ||
+        model === 'ideogram-4.5-edit' ||
+        model === 'bria-extract-object';
 
     const generate = async () => {
         setError(null);
@@ -2150,6 +2186,13 @@ function ImageEditing() {
                     form.append('system_prompt', systemPrompt.trim());
                 }
                 break;
+
+            case 'ideogram-4.5-edit':
+                form.append('quality', ideogramQuality);
+                break;
+
+            case 'bria-extract-object':
+                break;
         }
 
         setProcessing(true);
@@ -2206,7 +2249,7 @@ function ImageEditing() {
                                 } else if (val === 'flux-kontext-dev') {
                                     setAspectRatio('match_input_image');
                                     setOutputFormat('png');
-                                } else if (val === 'gpt-image-1.5-edit') {
+                                } else if (val === 'gpt-image-1.5-edit' || val === 'ideogram-4.5-edit' || val === 'bria-extract-object') {
                                     setOutputFormat('png');
                                 }
                             }}
@@ -2233,6 +2276,12 @@ function ImageEditing() {
                                 <SelectItem value="nano-banana-pro">
                                     Nano Banana Pro (Comic & Concept Art)
                                 </SelectItem>
+                                <SelectItem value="ideogram-4.5-edit">
+                                    Ideogram 4.5 Edit (Precision Text & Style)
+                                </SelectItem>
+                                <SelectItem value="bria-extract-object">
+                                    Bria Extract Object (Cutout PNG)
+                                </SelectItem>
                             </SelectContent>
                         </Select>
                         <p className="text-xs text-muted-foreground">
@@ -2248,6 +2297,10 @@ function ImageEditing() {
                                 'High-end cinematic image-to-image stylization and environmental transformation.'}
                             {model === 'nano-banana-pro' &&
                                 'Multi-panel comic art, concept illustrations, and expressive stylized generation.'}
+                            {model === 'ideogram-4.5-edit' &&
+                                'Surgically edit elements or add clean legible typography while keeping the rest untouched.'}
+                            {model === 'bria-extract-object' &&
+                                'Intelligent AI cutout to isolate and extract named objects with transparent alpha channel.'}
                         </p>
                     </div>
 
@@ -2268,7 +2321,11 @@ function ImageEditing() {
                                           ? 'A photorealistic wide shot of the person casually sitting across a London street...'
                                           : model === 'kling-3-image2image'
                                             ? 'Transform this garden into a magical winter wonderland with crystalline ice patterns...'
-                                            : 'Create a multi-panel GTA-style comic page featuring two coworkers on launch day...'
+                                            : model === 'ideogram-4.5-edit'
+                                              ? 'Paint the bold wordmark "RAMPWORKS" in a 1970s chrome script across the center...'
+                                              : model === 'bria-extract-object'
+                                                ? 'Name the object to extract (e.g., "sunglasses", "the cat", "the red dress")...'
+                                                : 'Create a multi-panel GTA-style comic page featuring two coworkers on launch day...'
                             }
                             className="flex min-h-[110px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                         />
@@ -2685,6 +2742,26 @@ function ImageEditing() {
                                         <SelectItem value="4K">4K (Default)</SelectItem>
                                         <SelectItem value="2K">2K</SelectItem>
                                         <SelectItem value="1K">1K</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Ideogram 4.5 Edit Settings */}
+                    {model === 'ideogram-4.5-edit' && (
+                        <div className="space-y-4 rounded-lg border p-4">
+                            <h4 className="font-medium text-sm">Ideogram 4.5 Edit Settings</h4>
+                            <div className="space-y-2">
+                                <Label>Quality Tier</Label>
+                                <Select value={ideogramQuality} onValueChange={setIdeogramQuality}>
+                                    <SelectTrigger>
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="medium">Medium (Standard)</SelectItem>
+                                        <SelectItem value="high">High (Maximum Detail)</SelectItem>
+                                        <SelectItem value="low">Low (Fast Draft)</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>

@@ -46,6 +46,7 @@ Route::prefix('v1')->group(function () {
     Route::get('templates/{slug}', [TemplateController::class, 'show']);
     Route::get('template-categories', [TemplateCategoryController::class, 'index']);
     Route::get('coin-costs', [CoinCostController::class, 'index']);
+    Route::get('ai-models', [App\Http\Controllers\Api\AIModelApiController::class, 'index']);
 
     // Home Page Dynamic Content
     Route::get('home-heroes', [HomePageController::class, 'heroes']);

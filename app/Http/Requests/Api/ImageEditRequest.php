@@ -26,7 +26,7 @@ class ImageEditRequest extends FormRequest
             'model' => [
                 'required',
                 'string',
-                'in:multi-image-kontext-max,flux-kontext-dev,seedream-v5-lite-image-to-image,gpt-image-1.5-edit,kling-3-image2image,nano-banana-pro',
+                'in:multi-image-kontext-max,flux-kontext-dev,seedream-v5-lite-image-to-image,gpt-image-1.5-edit,kling-3-image2image,nano-banana-pro,ideogram-4.5-edit,bria-extract-object',
             ],
             'prompt' => ['required', 'string', 'max:5000'],
             'seed' => ['nullable', 'integer', 'min:0'],
@@ -43,6 +43,8 @@ class ImageEditRequest extends FormRequest
             'input_image_1_url' => ['nullable', 'url', 'max:2048'],
             'input_image_2' => ['nullable', 'file', 'image', 'max:10240'],
             'input_image_2_url' => ['nullable', 'url', 'max:2048'],
+            'mask' => ['nullable', 'file', 'image', 'max:10240'],
+            'mask_url' => ['nullable', 'url', 'max:2048'],
             'image_input' => ['nullable', 'array'],
             'image_input.*' => ['string'],
             'image_urls' => ['nullable', 'array'],

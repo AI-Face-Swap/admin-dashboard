@@ -44,6 +44,7 @@ class CoinCostController extends Controller
             'image_generation' => (int) Setting::get('ai', 'coin_cost_image_generation', config('ai.coin_costs.image_generation', 5)),
             'image_to_video_480p' => (int) Setting::get('ai', 'coin_cost_image_to_video_480p', config('ai.coin_costs.image_to_video_480p', 10)),
             'image_to_video_720p' => (int) Setting::get('ai', 'coin_cost_image_to_video_720p', config('ai.coin_costs.image_to_video_720p', 20)),
+            'image_to_video_1080p' => (int) Setting::get('ai', 'coin_cost_image_to_video_1080p', config('ai.coin_costs.image_to_video_1080p', 35)),
             'image_edit' => (int) Setting::get('ai', 'coin_cost_image_edit', config('ai.coin_costs.image_edit', 10)),
 
             // Dynamic model-specific pricing and configurations

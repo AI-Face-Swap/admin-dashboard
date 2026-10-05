@@ -174,6 +174,22 @@ class AIImageEditController extends Controller
                 $payload['output_format'] = $request->string('output_format', 'jpg')->toString();
                 $payload['response_modalities'] = $request->string('response_modalities', 'TEXT_AND_IMAGE')->toString();
                 break;
+
+            case 'ideogram-4.5-edit':
+                $img = $this->resolveImageUrl($request, 'image_url')
+                    ?: ($this->resolveImageUrl($request, 'input_image') ?: $this->resolveImageUrl($request, 'input_image_1'));
+                $payload['image'] = $img;
+                $payload['quality'] = $request->string('quality', 'medium')->toString();
+                if ($request->hasFile('mask') || $request->filled('mask_url') || $request->filled('mask')) {
+                    $payload['mask'] = $this->resolveImageUrl($request, 'mask');
+                }
+                break;
+
+            case 'bria-extract-object':
+                $img = $this->resolveImageUrl($request, 'image_url')
+                    ?: ($this->resolveImageUrl($request, 'input_image') ?: $this->resolveImageUrl($request, 'input_image_1'));
+                $payload['image'] = $img;
+                break;
         }
 
         return $payload;
