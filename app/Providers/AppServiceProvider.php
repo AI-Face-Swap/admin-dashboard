@@ -9,6 +9,10 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 
+use Dedoc\Scramble\Scramble;
+use Illuminate\Routing\Route;
+use Illuminate\Support\Str;
+
 class AppServiceProvider extends ServiceProvider
 {
     /**
@@ -51,7 +55,7 @@ class AppServiceProvider extends ServiceProvider
     }
 
     /**
-     * Control who can access API docs (/docs/api).
+     * Control who can access API docs (/docs/api) and ensure only routes/api.php endpoints are documented.
      */
     protected function configureScrambleAccess(): void
     {
@@ -59,5 +63,12 @@ class AppServiceProvider extends ServiceProvider
             // Super admin and developer roles can view docs
             return $user->roles()->whereIn('slug', ['super-admin', 'developer'])->exists();
         });
+
+        // Strictly restrict documentation to API routes from routes/api.php
+        Scramble::routes(function (Route $route) {
+            return Str::startsWith($route->uri(), 'api/')
+                && in_array('api', $route->gatherMiddleware());
+        });
     }
 }
+

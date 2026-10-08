@@ -26,44 +26,40 @@ return [
     'info' => [
         'version' => env('API_VERSION', '1.0.0'),
         'description' => <<<'EOD'
-# HTUT AI — Mobile API
+# HTUT AI — REST API
 
-AI-powered image generation, face swap, and video face swap API.
+AI-powered image generation, face swap, image editing, video face swap, and customer portal API.
 
 ## Authentication
 
-All `/ai/*` endpoints require a **Bearer token** obtained from the login or register endpoint.
+All protected endpoints require a **Bearer token** issued via HTUT Central Auth SSO.
 
 Include the token in the `Authorization` header:
 ```
 Authorization: Bearer YOUR_TOKEN_HERE
 ```
 
-## Coin System
+## SSO & Customer Auth Flow
 
-- New customers start with **100 free coins**
-- Each operation costs coins (see endpoint descriptions)
-- Insufficient coins return `402` status code
+1. Redirect user to `GET /api/v1/auth/htut/redirect`
+2. User authenticates on HTUT Central Auth (SSO)
+3. Callback to `GET /api/v1/auth/htut/callback` returns the customer record and access token
+4. Retrieve customer profile & coin balance via `GET /api/v1/auth/me`
+5. Terminate session via `POST /api/v1/auth/logout`
 
-## Endpoints
+## Coin System & Packages
 
-| Endpoint | Cost | Description |
-|---|---|---|
-| `POST /auth/register` | Free | Register (get 100 coins) |
-| `POST /auth/login` | Free | Login (get token) |
-| `GET /auth/me` | Free | Get profile |
-| `POST /auth/logout` | Free | Revoke token |
-| `POST /ai/face-swap` | Template cost | Swap face onto image |
-| `POST /ai/video-face-swap` | Template cost | Swap face in video (queued) |
-| `POST /ai/images` | 5 coins | Generate image from text |
-| `GET /ai/generations/{id}` | Free | Poll generation status |
+- Customers use coins for AI operations (Face Swap, Image Generation, Video Face Swap, etc.)
+- Coin balance and costs can be retrieved via `GET /api/v1/coin-costs` and `GET /api/v1/auth/me`
+- Available coin top-up packages can be fetched via `GET /api/v1/packages` and purchased via `POST /api/v1/packages/checkout`
+- Insufficient coins return `402 Payment Required` status code
 
 ## Base URLs
 
 | Environment | URL |
 |---|---|
-| Local | `http://localhost:8000` |
-| Production | `https://api-ai.htut.com` |
+| Local | `http://localhost:8001/api` |
+| Production | `https://ai.htut.com/api` |
 EOD,
     ],
 
@@ -98,11 +94,10 @@ EOD,
 
     /*
      * Server URLs for the API docs.
-     * Mobile devs will see both Local and Production servers.
      */
     'servers' => [
-        'Local' => 'http://localhost:8000/api',
-        'Production' => 'https://api-ai.htut.com/api',
+        'Local' => env('APP_URL', 'http://localhost:8001') . '/api',
+        'Production' => 'https://ai.htut.com/api',
     ],
 
     'enum_cases_description_strategy' => 'description',
