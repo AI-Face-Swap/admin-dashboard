@@ -59,10 +59,8 @@ class AppServiceProvider extends ServiceProvider
      */
     protected function configureScrambleAccess(): void
     {
-        Gate::define('viewApiDocs', function ($user) {
-            // Super admin and developer roles can view docs
-            return $user->roles()->whereIn('slug', ['super-admin', 'developer'])->exists();
-        });
+        // Allow public access to API docs
+        Gate::define('viewApiDocs', fn ($user = null) => true);
 
         // Strictly restrict documentation to API routes from routes/api.php
         Scramble::routes(function (Route $route) {

@@ -1,6 +1,5 @@
 <?php
 
-use Dedoc\Scramble\Http\Middleware\RestrictedDocsAccess;
 use Dedoc\Scramble\SecurityDocumentation\MiddlewareAuthSecurityStrategy;
 
 return [
@@ -76,7 +75,7 @@ EOD,
             'hideTryIt' => false,
             'hideSchemas' => false,
             'logo' => '',
-            'tryItCredentialsPolicy' => 'include',
+            'tryItCredentialsPolicy' => 'same-origin',
             'layout' => 'responsive',
             'router' => 'hash',
         ],
@@ -88,16 +87,16 @@ EOD,
             'darkMode' => false,
             'showDeveloperTools' => 'never',
             'agent' => ['disabled' => true],
-            'credentials' => 'include',
+            'credentials' => 'same-origin',
         ],
     ],
 
     /*
-     * Server URLs for the API docs.
+     * Server URLs for the API docs. Production is default so live docs work seamlessly.
      */
     'servers' => [
-        'Local' => env('APP_URL', 'http://localhost:8001') . '/api',
         'Production' => 'https://ai.htut.com/api',
+        'Local' => env('APP_URL', 'http://localhost:8001') . '/api',
     ],
 
     'enum_cases_description_strategy' => 'description',
@@ -108,7 +107,6 @@ EOD,
 
     'middleware' => [
         'web',
-        RestrictedDocsAccess::class,
     ],
 
     'extensions' => [],
