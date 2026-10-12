@@ -189,7 +189,6 @@ class ExampleDataSeeder extends Seeder
                 'name' => 'Aung Aung',
                 'password' => 'password',
                 'customer_type' => 'free',
-                'coins' => 85,
                 'email_verified_at' => now(),
             ]
         );
@@ -199,7 +198,6 @@ class ExampleDataSeeder extends Seeder
                 'name' => 'Mya Mya',
                 'password' => 'password',
                 'customer_type' => 'free',
-                'coins' => 42,
                 'email_verified_at' => now(),
             ]
         );
@@ -209,7 +207,6 @@ class ExampleDataSeeder extends Seeder
                 'name' => 'Kyaw Kyaw',
                 'password' => 'password',
                 'customer_type' => 'free',
-                'coins' => 100,
                 'email_verified_at' => now(),
             ]
         );
@@ -221,7 +218,6 @@ class ExampleDataSeeder extends Seeder
                 'name' => 'Zaw Zaw',
                 'password' => 'password',
                 'customer_type' => 'premium',
-                'coins' => 500,
                 'email_verified_at' => now(),
             ]
         );
@@ -231,7 +227,6 @@ class ExampleDataSeeder extends Seeder
                 'name' => 'Thin Thin',
                 'password' => 'password',
                 'customer_type' => 'premium',
-                'coins' => 1200,
                 'email_verified_at' => now(),
             ]
         );
@@ -243,7 +238,6 @@ class ExampleDataSeeder extends Seeder
                 'name' => 'Banned User',
                 'password' => 'password',
                 'customer_type' => 'free',
-                'coins' => 30,
                 'is_banned' => true,
                 'email_verified_at' => now(),
             ]

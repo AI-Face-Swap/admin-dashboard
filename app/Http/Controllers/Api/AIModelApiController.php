@@ -31,7 +31,7 @@ class AIModelApiController extends Controller
             'model_name' => $m->model_name,
             'type' => $m->generationType?->slug,
             'provider_name' => $m->provider_name,
-            'coin_cost' => $m->coin_cost,
+            'point_cost' => $m->point_cost,
             'resolution_costs' => $m->resolution_costs,
             'duration_costs' => $m->duration_costs,
             'is_default' => (bool) $m->is_default,

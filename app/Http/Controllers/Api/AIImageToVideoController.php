@@ -30,7 +30,7 @@ class AIImageToVideoController extends Controller
      * Uses Segmind's Wan Image-to-Video model to generate short,
      * coherent videos from a single reference image plus a text prompt.
      *
-     * **Cost:** 20 coins per generation (configurable in admin settings).
+     * **Cost:** 20 points per generation (configurable in admin settings).
      *
      * **Parameters:**
      * - `prompt` (required): Vividly describe motion, camera behavior, atmosphere.
@@ -42,8 +42,8 @@ class AIImageToVideoController extends Controller
      * - `seed` (optional): Lock randomness for reproducible outputs.
      * - `watermark` (optional): Add "AI Generated" tag.
      *
-     * @response 200 {"status": "completed", "generation": {"id": 1, "operation": "image-to-video", "output": ["https://...mp4"], "coins_spent": 20, "coins_remaining": 80}}
-     * @response 402 {"message": "Not enough coins — top up to continue."}
+     * @response 200 {"status": "completed", "generation": {"id": 1, "operation": "image-to-video", "output": ["https://...mp4"], "points_spent": 20, "points_remaining": 80}}
+     * @response 402 {"message": "Not enough points — top up to continue."}
      * @response 422 {"status": "failed", "message": "Segmind generation failed: ..."}
      */
     public function store(Request $request): JsonResponse
@@ -69,7 +69,7 @@ class AIImageToVideoController extends Controller
         $aiModel = AIModel::where('model_name', $modelName)->where('is_active', true)->first();
 
         if ($aiModel) {
-            $cost = $aiModel->coin_cost;
+            $cost = $aiModel->point_cost;
             if (! empty($aiModel->resolution_costs[$resolution])) {
                 $cost = (int) $aiModel->resolution_costs[$resolution];
             }
@@ -80,25 +80,30 @@ class AIImageToVideoController extends Controller
             $templateCost = $cost;
         } else {
             $costKey = match ($resolution) {
+                '480p' => 'point_cost_image_to_video_480p',
+                '1080p' => 'point_cost_image_to_video_1080p',
+                default => 'point_cost_image_to_video_720p',
+            };
+            $legacyCostKey = match ($resolution) {
                 '480p' => 'coin_cost_image_to_video_480p',
                 '1080p' => 'coin_cost_image_to_video_1080p',
                 default => 'coin_cost_image_to_video_720p',
             };
             $configKey = match ($resolution) {
-                '480p' => 'ai.coin_costs.image_to_video_480p',
-                '1080p' => 'ai.coin_costs.image_to_video_1080p',
-                default => 'ai.coin_costs.image_to_video_720p',
+                '480p' => 'ai.point_costs.image_to_video_480p',
+                '1080p' => 'ai.point_costs.image_to_video_1080p',
+                default => 'ai.point_costs.image_to_video_720p',
             };
             $defaultCost = match ($resolution) {
                 '480p' => 10,
                 '1080p' => 30,
                 default => 20,
             };
-            $templateCost = (int) Setting::get('ai', $costKey, config($configKey, $defaultCost));
+            $templateCost = (int) Setting::get('ai', $costKey, Setting::get('ai', $legacyCostKey, config($configKey, config(str_replace('point_costs', 'coin_costs', $configKey), $defaultCost))));
         }
 
         if ($requester instanceof Customer) {
-            $this->authorizeCustomerCoins($requester, $templateCost);
+            $this->authorizeCustomerPoints($requester, $templateCost);
         }
 
         // Resolve image URL (upload file or use provided URL)
@@ -156,9 +161,9 @@ class AIImageToVideoController extends Controller
             );
 
             if ($requester instanceof Customer && $generation->status === 'completed') {
-                $requester->spendCoins($templateCost);
-                // Save coins spent to generation record
-                $generation->update(['coins_spent' => $templateCost]);
+                $requester->spendPoints($templateCost, "Video generation ({$generation->id})", $generation->request_id);
+                // Save points spent to generation record
+                $generation->update(['points_spent' => $templateCost]);
             }
 
             return response()->json([
@@ -172,8 +177,8 @@ class AIImageToVideoController extends Controller
                     'currency' => $generation->currency,
                     'duration_ms' => $generation->duration_ms,
                     'output' => $generation->output_metadata ?? [],
-                    'coins_spent' => $requester instanceof Customer ? $templateCost : null,
-                    'coins_remaining' => $requester instanceof Customer ? $requester->fresh()->coins : null,
+                    'points_spent' => $requester instanceof Customer ? $templateCost : null,
+                    'points_remaining' => $requester instanceof Customer ? $requester->points : null,
                 ],
             ]);
         } catch (AIGenerationFailedException $e) {
@@ -190,12 +195,12 @@ class AIImageToVideoController extends Controller
     }
 
     /**
-     * Reject the request when the customer cannot afford the coin cost.
+     * Reject the request when the customer cannot afford the cost.
      */
-    private function authorizeCustomerCoins(Customer $customer, int $cost): void
+    private function authorizeCustomerPoints(Customer $customer, int $cost): void
     {
-        if ($cost > 0 && ! $customer->hasEnoughCoins($cost)) {
-            abort(402, 'Not enough coins — top up to continue.');
+        if ($cost > 0 && ! $customer->hasEnoughPoints($cost)) {
+            abort(402, 'Not enough points — top up to continue.');
         }
     }
 

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\CentralAuthPointService;
 use Database\Factories\CustomerFactory;
 use Illuminate\Auth\Passwords\CanResetPassword;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -27,6 +28,7 @@ use Laravel\Sanctum\HasApiTokens;
  * @property string|null $auth_provider_id
  * @property string $customer_type
  * @property Carbon|null $expired_at
+ * @property int $points
  * @property int $coins
  * @property bool $is_banned
  * @property Carbon|null $email_verified_at
@@ -35,12 +37,14 @@ use Laravel\Sanctum\HasApiTokens;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['central_auth_uuid', 'name', 'email', 'phone', 'password', 'avatar', 'auth_provider', 'auth_provider_id', 'customer_type', 'expired_at', 'coins', 'is_banned', 'email_verified_at', 'last_active_at'])]
+#[Fillable(['central_auth_uuid', 'name', 'email', 'phone', 'password', 'avatar', 'auth_provider', 'auth_provider_id', 'customer_type', 'expired_at', 'is_banned', 'email_verified_at', 'last_active_at'])]
 #[Hidden(['password', 'remember_token'])]
 class Customer extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<CustomerFactory> */
     use CanResetPassword, HasApiTokens, HasFactory, Notifiable;
+
+    protected $appends = ['points'];
 
     public const TYPE_FREE = 'free';
 
@@ -103,51 +107,136 @@ class Customer extends Authenticatable implements MustVerifyEmail
     }
 
     /**
-     * Check if SSO project access / trial has expired.
-     * Free customers who exceed their 1-week trial have their coins reset to 0.
+     * Get unified point balance from HTUT Central Auth.
+     */
+    public function getPointsAttribute(): int
+    {
+        $uuid = $this->central_auth_uuid ?: CentralAuthPointService::ensureCentralAuthUuid($this);
+
+        if (! empty($uuid)) {
+            return CentralAuthPointService::getPoints($uuid);
+        }
+
+        return 0;
+    }
+
+    /**
+     * Compatibility accessor for legacy coin references.
+     */
+    public function getCoinsAttribute(): int
+    {
+        return $this->getPointsAttribute();
+    }
+
+    /**
+     * Check if SSO project access has expired.
+     */
+    public function syncProjectExpiry(?bool $isSsoExpired = null, ?Carbon $ssoExpiredAt = null): void
+    {
+        if ($ssoExpiredAt && (! $this->expired_at || $this->expired_at->ne($ssoExpiredAt))) {
+            $this->expired_at = $ssoExpiredAt;
+            $this->save();
+        }
+    }
+
+    /**
+     * Backward-compatible alias for syncProjectExpiry.
      */
     public function syncCoinExpiry(?bool $isSsoExpired = null, ?Carbon $ssoExpiredAt = null): void
     {
-        if ($ssoExpiredAt) {
-            $this->expired_at = $ssoExpiredAt;
-        }
-
-        $hasExpired = $isSsoExpired ?? ($this->expired_at && now()->greaterThan($this->expired_at));
-
-        if ($this->customer_type !== self::TYPE_PREMIUM) {
-            if ($hasExpired && $this->coins > 0) {
-                $this->coins = 0;
-                $this->save();
-            }
-        }
+        $this->syncProjectExpiry($isSsoExpired, $ssoExpiredAt);
     }
 
     /**
-     * Determine if the customer can afford a coin cost.
+     * Determine if customer has enough points for an operation.
+     */
+    public function hasEnoughPoints(int $cost): bool
+    {
+        return $this->points >= $cost;
+    }
+
+    /**
+     * Atomically deduct points from customer via Central Auth S2S.
+     *
+     * @return array{success: bool, points: int, deducted?: int, message?: string}
+     */
+    public function spendPoints(
+        int $cost,
+        string $description = 'AI Generation on HTUT AI',
+        ?string $referenceId = null,
+        array $metadata = []
+    ): array {
+        $uuid = $this->central_auth_uuid ?: CentralAuthPointService::ensureCentralAuthUuid($this);
+
+        if (empty($uuid)) {
+            return [
+                'success' => false,
+                'message' => 'Customer is not linked to HTUT Central Auth.',
+                'points' => 0,
+            ];
+        }
+
+        return CentralAuthPointService::deductPoints(
+            $uuid,
+            $cost,
+            $description,
+            $referenceId,
+            $metadata
+        );
+    }
+
+    /**
+     * Atomically credit points to customer via Central Auth S2S.
+     *
+     * @return array{success: bool, points: int, added?: int, message?: string}
+     */
+    public function addPoints(
+        int $amount,
+        string $description = 'Point top-up on HTUT AI',
+        ?string $referenceId = null,
+        array $metadata = []
+    ): array {
+        $uuid = $this->central_auth_uuid ?: CentralAuthPointService::ensureCentralAuthUuid($this);
+
+        if (empty($uuid)) {
+            return [
+                'success' => false,
+                'message' => 'Customer is not linked to HTUT Central Auth.',
+                'points' => 0,
+            ];
+        }
+
+        return CentralAuthPointService::addPoints(
+            $uuid,
+            $amount,
+            $description,
+            $referenceId,
+            $metadata
+        );
+    }
+
+    /**
+     * Backward-compatible alias for hasEnoughCoins.
      */
     public function hasEnoughCoins(int $cost): bool
     {
-        $this->syncCoinExpiry();
-
-        return $this->coins >= $cost;
+        return $this->hasEnoughPoints($cost);
     }
 
     /**
-     * Deduct coins. The caller is responsible for checking the balance.
+     * Backward-compatible alias for spendCoins.
      */
-    public function spendCoins(int $cost): void
+    public function spendCoins(int $cost): array
     {
-        $this->syncCoinExpiry();
-
-        $this->decrement('coins', max(0, $cost));
+        return $this->spendPoints($cost);
     }
 
     /**
-     * Add coins to the customer's balance.
+     * Backward-compatible alias for addCoins.
      */
-    public function addCoins(int $amount): void
+    public function addCoins(int $amount): array
     {
-        $this->increment('coins', max(0, $amount));
+        return $this->addPoints($amount);
     }
 
     /**

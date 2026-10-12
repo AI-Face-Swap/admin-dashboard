@@ -32,7 +32,8 @@ type Customer = {
     email: string;
     avatar: string | null;
     customer_type: string;
-    coins: number;
+    points?: number;
+    coins?: number;
     is_banned: boolean;
     last_active_at: string | null;
     created_at: string;
@@ -44,7 +45,8 @@ type Stats = {
     free: number;
     premium: number;
     banned: number;
-    total_coins: number;
+    total_points?: number;
+    total_coins?: number;
 };
 
 type Props = {
@@ -216,10 +218,10 @@ export default function Index({ customers, stats, filters }: Props) {
                             </div>
                             <div>
                                 <p className="text-2xl font-bold">
-                                    {stats.total_coins.toLocaleString()}
+                                    {(stats.total_points ?? stats.total_coins ?? 0).toLocaleString()}
                                 </p>
                                 <p className="text-xs text-muted-foreground">
-                                    Total Coins
+                                    Total Points
                                 </p>
                             </div>
                         </CardContent>
@@ -359,7 +361,7 @@ export default function Index({ customers, stats, filters }: Props) {
                                 <TableRow>
                                     <TableHead>Customer</TableHead>
                                     <TableHead>Type</TableHead>
-                                    <TableHead>Coins</TableHead>
+                                    <TableHead>Points</TableHead>
                                     <TableHead>Status</TableHead>
                                     <TableHead>Generations</TableHead>
                                     <TableHead>Last Active</TableHead>
@@ -422,7 +424,7 @@ export default function Index({ customers, stats, filters }: Props) {
                                         <TableCell>
                                             <span className="font-mono text-sm">
                                                 🪙{' '}
-                                                {customer.coins.toLocaleString()}
+                                                {(customer.points ?? 0).toLocaleString()}
                                             </span>
                                         </TableCell>
                                         <TableCell>

@@ -22,15 +22,15 @@ class AIImageGenerationController extends Controller
     /**
      * Generate an image from a text prompt.
      *
-     * **Cost:** 5 coins per generation (configurable in admin settings).
+     * **Cost:** 5 points per generation (configurable in admin settings).
      *
      * **Available models:**
      * - `seedream-v5-lite-text-to-image` — Fast, affordable (default)
      * - `nano-banana-2-lite` — Google's fastest (~4 sec)
      * - `qwen-image-3` — Best for legible in-image text
      *
-     * @response 200 {"status": "completed", "generation": {"id": 1, "operation": "image-generation", "output": ["https://..."], "coins_spent": 5, "coins_remaining": 95}}
-     * @response 402 {"message": "Not enough coins — top up to continue."}
+     * @response 200 {"status": "completed", "generation": {"id": 1, "operation": "image-generation", "output": ["https://..."], "points_spent": 5, "points_remaining": 95}}
+     * @response 402 {"message": "Not enough points — top up to continue."}
      * @response 422 {"status": "failed", "message": "Segmind generation failed: ..."}
      */
     public function store(ImageGenerationRequest $request): JsonResponse
@@ -42,10 +42,10 @@ class AIImageGenerationController extends Controller
         if (! empty($modelName)) {
             $aiModel = AIModel::where('model_name', $modelName)->where('is_active', true)->first();
         }
-        $templateCost = $aiModel?->coin_cost ?? (int) Setting::get('ai', 'coin_cost_image_generation', config('ai.coin_costs.image_generation', 5));
+        $templateCost = $aiModel?->point_cost ?? (int) Setting::get('ai', 'point_cost_image_generation', Setting::get('ai', 'coin_cost_image_generation', config('ai.point_costs.image_generation', config('ai.coin_costs.image_generation', 5))));
 
         if ($requester instanceof Customer) {
-            $this->authorizeCustomerCoins($requester, $templateCost);
+            $this->authorizeCustomerPoints($requester, $templateCost);
         }
 
         $payload = [
@@ -91,9 +91,9 @@ class AIImageGenerationController extends Controller
             );
 
             if ($requester instanceof Customer && $generation->status === 'completed') {
-                $requester->spendCoins($templateCost);
-                // Save coins spent to generation record
-                $generation->update(['coins_spent' => $templateCost]);
+                $requester->spendPoints($templateCost, "Image generation ({$generation->id})", $generation->request_id);
+                // Save points spent to generation record
+                $generation->update(['points_spent' => $templateCost]);
             }
 
             return response()->json([
@@ -107,8 +107,8 @@ class AIImageGenerationController extends Controller
                     'currency' => $generation->currency,
                     'duration_ms' => $generation->duration_ms,
                     'output' => $generation->output_metadata ?? [],
-                    'coins_spent' => $requester instanceof Customer ? $templateCost : null,
-                    'coins_remaining' => $requester instanceof Customer ? $requester->fresh()->coins : null,
+                    'points_spent' => $requester instanceof Customer ? $templateCost : null,
+                    'points_remaining' => $requester instanceof Customer ? $requester->points : null,
                 ],
             ]);
         } catch (AIGenerationFailedException $e) {
@@ -125,12 +125,12 @@ class AIImageGenerationController extends Controller
     }
 
     /**
-     * Reject the request when the customer cannot afford the coin cost.
+     * Reject the request when the customer cannot afford the cost.
      */
-    private function authorizeCustomerCoins(Customer $customer, int $cost): void
+    private function authorizeCustomerPoints(Customer $customer, int $cost): void
     {
-        if ($cost > 0 && ! $customer->hasEnoughCoins($cost)) {
-            abort(402, 'Not enough coins — top up to continue.');
+        if ($cost > 0 && ! $customer->hasEnoughPoints($cost)) {
+            abort(402, 'Not enough points — top up to continue.');
         }
     }
 }

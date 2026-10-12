@@ -24,10 +24,10 @@ class CustomerAuthController extends Controller
     /**
      * Register a new customer.
      *
-     * Creates a new customer account with 100 free coins.
+     * Creates a new customer account with points managed via Central Auth.
      * Returns a Bearer token for subsequent API calls.
      *
-     * @response 201 {"customer": {"id": 1, "name": "John", "email": "john@example.com", "coins": 100}, "token": "1|abc..."}
+     * @response 201 {"customer": {"id": 1, "name": "John", "email": "john@example.com", "points": 10}, "token": "1|abc..."}
      */
     public function register(RegisterRequest $request): JsonResponse
     {
@@ -35,7 +35,7 @@ class CustomerAuthController extends Controller
             'name' => $request->string('name')->toString(),
             'email' => $request->string('email')->toString(),
             'password' => $request->string('password')->toString(),
-        ])->refresh(); // load DB defaults (customer_type, coins)
+        ])->refresh(); // load DB defaults (customer_type)
 
         $token = $customer->createToken('mobile')->plainTextToken;
 
@@ -51,7 +51,7 @@ class CustomerAuthController extends Controller
      * Returns a Bearer token for subsequent API calls.
      * Updates last_active_at timestamp.
      *
-     * @response 200 {"customer": {"id": 1, "name": "John", "coins": 50}, "token": "2|xyz..."}
+     * @response 200 {"customer": {"id": 1, "name": "John", "points": 50}, "token": "2|xyz..."}
      */
     public function login(LoginRequest $request): JsonResponse
     {
@@ -94,16 +94,16 @@ class CustomerAuthController extends Controller
     /**
      * Get the authenticated customer's profile.
      *
-     * Returns customer info including coins, type, and generation count.
+     * Returns customer info including points, type, and generation count.
      *
-     * @response 200 {"customer": {"id": 1, "name": "John", "email": "john@example.com", "coins": 50, "customer_type": "free"}}
+     * @response 200 {"customer": {"id": 1, "name": "John", "email": "john@example.com", "points": 50, "customer_type": "free"}}
      */
     public function me(Request $request): JsonResponse
     {
         /** @var \App\Models\Customer $customer */
         $customer = $request->user();
         if ($customer) {
-            $customer->syncCoinExpiry();
+            $customer->syncProjectExpiry();
             $customer->refresh();
         }
 

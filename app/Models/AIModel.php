@@ -47,6 +47,15 @@ class AIModel extends Model
      */
     protected $table = 'ai_models';
 
+    protected $appends = [
+        'point_cost',
+    ];
+
+    public function getPointCostAttribute(): int
+    {
+        return (int) ($this->attributes['coin_cost'] ?? 0);
+    }
+
     /**
      * The generation type this model belongs to.
      *

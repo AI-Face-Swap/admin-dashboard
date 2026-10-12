@@ -27,15 +27,15 @@ class AIFaceSwapController extends Controller
      * Upload a face image (or provide a URL) and a target image (or template slug).
      * The AI will swap the face onto the target.
      *
-     * **Cost:** Depends on the template (free templates cost 0 coins).
+     * **Cost:** Depends on the template (free templates cost 0 points).
      *
      * **How it works:**
      * 1. Provide `face_image` (file) OR `face_image_url` (string)
      * 2. Provide `template_slug` (string) OR `target_image_url` (string)
      * 3. Get back a completed generation with the swapped image
      *
-     * @response 200 {"status": "completed", "generation": {"id": 1, "operation": "face-swap", "output": ["https://..."], "coins_spent": 5, "coins_remaining": 95}}
-     * @response 402 {"message": "Not enough coins — top up to continue."}
+     * @response 200 {"status": "completed", "generation": {"id": 1, "operation": "face-swap", "output": ["https://..."], "points_spent": 5, "points_remaining": 95}}
+     * @response 402 {"message": "Not enough points — top up to continue."}
      */
     public function store(FaceSwapRequest $request): JsonResponse
     {
@@ -60,7 +60,7 @@ class AIFaceSwapController extends Controller
         $requester = $request->user();
 
         if ($requester instanceof Customer) {
-            $this->authorizeCustomerCoins($requester, $templateCost);
+            $this->authorizeCustomerPoints($requester, $templateCost);
         }
 
         $generation = $this->aiService->faceSwap(
@@ -76,9 +76,9 @@ class AIFaceSwapController extends Controller
         );
 
         if ($requester instanceof Customer && $generation->status === 'completed') {
-            $requester->spendCoins($templateCost);
-            // Save coins spent to generation record
-            $generation->update(['coins_spent' => $templateCost]);
+            $requester->spendPoints($templateCost, "Face swap ({$generation->id})", $generation->request_id);
+            // Save points spent to generation record
+            $generation->update(['points_spent' => $templateCost]);
         }
 
         return response()->json([
@@ -92,19 +92,19 @@ class AIFaceSwapController extends Controller
                 'currency' => $generation->currency,
                 'duration_ms' => $generation->duration_ms,
                 'output' => $generation->output_metadata ?? [],
-                'coins_spent' => $requester instanceof Customer ? $templateCost : null,
-                'coins_remaining' => $requester instanceof Customer ? $requester->fresh()->coins : null,
+                'points_spent' => $requester instanceof Customer ? $templateCost : null,
+                'points_remaining' => $requester instanceof Customer ? $requester->points : null,
             ],
         ]);
     }
 
     /**
-     * Reject the request when the customer cannot afford the coin cost.
+     * Reject the request when the customer cannot afford the cost.
      */
-    private function authorizeCustomerCoins(Customer $customer, int $cost): void
+    private function authorizeCustomerPoints(Customer $customer, int $cost): void
     {
-        if ($cost > 0 && ! $customer->hasEnoughCoins($cost)) {
-            abort(402, 'Not enough coins — top up to continue.');
+        if ($cost > 0 && ! $customer->hasEnoughPoints($cost)) {
+            abort(402, 'Not enough points — top up to continue.');
         }
     }
 

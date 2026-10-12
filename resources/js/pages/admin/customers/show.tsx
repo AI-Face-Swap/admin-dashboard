@@ -46,7 +46,8 @@ type Customer = {
     avatar: string | null;
     auth_provider: string | null;
     customer_type: string;
-    coins: number;
+    points?: number;
+    coins?: number;
     is_banned: boolean;
     email_verified_at: string | null;
     last_active_at: string | null;
@@ -60,7 +61,8 @@ type Generation = {
     status: string;
     cost: string | null;
     currency: string | null;
-    coins_spent: number | null;
+    points_spent?: number | null;
+    coins_spent?: number | null;
     duration_ms: number | null;
     created_at: string;
     template: { id: number; name: string; slug: string; cost: number } | null;
@@ -86,38 +88,40 @@ type Props = {
     generations: PaginatedGenerations;
     generationStats: GenerationStats;
     totalCost: number;
-    totalCoinsSpent: number;
+    totalPointsSpent?: number;
+    totalCoinsSpent?: number;
 };
 
 export default function Show({
     customer,
     generations,
     generationStats,
+    totalPointsSpent,
     totalCoinsSpent,
 }: Omit<Props, 'totalCost'>) {
-    const [showCoinDialog, setShowCoinDialog] = useState(false);
-    const [coinAmount, setCoinAmount] = useState('');
-    const [coinNote, setCoinNote] = useState('');
-    const [coinLoading, setCoinLoading] = useState(false);
+    const [showPointDialog, setShowPointDialog] = useState(false);
+    const [pointAmount, setPointAmount] = useState('');
+    const [pointNote, setPointNote] = useState('');
+    const [pointLoading, setPointLoading] = useState(false);
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
-    const handleAddCoins = () => {
-        if (!coinAmount || parseInt(coinAmount) <= 0) {
+    const handleAddPoints = () => {
+        if (!pointAmount || parseInt(pointAmount) <= 0) {
             return;
         }
 
-        setCoinLoading(true);
+        setPointLoading(true);
 
         router.post(
-            `/admin/customers/${customer.id}/add-coins`,
-            { amount: parseInt(coinAmount), note: coinNote || null },
+            `/admin/customers/${customer.id}/add-points`,
+            { amount: parseInt(pointAmount), note: pointNote || null },
             {
                 onSuccess: () => {
-                    setShowCoinDialog(false);
-                    setCoinAmount('');
-                    setCoinNote('');
+                    setShowPointDialog(false);
+                    setPointAmount('');
+                    setPointNote('');
                 },
-                onFinish: () => setCoinLoading(false),
+                onFinish: () => setPointLoading(false),
             },
         );
     };
@@ -222,8 +226,8 @@ export default function Show({
                                 <div className="flex items-center gap-2">
                                     <Coins className="size-4 text-muted-foreground" />
                                     <span>
-                                        🪙 {customer.coins.toLocaleString()}{' '}
-                                        coins
+                                        🪙 {(customer.points ?? 0).toLocaleString()}{' '}
+                                        points
                                     </span>
                                 </div>
                                 <div className="flex items-center gap-2">
@@ -266,9 +270,9 @@ export default function Show({
                             {/* Actions */}
                             <div className="flex flex-col gap-2 pt-2">
                                 <AnimatedButton
-                                    onClick={() => setShowCoinDialog(true)}
+                                    onClick={() => setShowPointDialog(true)}
                                 >
-                                    <Coins className="mr-1 h-4 w-4" /> Add Coins
+                                    <Coins className="mr-1 h-4 w-4" /> Add Points
                                 </AnimatedButton>
                                 {customer.is_banned ? (
                                     <AnimatedButton
@@ -352,10 +356,10 @@ export default function Show({
                                     </div>
                                     <div>
                                         <p className="text-2xl font-bold">
-                                            🪙 {totalCoinsSpent}
+                                            🪙 {totalPointsSpent ?? totalCoinsSpent ?? 0}
                                         </p>
                                         <p className="text-xs text-muted-foreground">
-                                            Coins Spent
+                                            Points Spent
                                         </p>
                                     </div>
                                 </CardContent>
@@ -424,7 +428,7 @@ export default function Show({
                                                                 {
                                                                     gen.coins_spent
                                                                 }{' '}
-                                                                coins
+                                                                points
                                                             </span>
                                                         ) : gen.template
                                                               ?.cost ? (
@@ -434,7 +438,7 @@ export default function Show({
                                                                     gen.template
                                                                         .cost
                                                                 }{' '}
-                                                                coins
+                                                                points
                                                             </span>
                                                         ) : null}
                                                         {gen.cost && (
@@ -537,14 +541,14 @@ export default function Show({
                 </div>
             </div>
 
-            {/* Add Coins Dialog */}
-            <Dialog open={showCoinDialog} onOpenChange={setShowCoinDialog}>
+            {/* Add Points Dialog */}
+            <Dialog open={showPointDialog} onOpenChange={setShowPointDialog}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Add Coins</DialogTitle>
+                        <DialogTitle>Add Points</DialogTitle>
                         <DialogDescription>
-                            Add coins to {customer.name}'s balance. Current
-                            balance: 🪙 {customer.coins.toLocaleString()}
+                            Add points to {customer.name}'s balance. Current
+                            balance: 🪙 {(customer.points ?? 0).toLocaleString()} points
                         </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4">
@@ -554,17 +558,17 @@ export default function Show({
                                 type="number"
                                 min="1"
                                 max="100000"
-                                placeholder="Enter coin amount"
-                                value={coinAmount}
-                                onChange={(e) => setCoinAmount(e.target.value)}
+                                placeholder="Enter point amount"
+                                value={pointAmount}
+                                onChange={(e) => setPointAmount(e.target.value)}
                             />
                         </div>
                         <div className="space-y-2">
                             <Label>Note (optional)</Label>
                             <Textarea
-                                placeholder="Reason for adding coins..."
-                                value={coinNote}
-                                onChange={(e) => setCoinNote(e.target.value)}
+                                placeholder="Reason for adding points..."
+                                value={pointNote}
+                                onChange={(e) => setPointNote(e.target.value)}
                                 rows={2}
                             />
                         </div>
@@ -572,15 +576,15 @@ export default function Show({
                     <DialogFooter>
                         <AnimatedButton
                             variant="outline"
-                            onClick={() => setShowCoinDialog(false)}
+                            onClick={() => setShowPointDialog(false)}
                         >
                             Cancel
                         </AnimatedButton>
                         <AnimatedButton
-                            onClick={handleAddCoins}
-                            disabled={coinLoading || !coinAmount}
+                            onClick={handleAddPoints}
+                            disabled={pointLoading || !pointAmount}
                         >
-                            {coinLoading ? 'Adding...' : 'Add Coins'}
+                            {pointLoading ? 'Adding...' : 'Add Points'}
                         </AnimatedButton>
                     </DialogFooter>
                 </DialogContent>

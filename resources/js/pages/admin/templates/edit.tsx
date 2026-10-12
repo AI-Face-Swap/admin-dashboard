@@ -45,7 +45,8 @@ type AIModelOption = {
     name?: string;
     provider_name: string;
     model_name: string;
-    coin_cost: number;
+    point_cost?: number;
+    coin_cost?: number;
     generation_type_id: number | null;
 };
 type GenerationType = { id: number; name: string; slug: string };
@@ -169,7 +170,7 @@ export default function Edit({
         const selected = aiModels.find((m) => String(m.id) === id);
         if (selected) {
             setModel(selected.model_name);
-            setCost(String(selected.coin_cost ?? 0));
+            setCost(String(selected.point_cost ?? selected.coin_cost ?? 0));
             if (selected.generation_type_id && !generationTypeId) {
                 setGenerationTypeId(String(selected.generation_type_id));
             }
@@ -406,7 +407,7 @@ export default function Edit({
                                             AI Model
                                         </Label>
                                         <span className="text-xs text-muted-foreground">
-                                            Auto-fills template coin cost
+                                            Auto-fills template point cost
                                         </span>
                                     </div>
                                     <Select
@@ -427,8 +428,8 @@ export default function Edit({
                                                     </span>
                                                     <span className="ml-2 text-xs text-muted-foreground">
                                                         ({m.provider_name} •{' '}
-                                                        {m.coin_cost ?? 0}{' '}
-                                                        coins)
+                                                        {m.point_cost ?? m.coin_cost ?? 0}{' '}
+                                                        points)
                                                     </span>
                                                 </SelectItem>
                                             ))}
@@ -439,13 +440,13 @@ export default function Edit({
                             </CardContent>
                         </AnimatedCard>
 
-                        {/* 2. Coin Pricing & Discount Card */}
+                        {/* 2. Point Pricing & Discount Card */}
                         <AnimatedCard className="border-amber-500/30 bg-gradient-to-br from-amber-500/5 via-card to-card shadow-sm">
                             <CardHeader className="pb-4">
                                 <CardTitle className="flex items-center justify-between text-lg">
                                     <div className="flex items-center gap-2">
                                         <Coins className="h-5 w-5 text-amber-400" />
-                                        <span>Coin Pricing & Discount</span>
+                                        <span>Point Pricing & Discount</span>
                                     </div>
                                     {discountPercent > 0 && (
                                         <Badge className="border-emerald-500/30 bg-emerald-500/20 font-semibold text-emerald-400 hover:bg-emerald-500/30">
@@ -466,7 +467,7 @@ export default function Edit({
                                             htmlFor="cost"
                                             className="font-medium"
                                         >
-                                            Base Cost (coins){' '}
+                                            Base Cost (points){' '}
                                             <span className="text-destructive">
                                                 *
                                             </span>
@@ -493,7 +494,7 @@ export default function Edit({
                                             htmlFor="discountCost"
                                             className="font-medium"
                                         >
-                                            Discount Coins
+                                            Discount Points
                                         </Label>
                                         <div className="relative">
                                             <Input
@@ -525,11 +526,11 @@ export default function Edit({
                                         </span>
                                         <div className="flex items-baseline gap-2">
                                             <span className="text-2xl font-bold text-amber-300">
-                                                {effectiveCost} coins
+                                                {effectiveCost} points
                                             </span>
                                             {numDiscount > 0 && (
                                                 <span className="text-sm text-muted-foreground line-through">
-                                                    {numCost} coins
+                                                    {numCost} points
                                                 </span>
                                             )}
                                         </div>
@@ -539,7 +540,7 @@ export default function Edit({
                                         {numDiscount > 0 ? (
                                             <div className="space-y-0.5">
                                                 <div className="font-medium text-emerald-400">
-                                                    Save {numDiscount} coins (
+                                                    Save {numDiscount} points (
                                                     {discountPercent}% discount)
                                                 </div>
                                                 <div>

@@ -303,7 +303,7 @@ class TemplateController extends Controller
                 ?? AIModel::where('generation_type_id', $generationType->id)->first();
         }
 
-        $cost = $aiModel?->coin_cost ?? ($isVideo ? 20 : 5);
+        $cost = $aiModel?->point_cost ?? ($isVideo ? 20 : 5);
 
         // Create the template
         $template = Template::create([

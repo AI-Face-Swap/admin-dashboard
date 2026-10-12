@@ -101,7 +101,7 @@ export default function Index({ coinCosts, footerSettings }: Props) {
             <div className="flex flex-1 flex-col gap-6 p-4 md:p-6">
                 <Heading
                     title="Settings"
-                    description="Configure application-wide settings for AI operations and coin costs."
+                    description="Configure application-wide settings for AI operations and point costs."
                 />
 
                 {flash?.success && (
@@ -112,15 +112,15 @@ export default function Index({ coinCosts, footerSettings }: Props) {
                     </AnimatedCard>
                 )}
 
-                {/* Coin Costs Section */}
+                {/* Point Costs Section */}
                 <AnimatedCard>
                     <CardContent className="space-y-6">
                         <div className="space-y-1">
                             <h3 className="text-lg font-semibold">
-                                💰 AI Coin Costs
+                                💰 AI Point Costs
                             </h3>
                             <p className="text-sm text-muted-foreground">
-                                Default coin costs per operation. Templates can
+                                Default point costs per operation. Templates can
                                 override with their own cost.
                             </p>
                         </div>
@@ -149,7 +149,7 @@ export default function Index({ coinCosts, footerSettings }: Props) {
                                         className="w-[120px] font-mono text-sm"
                                     />
                                     <span className="text-sm text-muted-foreground">
-                                        coins per request
+                                        points per request
                                     </span>
                                 </div>
                                 <p className="text-xs text-muted-foreground">
@@ -185,7 +185,7 @@ export default function Index({ coinCosts, footerSettings }: Props) {
                                             className="w-[120px] font-mono text-sm"
                                         />
                                         <span className="text-sm text-muted-foreground">
-                                            coins per request
+                                            points per request
                                         </span>
                                     </div>
                                     <p className="text-xs text-muted-foreground">
@@ -216,7 +216,7 @@ export default function Index({ coinCosts, footerSettings }: Props) {
                                             className="w-[120px] font-mono text-sm"
                                         />
                                         <span className="text-sm text-muted-foreground">
-                                            coins per request
+                                            points per request
                                         </span>
                                     </div>
                                     <p className="text-xs text-muted-foreground">
@@ -425,7 +425,7 @@ export default function Index({ coinCosts, footerSettings }: Props) {
                 <AnimatedCard>
                     <CardContent className="space-y-3">
                         <h3 className="text-sm font-semibold">
-                            ℹ️ How Coin Costs Work
+                            ℹ️ How Point Costs Work
                         </h3>
                         <ul className="space-y-1 text-xs text-muted-foreground">
                             <li>

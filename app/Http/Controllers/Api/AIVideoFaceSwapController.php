@@ -31,7 +31,7 @@ class AIVideoFaceSwapController extends Controller
      * **Processing time:** 30 seconds to 5+ minutes depending on video length.
      *
      * @response 202 {"status": "queued", "generation": {"id": 18, "operation": "video-face-swap", "message": "Video face-swap job dispatched. Poll /api/v1/ai/generations/18 for status."}}
-     * @response 402 {"message": "Not enough coins — top up to continue."}
+     * @response 402 {"message": "Not enough points — top up to continue."}
      */
     public function store(VideoFaceSwapRequest $request): JsonResponse
     {
@@ -56,7 +56,7 @@ class AIVideoFaceSwapController extends Controller
         $requester = $request->user();
 
         if ($requester instanceof Customer) {
-            $this->authorizeCustomerCoins($requester, $templateCost);
+            $this->authorizeCustomerPoints($requester, $templateCost);
         }
 
         // Build the payload for the provider.
@@ -85,7 +85,7 @@ class AIVideoFaceSwapController extends Controller
             payload: $payload,
             templateId: $template?->id,
             customerId: $requester instanceof Customer ? $requester->id : null,
-            coinCost: $templateCost,
+            pointCost: $templateCost,
         );
 
         return response()->json([
@@ -100,12 +100,12 @@ class AIVideoFaceSwapController extends Controller
     }
 
     /**
-     * Reject the request when the customer cannot afford the coin cost.
+     * Reject the request when the customer cannot afford the cost.
      */
-    private function authorizeCustomerCoins(Customer $customer, int $cost): void
+    private function authorizeCustomerPoints(Customer $customer, int $cost): void
     {
-        if ($cost > 0 && ! $customer->hasEnoughCoins($cost)) {
-            abort(402, 'Not enough coins — top up to continue.');
+        if ($cost > 0 && ! $customer->hasEnoughPoints($cost)) {
+            abort(402, 'Not enough points — top up to continue.');
         }
     }
 

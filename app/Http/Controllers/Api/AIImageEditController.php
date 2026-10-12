@@ -26,8 +26,8 @@ class AIImageEditController extends Controller
     /**
      * Edit an image using AI models.
      *
-     * @response 200 {"status": "completed", "generation": {"id": 1, "operation": "image-editing", "output": ["https://..."], "coins_spent": 10, "coins_remaining": 90}}
-     * @response 402 {"message": "Not enough coins — top up to continue."}
+     * @response 200 {"status": "completed", "generation": {"id": 1, "operation": "image-editing", "output": ["https://..."], "points_spent": 10, "points_remaining": 90}}
+     * @response 402 {"message": "Not enough points — top up to continue."}
      * @response 422 {"status": "failed", "message": "Segmind generation failed: ..."}
      */
     public function store(ImageEditRequest $request): JsonResponse
@@ -36,7 +36,7 @@ class AIImageEditController extends Controller
         $model = $request->string('model')->toString();
 
         $aiModel = AIModel::where('model_name', $model)->where('is_active', true)->first();
-        $coinCost = $aiModel?->coin_cost ?? (int) Setting::get('ai', 'coin_cost_image_edit', config('ai.coin_costs.image_edit', 10));
+        $pointCost = $aiModel?->point_cost ?? (int) Setting::get('ai', 'point_cost_image_edit', Setting::get('ai', 'coin_cost_image_edit', config('ai.point_costs.image_edit', config('ai.coin_costs.image_edit', 10))));
 
         if ($aiModel && ! empty($aiModel->resolution_costs)) {
             $resKey = $request->string('size')->toString()
@@ -45,12 +45,12 @@ class AIImageEditController extends Controller
                 ?: $request->string('output_resolution')->toString();
 
             if (! empty($resKey) && isset($aiModel->resolution_costs[$resKey])) {
-                $coinCost = (int) $aiModel->resolution_costs[$resKey];
+                $pointCost = (int) $aiModel->resolution_costs[$resKey];
             }
         }
 
         if ($requester instanceof Customer) {
-            $this->authorizeCustomerCoins($requester, $coinCost);
+            $this->authorizeCustomerPoints($requester, $pointCost);
         }
 
         $payload = $this->buildPayload($request, $model);
@@ -66,8 +66,8 @@ class AIImageEditController extends Controller
             );
 
             if ($requester instanceof Customer && $generation->status === 'completed') {
-                $requester->spendCoins($coinCost);
-                $generation->update(['coins_spent' => $coinCost]);
+                $requester->spendPoints($pointCost, "Image editing ({$generation->id})", $generation->request_id);
+                $generation->update(['points_spent' => $pointCost]);
             }
 
             return response()->json([
@@ -81,8 +81,8 @@ class AIImageEditController extends Controller
                     'currency' => $generation->currency,
                     'duration_ms' => $generation->duration_ms,
                     'output' => $generation->output_metadata ?? [],
-                    'coins_spent' => $requester instanceof Customer ? $coinCost : null,
-                    'coins_remaining' => $requester instanceof Customer ? $requester->fresh()->coins : null,
+                    'points_spent' => $requester instanceof Customer ? $pointCost : null,
+                    'points_remaining' => $requester instanceof Customer ? $requester->points : null,
                 ],
             ]);
         } catch (AIGenerationFailedException $e) {
@@ -196,12 +196,12 @@ class AIImageEditController extends Controller
     }
 
     /**
-     * Authorize customer has enough coins.
+     * Authorize customer has enough points.
      */
-    private function authorizeCustomerCoins(Customer $customer, int $cost): void
+    private function authorizeCustomerPoints(Customer $customer, int $cost): void
     {
-        if ($cost > 0 && ! $customer->hasEnoughCoins($cost)) {
-            abort(402, 'Not enough coins — top up to continue.');
+        if ($cost > 0 && ! $customer->hasEnoughPoints($cost)) {
+            abort(402, 'Not enough points — top up to continue.');
         }
     }
 

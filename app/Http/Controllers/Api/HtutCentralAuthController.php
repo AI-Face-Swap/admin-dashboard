@@ -255,18 +255,11 @@ class HtutCentralAuthController extends Controller
             if ($subExpiresAt) {
                 $updates['expired_at'] = $subExpiresAt;
             }
-            // If customer has 500 AI credits entitlement and currently has lower, award bonus credits
-            if (in_array('ai_credits_500', $features, true) && $customer->coins < 500) {
-                $updates['coins'] = 500;
-            }
+            // Points and entitlements are centralized in Central Auth
         } else {
             $updates['customer_type'] = Customer::TYPE_FREE;
             if ($subExpiresAt) {
                 $updates['expired_at'] = $subExpiresAt;
-            }
-            // If trial / subscription is expired, reset coins to 0
-            if ($isSubExpired || ($subExpiresAt && $subExpiresAt->isPast()) || ($customer->expired_at && $customer->expired_at->isPast())) {
-                $updates['coins'] = 0;
             }
         }
 
@@ -287,7 +280,7 @@ class HtutCentralAuthController extends Controller
             'message' => 'Customer synchronized successfully.',
             'customer_id' => $customer->id,
             'customer_type' => $customer->customer_type,
-            'coins' => $customer->coins,
+            'points' => $customer->points,
         ]);
     }
 
@@ -344,7 +337,6 @@ class HtutCentralAuthController extends Controller
                 'auth_provider_id' => $uuid,
                 'customer_type' => Customer::TYPE_FREE,
                 'expired_at' => $trialExpiry,
-                'coins' => 100, // free starter coins for 1 week
                 'email_verified_at' => now(),
             ]);
         } else {
@@ -375,7 +367,7 @@ class HtutCentralAuthController extends Controller
             }
         } else {
             // Free plan: evaluate SSO project access trial expiration
-            $customer->syncCoinExpiry($isSsoExpired, $ssoExpiredAt);
+            $customer->syncProjectExpiry($isSsoExpired, $ssoExpiredAt);
         }
 
         return $customer;

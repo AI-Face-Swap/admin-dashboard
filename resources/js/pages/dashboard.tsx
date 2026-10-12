@@ -2,7 +2,7 @@ import { Head, Link } from '@inertiajs/react';
 import {
     ArrowRight,
     Clock,
-    Coins,
+    DollarSign,
     Images,
     Sparkles,
     TrendingUp,
@@ -260,7 +260,7 @@ export default function Dashboard({
         {
             label: "Today's Cost",
             value: formatCost(stats.today_cost),
-            icon: Coins,
+            icon: DollarSign,
             hint: `${today.generations} generations today`,
             iconClassName:
                 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',

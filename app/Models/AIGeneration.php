@@ -43,6 +43,7 @@ use Illuminate\Support\Carbon;
     'cost',
     'currency',
     'coins_spent',
+    'points_spent',
     'duration_ms',
     'input_metadata',
     'output_metadata',
@@ -58,6 +59,20 @@ class AIGeneration extends Model
      * The table associated with the model.
      */
     protected $table = 'ai_generations';
+
+    protected $appends = [
+        'points_spent',
+    ];
+
+    public function getPointsSpentAttribute(): ?int
+    {
+        return $this->coins_spent;
+    }
+
+    public function setPointsSpentAttribute(?int $value): void
+    {
+        $this->attributes['coins_spent'] = $value;
+    }
 
     public const OPERATION_IMAGE = 'image-generation';
 

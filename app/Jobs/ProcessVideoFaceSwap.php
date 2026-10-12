@@ -44,6 +44,7 @@ class ProcessVideoFaceSwap implements ShouldQueue
         private readonly array $payload,
         private readonly ?int $templateId = null,
         private readonly ?int $customerId = null,
+        private readonly int $pointCost = 0,
         private readonly int $coinCost = 0,
     ) {}
 
@@ -78,9 +79,11 @@ class ProcessVideoFaceSwap implements ShouldQueue
                 $generation,
             );
 
-            // Deduct coins on successful completion.
-            if ($requester instanceof Customer && $this->coinCost > 0 && $result->status === 'completed') {
-                $requester->spendCoins($this->coinCost);
+            // Deduct points on successful completion.
+            $cost = $this->pointCost > 0 ? $this->pointCost : $this->coinCost;
+            if ($requester instanceof Customer && $cost > 0 && $result->status === 'completed') {
+                $requester->spendPoints($cost, "Video face swap ({$generation->id})", $generation->request_id);
+                $generation->update(['points_spent' => $cost]);
             }
         } catch (\Throwable $exception) {
             Log::error("ProcessVideoFaceSwap failed for generation {$this->generationId}: {$exception->getMessage()}");

@@ -92,7 +92,8 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::get('customers/{customer}', [CustomerController::class, 'show'])->middleware('permission:customers.view')->name('customers.show');
     Route::patch('customers/{customer}/ban', [CustomerController::class, 'ban'])->middleware('permission:customers.manage')->name('customers.ban');
     Route::patch('customers/{customer}/unban', [CustomerController::class, 'unban'])->middleware('permission:customers.manage')->name('customers.unban');
-    Route::post('customers/{customer}/add-coins', [CustomerController::class, 'addCoins'])->middleware('permission:customers.manage')->name('customers.add-coins');
+    Route::post('customers/{customer}/add-points', [CustomerController::class, 'addPoints'])->middleware('permission:customers.manage')->name('customers.add-points');
+    Route::post('customers/{customer}/add-coins', [CustomerController::class, 'addPoints'])->middleware('permission:customers.manage')->name('customers.add-coins');
     Route::delete('customers/{customer}', [CustomerController::class, 'destroy'])->middleware('permission:customers.manage')->name('customers.destroy');
 
     // Home Page Settings

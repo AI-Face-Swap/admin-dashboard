@@ -22,14 +22,7 @@ class ExpireCustomerCoinsCommand extends Command
      */
     public function handle(): int
     {
-        $expiredCount = Customer::query()
-            ->where('customer_type', '!=', Customer::TYPE_PREMIUM)
-            ->whereNotNull('expired_at')
-            ->where('expired_at', '<=', now())
-            ->where('coins', '>', 0)
-            ->update(['coins' => 0]);
-
-        $this->info("Successfully reset coins to 0 for {$expiredCount} expired free customers.");
+        $this->info('Customer points and expiry are centrally managed by HTUT Central Auth.');
 
         return Command::SUCCESS;
     }

@@ -379,10 +379,10 @@ const ENDPOINT_TEMPLATES: EndpointTemplate[] = [
         headers: [{ key: 'Accept', value: 'application/json' }],
     },
     {
-        label: 'Get Coin Costs',
+        label: 'Get Point Costs',
         group: 'public',
         method: 'GET',
-        url: '/api/v1/coin-costs',
+        url: '/api/v1/point-costs',
         bodyType: 'none',
         body: '',
         headers: [{ key: 'Accept', value: 'application/json' }],

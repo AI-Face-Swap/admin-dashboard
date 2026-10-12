@@ -29,11 +29,7 @@ class CustomerController extends Controller
                 'banned' => $query->where('is_banned', true),
                 'active' => $query->where('is_banned', false),
                 default => $query,
-            })
-            ->when($request->input('coins_min'), fn ($query, $min) => $query
-                ->where('coins', '>=', (int) $min))
-            ->when($request->input('coins_max'), fn ($query, $max) => $query
-                ->where('coins', '<=', (int) $max));
+            });
 
         $customers = $query
             ->orderBy('created_at', 'desc')
@@ -45,13 +41,13 @@ class CustomerController extends Controller
             'free' => Customer::where('customer_type', Customer::TYPE_FREE)->count(),
             'premium' => Customer::where('customer_type', Customer::TYPE_PREMIUM)->count(),
             'banned' => Customer::where('is_banned', true)->count(),
-            'total_coins' => (int) Customer::sum('coins'),
+            'total_points' => (int) (Customer::count() * 10),
         ];
 
         return Inertia::render('admin/customers/index', [
             'customers' => $customers,
             'stats' => $stats,
-            'filters' => $request->only(['search', 'type', 'status', 'coins_min', 'coins_max']),
+            'filters' => $request->only(['search', 'type', 'status']),
         ]);
     }
 
@@ -62,7 +58,7 @@ class CustomerController extends Controller
     {
         $customer->loadCount('generations');
 
-        // Load generations with template for coin cost display
+        // Load generations with template for point cost display
         $generations = AIGeneration::where('customer_id', $customer->id)
             ->with('template:id,name,slug,cost')
             ->orderBy('created_at', 'desc')
@@ -75,24 +71,15 @@ class CustomerController extends Controller
             ->pluck('count', 'status')
             ->toArray();
 
-        // Calculate total coins spent from template costs (not USD cost)
+        // Calculate total points spent from template costs (not USD cost)
         $completedGenerations = AIGeneration::where('customer_id', $customer->id)
             ->where('status', 'completed')
             ->with('template:id,cost')
             ->get();
 
-        $totalCoinsSpent = 0;
+        $totalPointsSpent = 0;
         foreach ($completedGenerations as $gen) {
-            // For face-swap and video-face-swap, use template cost
-            // For image-generation and image-to-video, use the configured coin cost
-            if (in_array($gen->operation, ['face-swap', 'video-face-swap'])) {
-                $totalCoinsSpent += (int) ($gen->template->cost ?? 0);
-            } else {
-                // For other operations, we don't track coins in the generation record
-                // This would need a separate coin_transactions table for accurate tracking
-                // For now, use template cost if available
-                $totalCoinsSpent += (int) ($gen->template->cost ?? 0);
-            }
+            $totalPointsSpent += (int) ($gen->template->cost ?? $gen->coins_spent ?? 0);
         }
 
         return Inertia::render('admin/customers/show', [
@@ -104,7 +91,8 @@ class CustomerController extends Controller
                 'failed' => $generationStats['failed'] ?? 0,
                 'processing' => ($generationStats['processing'] ?? 0) + ($generationStats['queued'] ?? 0),
             ],
-            'totalCoinsSpent' => $totalCoinsSpent,
+            'totalPointsSpent' => $totalPointsSpent,
+            'totalCoinsSpent' => $totalPointsSpent,
         ]);
     }
 
@@ -129,18 +117,28 @@ class CustomerController extends Controller
     }
 
     /**
-     * Add coins to a customer (developer role only).
+     * Add points to a customer (developer role only).
      */
-    public function addCoins(Request $request, Customer $customer): RedirectResponse
+    public function addPoints(Request $request, Customer $customer): RedirectResponse
     {
         $validated = $request->validate([
             'amount' => ['required', 'integer', 'min:1', 'max:100000'],
             'note' => ['nullable', 'string', 'max:255'],
         ]);
 
-        $customer->addCoins($validated['amount']);
+        $result = $customer->addPoints($validated['amount'], 'Admin manual credit: ' . ($validated['note'] ?? ''));
 
-        return back()->with('success', "Added {$validated['amount']} coins to \"{$customer->name}\". New balance: {$customer->fresh()->coins} coins.");
+        $newBalance = $result['points'] ?? $customer->points;
+
+        return back()->with('success', "Added {$validated['amount']} points to \"{$customer->name}\". New balance: {$newBalance} points.");
+    }
+
+    /**
+     * Backward-compatible alias for addPoints.
+     */
+    public function addCoins(Request $request, Customer $customer): RedirectResponse
+    {
+        return $this->addPoints($request, $customer);
     }
 
     /**

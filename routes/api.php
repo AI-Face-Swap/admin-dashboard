@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\AIImageGenerationController;
 use App\Http\Controllers\Api\AIImageToVideoController;
 use App\Http\Controllers\Api\AIVideoFaceSwapController;
 use App\Http\Controllers\Api\CoinCostController;
+use App\Http\Controllers\Api\PointCostController;
 use App\Http\Controllers\Api\CustomerAuthController;
 use App\Http\Controllers\Api\CustomerGenerationController;
 use App\Http\Controllers\Api\HomePageController;
@@ -46,6 +47,7 @@ Route::prefix('v1')->group(function () {
     Route::get('templates/{slug}', [TemplateController::class, 'show']);
     Route::get('template-categories', [TemplateCategoryController::class, 'index']);
     Route::get('coin-costs', [CoinCostController::class, 'index']);
+    Route::get('point-costs', [PointCostController::class, 'index']);
     Route::get('ai-models', [App\Http\Controllers\Api\AIModelApiController::class, 'index']);
 
     // Home Page Dynamic Content
