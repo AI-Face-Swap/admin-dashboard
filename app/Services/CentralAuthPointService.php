@@ -208,4 +208,30 @@ class CentralAuthPointService
             ];
         }
     }
+
+    /**
+     * Get Customer Point Transactions from Central Auth
+     */
+    public static function getTransactions(string $centralAuthUuid, int $perPage = 20, int $page = 1): array
+    {
+        if (empty($centralAuthUuid)) {
+            return ['data' => [], 'total' => 0];
+        }
+
+        try {
+            $url = self::getBaseUrl() . "/api/v1/s2s/points/{$centralAuthUuid}/transactions";
+            $response = Http::withHeaders(self::getHeaders())->timeout(8)->get($url, [
+                'per_page' => $perPage,
+                'page' => $page,
+            ]);
+
+            if ($response->successful()) {
+                return $response->json('transactions') ?? ['data' => [], 'total' => 0];
+            }
+        } catch (\Throwable $e) {
+            Log::warning("Failed to fetch point transactions from Central Auth for {$centralAuthUuid}: " . $e->getMessage());
+        }
+
+        return ['data' => [], 'total' => 0];
+    }
 }

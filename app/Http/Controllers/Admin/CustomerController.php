@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\AIGeneration;
 use App\Models\Customer;
+use App\Services\CentralAuthPointService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -82,9 +83,17 @@ class CustomerController extends Controller
             $totalPointsSpent += (int) ($gen->template->cost ?? $gen->coins_spent ?? 0);
         }
 
+        // Fetch point transaction history from Central Auth via S2S
+        $pointTransactions = ['data' => [], 'total' => 0];
+        $uuid = $customer->central_auth_uuid ?: CentralAuthPointService::ensureCentralAuthUuid($customer);
+        if ($uuid) {
+            $pointTransactions = CentralAuthPointService::getTransactions($uuid, 20);
+        }
+
         return Inertia::render('admin/customers/show', [
             'customer' => $customer,
             'generations' => $generations,
+            'pointTransactions' => $pointTransactions,
             'generationStats' => [
                 'total' => $customer->generations_count,
                 'completed' => $generationStats['completed'] ?? 0,

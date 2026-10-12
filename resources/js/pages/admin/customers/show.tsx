@@ -83,9 +83,31 @@ type PaginatedGenerations = {
     links: { url: string | null; label: string; active: boolean }[];
 };
 
+type PointTransaction = {
+    id: number;
+    project_id: string;
+    type: 'add' | 'deduct' | 'refund' | 'set';
+    amount: number;
+    balance_before: number;
+    balance_after: number;
+    description: string | null;
+    reference_id: string | null;
+    metadata: Record<string, any> | null;
+    created_at: string;
+};
+
+type PaginatedPointTransactions = {
+    data: PointTransaction[];
+    current_page?: number;
+    last_page?: number;
+    total?: number;
+    links?: { url: string | null; label: string; active: boolean }[];
+};
+
 type Props = {
     customer: Customer;
     generations: PaginatedGenerations;
+    pointTransactions?: PaginatedPointTransactions;
     generationStats: GenerationStats;
     totalCost: number;
     totalPointsSpent?: number;
@@ -95,10 +117,12 @@ type Props = {
 export default function Show({
     customer,
     generations,
+    pointTransactions,
     generationStats,
     totalPointsSpent,
     totalCoinsSpent,
 }: Omit<Props, 'totalCost'>) {
+    const [activeTab, setActiveTab] = useState<'generations' | 'transactions'>('generations');
     const [showPointDialog, setShowPointDialog] = useState(false);
     const [pointAmount, setPointAmount] = useState('');
     const [pointNote, setPointNote] = useState('');
@@ -366,156 +390,259 @@ export default function Show({
                             </AnimatedCard>
                         </div>
 
-                        {/* Recent Generations */}
+                        {/* Recent Generations & Point Transactions Tabs */}
                         <AnimatedCard>
                             <CardContent>
-                                <p className="mb-3 font-medium">
-                                    Recent Generations
-                                </p>
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Status</TableHead>
-                                            <TableHead>Operation</TableHead>
-                                            <TableHead>Template</TableHead>
-                                            <TableHead>Cost</TableHead>
-                                            <TableHead>Duration</TableHead>
-                                            <TableHead>Created</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {generations.data.length === 0 && (
-                                            <TableRow>
-                                                <TableCell
-                                                    colSpan={6}
-                                                    className="h-24 text-center text-muted-foreground"
-                                                >
-                                                    No generations yet.
-                                                </TableCell>
-                                            </TableRow>
-                                        )}
-                                        {generations.data.map((gen) => (
-                                            <TableRow key={gen.id}>
-                                                <TableCell>
-                                                    <Badge
-                                                        variant={
-                                                            gen.status ===
-                                                            'completed'
-                                                                ? 'default'
-                                                                : gen.status ===
-                                                                    'failed'
-                                                                  ? 'destructive'
-                                                                  : 'secondary'
-                                                        }
-                                                    >
-                                                        {gen.status}
-                                                    </Badge>
-                                                </TableCell>
-                                                <TableCell className="text-sm">
-                                                    {gen.operation}
-                                                </TableCell>
-                                                <TableCell className="text-sm">
-                                                    {gen.template?.name ?? '—'}
-                                                </TableCell>
-                                                <TableCell className="text-sm">
-                                                    <div className="flex flex-col gap-0.5">
-                                                        {gen.coins_spent !==
-                                                            null &&
-                                                        gen.coins_spent !==
-                                                            undefined ? (
-                                                            <span className="flex items-center gap-1 text-[var(--gold)]">
-                                                                <Coins className="h-3 w-3" />
-                                                                {
-                                                                    gen.coins_spent
-                                                                }{' '}
-                                                                points
-                                                            </span>
-                                                        ) : gen.template
-                                                              ?.cost ? (
-                                                            <span className="flex items-center gap-1 text-[var(--gold)]">
-                                                                <Coins className="h-3 w-3" />
-                                                                {
-                                                                    gen.template
-                                                                        .cost
-                                                                }{' '}
-                                                                points
-                                                            </span>
-                                                        ) : null}
-                                                        {gen.cost && (
-                                                            <span className="text-xs text-muted-foreground">
-                                                                ${gen.cost}{' '}
-                                                                {gen.currency}
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell className="text-sm text-muted-foreground">
-                                                    {gen.duration_ms
-                                                        ? `${gen.duration_ms}ms`
-                                                        : '—'}
-                                                </TableCell>
-                                                <TableCell className="text-sm text-muted-foreground">
-                                                    {new Date(
-                                                        gen.created_at,
-                                                    ).toLocaleString()}
-                                                </TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-
-                                {/* Pagination */}
-                                {generations.last_page > 1 && (
-                                    <div className="mt-4 flex items-center justify-between">
-                                        <p className="text-xs text-muted-foreground">
-                                            Page {generations.current_page} of{' '}
-                                            {generations.last_page}
-                                        </p>
-                                        <div className="flex gap-1">
-                                            {generations.links.map(
-                                                (link, index) => {
-                                                    const path = link.url
-                                                        ? new URL(link.url)
-                                                              .pathname +
-                                                          new URL(link.url)
-                                                              .search
-                                                        : '';
-
-                                                    return (
-                                                        <AnimatedButton
-                                                            key={index}
-                                                            variant={
-                                                                link.active
-                                                                    ? 'default'
-                                                                    : 'outline'
-                                                            }
-                                                            size="sm"
-                                                            disabled={!link.url}
-                                                            onClick={() =>
-                                                                link.url &&
-                                                                router.get(
-                                                                    path,
-                                                                    {},
-                                                                    {
-                                                                        preserveState: true,
-                                                                    },
-                                                                )
-                                                            }
-                                                            className="h-8 text-xs"
-                                                        >
-                                                            {link.label ===
-                                                            '&laquo; Previous'
-                                                                ? '← Prev'
-                                                                : link.label ===
-                                                                    'Next &raquo;'
-                                                                  ? 'Next →'
-                                                                  : link.label}
-                                                        </AnimatedButton>
-                                                    );
-                                                },
-                                            )}
-                                        </div>
+                                <div className="mb-4 flex items-center justify-between border-b pb-3">
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => setActiveTab('generations')}
+                                            className={`flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+                                                activeTab === 'generations'
+                                                    ? 'bg-primary text-primary-foreground shadow-xs'
+                                                    : 'text-muted-foreground hover:bg-muted'
+                                            }`}
+                                        >
+                                            <Images className="h-4 w-4" />
+                                            <span>Recent Generations</span>
+                                            <Badge variant={activeTab === 'generations' ? 'outline' : 'secondary'} className="ml-1 text-xs">
+                                                {generations.total}
+                                            </Badge>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setActiveTab('transactions')}
+                                            className={`flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+                                                activeTab === 'transactions'
+                                                    ? 'bg-primary text-primary-foreground shadow-xs'
+                                                    : 'text-muted-foreground hover:bg-muted'
+                                            }`}
+                                        >
+                                            <Coins className="h-4 w-4" />
+                                            <span>Point Transactions</span>
+                                            <Badge variant={activeTab === 'transactions' ? 'outline' : 'secondary'} className="ml-1 text-xs">
+                                                {pointTransactions?.total ?? pointTransactions?.data?.length ?? 0}
+                                            </Badge>
+                                        </button>
                                     </div>
+                                    <span className="text-xs text-muted-foreground font-mono">
+                                        {activeTab === 'generations' ? `${generations.total} total` : `${pointTransactions?.data?.length ?? 0} records`}
+                                    </span>
+                                </div>
+
+                                {activeTab === 'generations' ? (
+                                    <>
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead>Status</TableHead>
+                                                    <TableHead>Operation</TableHead>
+                                                    <TableHead>Template</TableHead>
+                                                    <TableHead>Cost</TableHead>
+                                                    <TableHead>Duration</TableHead>
+                                                    <TableHead>Created</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {generations.data.length === 0 && (
+                                                    <TableRow>
+                                                        <TableCell
+                                                            colSpan={6}
+                                                            className="h-24 text-center text-muted-foreground"
+                                                        >
+                                                            No generations yet.
+                                                        </TableCell>
+                                                    </TableRow>
+                                                )}
+                                                {generations.data.map((gen) => (
+                                                    <TableRow key={gen.id}>
+                                                        <TableCell>
+                                                            <Badge
+                                                                variant={
+                                                                    gen.status ===
+                                                                    'completed'
+                                                                        ? 'default'
+                                                                        : gen.status ===
+                                                                            'failed'
+                                                                          ? 'destructive'
+                                                                          : 'secondary'
+                                                                }
+                                                            >
+                                                                {gen.status}
+                                                            </Badge>
+                                                        </TableCell>
+                                                        <TableCell className="text-sm">
+                                                            {gen.operation}
+                                                        </TableCell>
+                                                        <TableCell className="text-sm">
+                                                            {gen.template?.name ?? '—'}
+                                                        </TableCell>
+                                                        <TableCell className="text-sm">
+                                                            <div className="flex flex-col gap-0.5">
+                                                                {gen.coins_spent !==
+                                                                    null &&
+                                                                gen.coins_spent !==
+                                                                    undefined ? (
+                                                                    <span className="flex items-center gap-1 text-[var(--gold)]">
+                                                                        <Coins className="h-3 w-3" />
+                                                                        {
+                                                                            gen.coins_spent
+                                                                        }{' '}
+                                                                        points
+                                                                    </span>
+                                                                ) : gen.template
+                                                                      ?.cost ? (
+                                                                    <span className="flex items-center gap-1 text-[var(--gold)]">
+                                                                        <Coins className="h-3 w-3" />
+                                                                        {
+                                                                            gen.template
+                                                                                .cost
+                                                                        }{' '}
+                                                                        points
+                                                                    </span>
+                                                                ) : null}
+                                                                {gen.cost && (
+                                                                    <span className="text-xs text-muted-foreground">
+                                                                        ${gen.cost}{' '}
+                                                                        {gen.currency}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </TableCell>
+                                                        <TableCell className="text-sm text-muted-foreground">
+                                                            {gen.duration_ms
+                                                                ? `${gen.duration_ms}ms`
+                                                                : '—'}
+                                                        </TableCell>
+                                                        <TableCell className="text-sm text-muted-foreground">
+                                                            {new Date(
+                                                                gen.created_at,
+                                                            ).toLocaleString()}
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+
+                                        {/* Pagination */}
+                                        {generations.last_page > 1 && (
+                                            <div className="mt-4 flex items-center justify-between">
+                                                <p className="text-xs text-muted-foreground">
+                                                    Page {generations.current_page} of{' '}
+                                                    {generations.last_page}
+                                                </p>
+                                                <div className="flex gap-1">
+                                                    {generations.links.map(
+                                                        (link, index) => {
+                                                            const path = link.url
+                                                                ? new URL(link.url)
+                                                                      .pathname +
+                                                                  new URL(link.url)
+                                                                      .search
+                                                                : '#';
+                                                            return (
+                                                                <AnimatedButton
+                                                                    key={index}
+                                                                    variant={
+                                                                        link.active
+                                                                            ? 'default'
+                                                                            : 'outline'
+                                                                    }
+                                                                    size="sm"
+                                                                    disabled={!link.url}
+                                                                    onClick={() =>
+                                                                        link.url &&
+                                                                        router.get(
+                                                                            path,
+                                                                            {},
+                                                                            {
+                                                                                preserveState: true,
+                                                                            },
+                                                                        )
+                                                                    }
+                                                                    className="h-8 text-xs"
+                                                                >
+                                                                    {link.label ===
+                                                                    '&laquo; Previous'
+                                                                        ? '← Prev'
+                                                                        : link.label ===
+                                                                            'Next &raquo;'
+                                                                          ? 'Next →'
+                                                                          : link.label}
+                                                                </AnimatedButton>
+                                                            );
+                                                        },
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </>
+                                ) : (
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Type</TableHead>
+                                                <TableHead>Amount</TableHead>
+                                                <TableHead className="text-center">Balance Flow</TableHead>
+                                                <TableHead>Project</TableHead>
+                                                <TableHead>Description & Reference</TableHead>
+                                                <TableHead>Date & Time</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {(!pointTransactions?.data || pointTransactions.data.length === 0) && (
+                                                <TableRow>
+                                                    <TableCell
+                                                        colSpan={6}
+                                                        className="h-24 text-center text-muted-foreground"
+                                                    >
+                                                        No point transactions recorded yet.
+                                                    </TableCell>
+                                                </TableRow>
+                                            )}
+                                            {pointTransactions?.data?.map((tx) => (
+                                                <TableRow key={tx.id}>
+                                                    <TableCell>
+                                                        <Badge
+                                                            variant={
+                                                                tx.type === 'add' || tx.type === 'refund'
+                                                                    ? 'default'
+                                                                    : tx.type === 'deduct'
+                                                                      ? 'destructive'
+                                                                      : 'secondary'
+                                                            }
+                                                            className="capitalize"
+                                                        >
+                                                            {tx.type === 'add' ? '+ Credited' : tx.type === 'deduct' ? '- Deducted' : tx.type}
+                                                        </Badge>
+                                                    </TableCell>
+                                                    <TableCell className={`text-sm font-semibold ${tx.type === 'add' || tx.type === 'refund' ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                                        {tx.type === 'deduct' ? '-' : '+'}{tx.amount.toLocaleString()} pts
+                                                    </TableCell>
+                                                    <TableCell className="text-center text-xs font-mono">
+                                                        <span className="text-muted-foreground">{tx.balance_before.toLocaleString()}</span>
+                                                        <span className="mx-1 text-amber-500 font-bold">→</span>
+                                                        <span className="font-semibold">{tx.balance_after.toLocaleString()}</span>
+                                                    </TableCell>
+                                                    <TableCell className="text-xs">
+                                                        <Badge variant="outline" className="font-mono text-xs">
+                                                            {tx.project_id}
+                                                        </Badge>
+                                                    </TableCell>
+                                                    <TableCell className="text-sm max-w-xs">
+                                                        <p className="line-clamp-1">{tx.description || '—'}</p>
+                                                        {tx.reference_id && (
+                                                            <p className="text-xs text-muted-foreground font-mono">{tx.reference_id}</p>
+                                                        )}
+                                                    </TableCell>
+                                                    <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                                                        {new Date(tx.created_at).toLocaleString()}
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
                                 )}
                             </CardContent>
                         </AnimatedCard>
