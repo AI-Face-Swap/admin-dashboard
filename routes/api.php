@@ -78,7 +78,7 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'customer.not-banned'])->group(
     Route::get('chat/conversations', [AIChatController::class, 'index']);
     Route::get('chat/conversations/{conversation}', [AIChatController::class, 'show']);
     Route::delete('chat/conversations/{conversation}', [AIChatController::class, 'destroy']);
-        // Public / Hybrid Chat endpoint (Supports both guest trial & authenticated customer with points deduction)
+    // Customer AI Chat Question (Requires Bearer token authentication & sufficient points)
     Route::post('chat/send', [AIChatController::class, 'send'])->middleware('throttle:30,1');
 
     Route::post('ai/face-swap', [AIFaceSwapController::class, 'store'])->middleware('throttle:30,1');

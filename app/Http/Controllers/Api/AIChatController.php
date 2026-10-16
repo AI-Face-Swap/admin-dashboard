@@ -65,20 +65,24 @@ class AIChatController extends Controller
         /** @var Customer|null $customer */
         $customer = $request->user('sanctum') ?? $request->user();
 
+        if (! $customer) {
+            return response()->json([
+                'message' => 'Unauthenticated. Please log in to chat with HTUT AI.',
+            ], 401);
+        }
+
+        if ($customer->isBanned()) {
+            return response()->json(['message' => 'Your account is suspended.'], 403);
+        }
+
         $pointCost = (int) Setting::get('ai', 'point_cost_chat', config('ai.point_costs.chat', 5));
 
-        if ($customer) {
-            if ($customer->isBanned()) {
-                return response()->json(['message' => 'Your account is suspended.'], 403);
-            }
-
-            if (! $customer->hasEnoughPoints($pointCost)) {
-                return response()->json([
-                    'message' => 'Insufficient points. Please top up your points to continue chatting with HTUT AI.',
-                    'required_points' => $pointCost,
-                    'current_points' => $customer->points,
-                ], 402);
-            }
+        if (! $customer->hasEnoughPoints($pointCost)) {
+            return response()->json([
+                'message' => 'Insufficient points. Please top up your points to continue chatting with HTUT AI.',
+                'required_points' => $pointCost,
+                'current_points' => $customer->points,
+            ], 402);
         }
 
         $prompt = trim($request->input('prompt'));
@@ -86,44 +90,6 @@ class AIChatController extends Controller
         $language = (string) $request->input('language', 'my');
         $model = $request->input('model');
         $conversationId = $request->input('conversation_id');
-
-        // Unauthenticated guest preview mode
-        if (! $customer) {
-            $aiResult = $chatService->chat(
-                message: $prompt,
-                category: $category,
-                history: [],
-                language: $language,
-                requester: null,
-                model: $model,
-            );
-
-            return response()->json([
-                'conversation_id' => 'guest-preview',
-                'user_message' => [
-                    'id' => 'guest-u-'.time(),
-                    'role' => 'user',
-                    'content' => $prompt,
-                    'category' => $category,
-                    'timestamp' => now()->format('g:i A'),
-                    'structured' => null,
-                    'created_at' => now()->toIso8601String(),
-                ],
-                'assistant_message' => [
-                    'id' => 'guest-a-'.time(),
-                    'role' => 'assistant',
-                    'content' => $aiResult['content'],
-                    'category' => $category,
-                    'timestamp' => now()->format('g:i A'),
-                    'structured' => $aiResult['structured'],
-                    'tokens_used' => $aiResult['tokens_used'],
-                    'created_at' => now()->toIso8601String(),
-                ],
-                'preview' => true,
-                'points_deducted' => 0,
-                'points_remaining' => 0,
-            ]);
-        }
 
         // Authenticated Customer mode with DB persistence and Point deduction
         if ($conversationId) {

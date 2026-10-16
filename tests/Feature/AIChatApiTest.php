@@ -95,43 +95,15 @@ class AIChatApiTest extends TestCase
         $this->assertEmpty($formattedPlain['structured']['sections']);
     }
 
-    public function test_guest_can_send_chat_preview_without_deduction(): void
+    public function test_unauthenticated_user_cannot_send_chat_question(): void
     {
-        Http::fake([
-            'https://api.segmind.com/v1/*' => Http::response([
-                'id' => 'chatcmpl-test-123',
-                'choices' => [
-                    [
-                        'message' => [
-                            'content' => json_encode([
-                                'content' => 'မင်္ဂလာပါ! HTUT AI မှ ကြိုဆိုပါသည်။',
-                                'structured' => [
-                                    'sections' => [
-                                        ['title' => 'လမ်းညွှန်ချက်', 'description' => 'အသေးစိတ် အချက်အလက်'],
-                                    ],
-                                    'checklist' => [
-                                        ['item' => 'အချက် ၁', 'detail' => 'ရှင်းလင်းချက်'],
-                                    ],
-                                ],
-                            ]),
-                        ],
-                    ],
-                ],
-                'usage' => ['total_tokens' => 95, 'prompt_tokens' => 30, 'completion_tokens' => 65],
-            ], 200),
-        ]);
-
         $response = $this->postJson('/api/v1/chat/send', [
             'prompt' => 'မင်္ဂလာပါ',
             'category' => 'general',
             'language' => 'my',
         ]);
 
-        $response->assertStatus(200)
-            ->assertJsonPath('preview', true)
-            ->assertJsonPath('points_deducted', 0)
-            ->assertJsonPath('assistant_message.content', 'မင်္ဂလာပါ! HTUT AI မှ ကြိုဆိုပါသည်။')
-            ->assertJsonPath('assistant_message.structured.sections.0.title', 'လမ်းညွှန်ချက်');
+        $response->assertStatus(401);
     }
 
     public function test_authenticated_customer_sends_chat_and_deducts_5_points(): void
