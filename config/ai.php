@@ -29,6 +29,7 @@ return [
         'image_to_video_480p' => (int) env('AI_IMAGE_TO_VIDEO_480P_COST', 10),
         'image_to_video_720p' => (int) env('AI_IMAGE_TO_VIDEO_720P_COST', 20),
         'image_edit' => (int) env('AI_IMAGE_EDIT_COST', 10),
+        'chat' => (int) env('AI_CHAT_COST', 5),
     ],
 
     // Backward-compatible alias
@@ -39,7 +40,10 @@ return [
         'image_to_video_480p' => (int) env('AI_IMAGE_TO_VIDEO_480P_COST', 10),
         'image_to_video_720p' => (int) env('AI_IMAGE_TO_VIDEO_720P_COST', 20),
         'image_edit' => (int) env('AI_IMAGE_EDIT_COST', 10),
+        'chat' => (int) env('AI_CHAT_COST', 5),
     ],
+
+    'chat_model' => env('AI_CHAT_MODEL', 'qwen-flash'),
 
     'providers' => [
 

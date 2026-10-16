@@ -1,17 +1,20 @@
 <?php
 
+use App\Http\Controllers\Api\AIChatController;
 use App\Http\Controllers\Api\AIFaceSwapController;
 use App\Http\Controllers\Api\AIGenerationStatusController;
 use App\Http\Controllers\Api\AIImageEditController;
 use App\Http\Controllers\Api\AIImageGenerationController;
 use App\Http\Controllers\Api\AIImageToVideoController;
+use App\Http\Controllers\Api\AIModelApiController;
 use App\Http\Controllers\Api\AIVideoFaceSwapController;
 use App\Http\Controllers\Api\CoinCostController;
-use App\Http\Controllers\Api\PointCostController;
 use App\Http\Controllers\Api\CustomerAuthController;
 use App\Http\Controllers\Api\CustomerGenerationController;
 use App\Http\Controllers\Api\HomePageController;
 use App\Http\Controllers\Api\HtutCentralAuthController;
+use App\Http\Controllers\Api\PaymentPackageController;
+use App\Http\Controllers\Api\PointCostController;
 use App\Http\Controllers\Api\SliderController;
 use App\Http\Controllers\Api\TemplateCategoryController;
 use App\Http\Controllers\Api\TemplateController;
@@ -48,22 +51,30 @@ Route::prefix('v1')->group(function () {
     Route::get('template-categories', [TemplateCategoryController::class, 'index']);
     Route::get('coin-costs', [CoinCostController::class, 'index']);
     Route::get('point-costs', [PointCostController::class, 'index']);
-    Route::get('ai-models', [App\Http\Controllers\Api\AIModelApiController::class, 'index']);
+    Route::get('ai-models', [AIModelApiController::class, 'index']);
 
     // Home Page Dynamic Content
     Route::get('home-heroes', [HomePageController::class, 'heroes']);
     Route::get('home-showcases', [HomePageController::class, 'showcases']);
     Route::get('home-features', [HomePageController::class, 'features']);
     Route::get('partners', [HomePageController::class, 'partners']);
-    Route::get('packages', [App\Http\Controllers\Api\PaymentPackageController::class, 'index']);
+    Route::get('packages', [PaymentPackageController::class, 'index']);
     Route::get('settings/footer', [HomePageController::class, 'footerSettings']);
+
+    // Public / Hybrid Chat endpoint (Supports both guest trial & authenticated customer with points deduction)
+    Route::post('chat/send', [AIChatController::class, 'send'])->middleware('throttle:30,1');
 });
 
 Route::prefix('v1')->middleware(['auth:sanctum', 'customer.not-banned'])->group(function () {
     Route::post('auth/logout', [CustomerAuthController::class, 'logout']);
     Route::get('auth/me', [CustomerAuthController::class, 'me']);
     Route::post('customer/avatar', [CustomerAuthController::class, 'updateAvatar']);
-    Route::post('packages/checkout', [App\Http\Controllers\Api\PaymentPackageController::class, 'checkout']);
+    Route::post('packages/checkout', [PaymentPackageController::class, 'checkout']);
+
+    // Customer Chat Conversations & Messages
+    Route::get('chat/conversations', [AIChatController::class, 'index']);
+    Route::get('chat/conversations/{conversation}', [AIChatController::class, 'show']);
+    Route::delete('chat/conversations/{conversation}', [AIChatController::class, 'destroy']);
 
     Route::post('ai/face-swap', [AIFaceSwapController::class, 'store'])->middleware('throttle:30,1');
     Route::post('ai/video-face-swap', [AIVideoFaceSwapController::class, 'store'])->middleware('throttle:10,1');

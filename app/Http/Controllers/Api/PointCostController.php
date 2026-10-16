@@ -44,6 +44,7 @@ class PointCostController extends Controller
             'image_to_video_720p' => (int) Setting::get('ai', 'point_cost_image_to_video_720p', Setting::get('ai', 'coin_cost_image_to_video_720p', config('ai.point_costs.image_to_video_720p', config('ai.coin_costs.image_to_video_720p', 20)))),
             'image_to_video_1080p' => (int) Setting::get('ai', 'point_cost_image_to_video_1080p', Setting::get('ai', 'coin_cost_image_to_video_1080p', config('ai.point_costs.image_to_video_1080p', config('ai.coin_costs.image_to_video_1080p', 35)))),
             'image_edit' => (int) Setting::get('ai', 'point_cost_image_edit', Setting::get('ai', 'coin_cost_image_edit', config('ai.point_costs.image_edit', config('ai.coin_costs.image_edit', 10)))),
+            'chat' => (int) Setting::get('ai', 'point_cost_chat', config('ai.point_costs.chat', 5)),
 
             // Dynamic model-specific pricing and configurations
             'models' => $modelsMap,

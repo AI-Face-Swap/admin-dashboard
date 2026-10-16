@@ -84,6 +84,8 @@ class AIGeneration extends Model
 
     public const OPERATION_IMAGE_EDIT = 'image-editing';
 
+    public const OPERATION_CHAT = 'chat';
+
     public const STATUS_QUEUED = 'queued';
 
     public const STATUS_PROCESSING = 'processing';

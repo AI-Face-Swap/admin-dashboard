@@ -61,6 +61,16 @@ class Customer extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Get the customer's chat conversations.
+     *
+     * @return HasMany<ChatConversation, $this>
+     */
+    public function conversations(): HasMany
+    {
+        return $this->hasMany(ChatConversation::class)->orderBy('updated_at', 'desc');
+    }
+
+    /**
      * Scope: only banned customers.
      *
      * @param  Builder<self>  $query

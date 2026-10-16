@@ -54,6 +54,7 @@ Laravel backend + admin dashboard for AI media generation (image generation, fac
 | — | Google customer login (web redirect + mobile ID-token flow) | ✅ |
 | — | Apple customer login (web redirect/form-post + mobile identity-token flow) | ✅ |
 | — | Image Editing API (6 Segmind models: multi-image-kontext-max, flux-kontext-dev, seedream-v5-lite, gpt-image-1.5-edit, kling-3-image2image, nano-banana-pro) + Admin AI tab + Save to Templates | ✅ |
+| — | AI Chat API & Agent Skills (`POST /api/v1/chat/send`, 3 skills: General, Health, Education via Segmind `qwen-flash`, structured sections & checklists, 5 points deduction) | ✅ |
 
 ## Pending phases
 
@@ -117,6 +118,10 @@ Laravel backend + admin dashboard for AI media generation (image generation, fac
 | `GET /api/v1/templates/{slug}` | public | Single template |
 | `GET /api/v1/template-categories` | public | Template categories |
 | `GET /api/v1/coin-costs` | public | Coin costs from admin settings |
+| `POST /api/v1/chat/send` | public / sanctum | Send chat question (preview or 5 pts deduction) |
+| `GET /api/v1/chat/conversations` | sanctum | List customer chat conversations |
+| `GET /api/v1/chat/conversations/{id}` | sanctum | Get conversation with messages |
+| `DELETE /api/v1/chat/conversations/{id}` | sanctum | Delete chat conversation |
 
 ## Admin web routes
 
