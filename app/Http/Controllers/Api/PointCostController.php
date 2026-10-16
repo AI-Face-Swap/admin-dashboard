@@ -26,11 +26,12 @@ class PointCostController extends Controller
 
         $modelsMap = [];
         foreach ($activeModels as $m) {
+            $cost = (int) ($m->point_cost ?? 5);
             $modelsMap[$m->model_name] = [
                 'name' => $m->name ?? $m->model_name,
                 'model_name' => $m->model_name,
                 'type' => $m->generationType?->slug,
-                'point_cost' => (int) ($m->point_cost ?? 5),
+                'point_cost' => $cost,
                 'resolution_costs' => $m->resolution_costs,
                 'duration_costs' => $m->duration_costs,
                 'is_default' => $m->is_default,

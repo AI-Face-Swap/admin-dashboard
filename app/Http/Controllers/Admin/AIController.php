@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\AIGeneration;
+use App\Models\AIModel;
 use App\Models\Template;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -27,7 +28,7 @@ class AIController extends Controller
                 ->latest()
                 ->limit(20)
                 ->get(),
-            'aiModels' => \App\Models\AIModel::where('is_active', true)
+            'aiModels' => AIModel::where('is_active', true)
                 ->with('generationType')
                 ->ordered()
                 ->get(),

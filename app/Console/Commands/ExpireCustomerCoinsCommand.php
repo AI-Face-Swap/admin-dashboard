@@ -2,7 +2,6 @@
 
 namespace App\Console\Commands;
 
-use App\Models\Customer;
 use Illuminate\Console\Command;
 
 class ExpireCustomerCoinsCommand extends Command

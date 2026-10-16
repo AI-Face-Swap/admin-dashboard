@@ -3,15 +3,14 @@
 namespace App\Providers;
 
 use Carbon\CarbonImmutable;
+use Dedoc\Scramble\Scramble;
+use Illuminate\Routing\Route;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
-use Illuminate\Validation\Rules\Password;
-
-use Dedoc\Scramble\Scramble;
-use Illuminate\Routing\Route;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rules\Password;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -69,4 +68,3 @@ class AppServiceProvider extends ServiceProvider
         });
     }
 }
-

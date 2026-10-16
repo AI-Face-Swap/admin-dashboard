@@ -100,7 +100,7 @@ class CustomerAuthController extends Controller
      */
     public function me(Request $request): JsonResponse
     {
-        /** @var \App\Models\Customer $customer */
+        /** @var Customer $customer */
         $customer = $request->user();
         if ($customer) {
             $customer->syncProjectExpiry();
@@ -126,7 +126,7 @@ class CustomerAuthController extends Controller
 
         $file = $request->file('avatar');
         $extension = $file->getClientOriginalExtension() ?: 'jpg';
-        $filename = Str::uuid() . '.' . $extension;
+        $filename = Str::uuid().'.'.$extension;
 
         // Store directly to DigitalOcean Spaces
         $path = $file->storeAs('avatars', $filename, 'spaces');

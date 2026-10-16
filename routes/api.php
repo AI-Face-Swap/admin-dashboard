@@ -8,7 +8,7 @@ use App\Http\Controllers\Api\AIImageGenerationController;
 use App\Http\Controllers\Api\AIImageToVideoController;
 use App\Http\Controllers\Api\AIModelApiController;
 use App\Http\Controllers\Api\AIVideoFaceSwapController;
-use App\Http\Controllers\Api\CoinCostController;
+use App\Http\Controllers\Api\Auth\SocialAuthController;
 use App\Http\Controllers\Api\CustomerAuthController;
 use App\Http\Controllers\Api\CustomerGenerationController;
 use App\Http\Controllers\Api\HomePageController;
@@ -36,10 +36,17 @@ use Illuminate\Support\Facades\Route;
 
 // All Customer Authentication is handled exclusively via HTUT Central Auth SSO
 
+// ── Mobile SDK Social Login (Direct mobile access with verified id_token, synced to Central Auth) ──
+Route::post('/auth/{provider}/login', [SocialAuthController::class, 'login'])->middleware('throttle:30,1');
+
 // HTUT Central Auth SSO & S2S Webhook
 Route::prefix('v1')->group(function () {
+    // ── Mobile SDK Social Login (Direct mobile access with verified id_token, synced to Central Auth) ──
+    Route::post('auth/{provider}/login', [SocialAuthController::class, 'login'])->middleware('throttle:30,1');
+
     Route::get('auth/htut/redirect', [HtutCentralAuthController::class, 'redirect'])->name('api.v1.auth.htut.redirect');
     Route::get('auth/htut/callback', [HtutCentralAuthController::class, 'callback'])->name('api.v1.auth.htut.callback');
+    Route::post('auth/htut/callback', [HtutCentralAuthController::class, 'mobileCallback'])->name('api.v1.auth.htut.mobile-callback');
     Route::post('htut/customer/sync', [HtutCentralAuthController::class, 'syncCustomerWebhook'])->name('api.v1.htut.customer.sync');
     Route::post('htut/packages/cache-clear', [HtutCentralAuthController::class, 'clearPackageCache'])->name('api.v1.htut.packages.cache-clear');
 });
@@ -49,7 +56,6 @@ Route::prefix('v1')->group(function () {
     Route::get('templates', [TemplateController::class, 'index']);
     Route::get('templates/{slug}', [TemplateController::class, 'show']);
     Route::get('template-categories', [TemplateCategoryController::class, 'index']);
-    Route::get('coin-costs', [CoinCostController::class, 'index']);
     Route::get('point-costs', [PointCostController::class, 'index']);
     Route::get('ai-models', [AIModelApiController::class, 'index']);
 

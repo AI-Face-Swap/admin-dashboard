@@ -28,9 +28,9 @@ class AIModelsExpansionTest extends TestCase
         Storage::fake('spaces');
     }
 
-    public function test_coin_costs_api_returns_all_eight_new_models(): void
+    public function test_point_costs_api_returns_all_eight_new_models(): void
     {
-        $response = $this->getJson('/api/v1/coin-costs');
+        $response = $this->getJson('/api/v1/point-costs');
 
         $response->assertOk();
         $response->assertJsonStructure([
@@ -46,33 +46,33 @@ class AIModelsExpansionTest extends TestCase
 
         // 3 Text-to-Image models
         $this->assertArrayHasKey('ideogram-4.5', $models);
-        $this->assertEquals(8, $models['ideogram-4.5']['coin_cost']);
+        $this->assertEquals(8, $models['ideogram-4.5']['point_cost']);
 
         $this->assertArrayHasKey('recraft-v4-pro', $models);
-        $this->assertEquals(8, $models['recraft-v4-pro']['coin_cost']);
+        $this->assertEquals(8, $models['recraft-v4-pro']['point_cost']);
 
         $this->assertArrayHasKey('grok-imagine-image-2', $models);
-        $this->assertEquals(7, $models['grok-imagine-image-2']['coin_cost']);
+        $this->assertEquals(7, $models['grok-imagine-image-2']['point_cost']);
 
         // 3 Image-to-Video models
         $this->assertArrayHasKey('wan3.0-video-prime', $models);
-        $this->assertEquals(20, $models['wan3.0-video-prime']['coin_cost']);
+        $this->assertEquals(20, $models['wan3.0-video-prime']['point_cost']);
         $this->assertEquals(35, $models['wan3.0-video-prime']['resolution_costs']['1080p']);
 
         $this->assertArrayHasKey('ltx-2.5-pro', $models);
-        $this->assertEquals(15, $models['ltx-2.5-pro']['coin_cost']);
+        $this->assertEquals(15, $models['ltx-2.5-pro']['point_cost']);
         $this->assertEquals(25, $models['ltx-2.5-pro']['resolution_costs']['1080p']);
 
         $this->assertArrayHasKey('minimax-h3-max-reference-to-video', $models);
-        $this->assertEquals(25, $models['minimax-h3-max-reference-to-video']['coin_cost']);
+        $this->assertEquals(25, $models['minimax-h3-max-reference-to-video']['point_cost']);
         $this->assertEquals(40, $models['minimax-h3-max-reference-to-video']['resolution_costs']['1080p']);
 
         // 2 Image Editing models
         $this->assertArrayHasKey('ideogram-4.5-edit', $models);
-        $this->assertEquals(12, $models['ideogram-4.5-edit']['coin_cost']);
+        $this->assertEquals(12, $models['ideogram-4.5-edit']['point_cost']);
 
         $this->assertArrayHasKey('bria-extract-object', $models);
-        $this->assertEquals(6, $models['bria-extract-object']['coin_cost']);
+        $this->assertEquals(6, $models['bria-extract-object']['point_cost']);
     }
 
     public function test_ideogram_4_5_edit_successful_generation(): void

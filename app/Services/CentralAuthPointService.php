@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Customer;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -36,14 +37,14 @@ class CentralAuthPointService
     /**
      * Ensure Customer is registered in Central Auth and return central_auth_uuid.
      */
-    public static function ensureCentralAuthUuid(\App\Models\Customer $customer): ?string
+    public static function ensureCentralAuthUuid(Customer $customer): ?string
     {
         if (! empty($customer->central_auth_uuid)) {
             return $customer->central_auth_uuid;
         }
 
         try {
-            $url = self::getBaseUrl() . '/api/v1/s2s/customer-sync';
+            $url = self::getBaseUrl().'/api/v1/s2s/customer-sync';
             $response = Http::withHeaders(self::getHeaders())->timeout(5)->post($url, [
                 'name' => $customer->name,
                 'email' => $customer->email,
@@ -56,11 +57,12 @@ class CentralAuthPointService
                     $customer->update(['central_auth_uuid' => $uuid]);
                     $points = (int) ($response->json('customer.points') ?? 10);
                     Cache::put("customer_points_{$uuid}", $points, 30);
+
                     return $uuid;
                 }
             }
         } catch (\Throwable $e) {
-            Log::warning("Failed to auto-sync customer {$customer->id} with Central Auth: " . $e->getMessage());
+            Log::warning("Failed to auto-sync customer {$customer->id} with Central Auth: ".$e->getMessage());
         }
 
         return null;
@@ -76,17 +78,18 @@ class CentralAuthPointService
         }
 
         try {
-            $url = self::getBaseUrl() . "/api/v1/s2s/points/{$centralAuthUuid}";
+            $url = self::getBaseUrl()."/api/v1/s2s/points/{$centralAuthUuid}";
             $response = Http::withHeaders(self::getHeaders())->timeout(5)->get($url);
 
             if ($response->successful()) {
                 $points = (int) ($response->json('points') ?? 0);
                 // Cache briefly for 30 seconds to speed up UI requests
                 Cache::put("customer_points_{$centralAuthUuid}", $points, 30);
+
                 return $points;
             }
         } catch (\Throwable $e) {
-            Log::warning("Failed to fetch points from Central Auth for {$centralAuthUuid}: " . $e->getMessage());
+            Log::warning("Failed to fetch points from Central Auth for {$centralAuthUuid}: ".$e->getMessage());
         }
 
         return (int) Cache::get("customer_points_{$centralAuthUuid}", 0);
@@ -111,7 +114,7 @@ class CentralAuthPointService
         }
 
         try {
-            $url = self::getBaseUrl() . '/api/v1/s2s/points/deduct';
+            $url = self::getBaseUrl().'/api/v1/s2s/points/deduct';
             $payload = [
                 'central_auth_uuid' => $centralAuthUuid,
                 'amount' => $amount,
@@ -141,11 +144,11 @@ class CentralAuthPointService
                 'required' => $amount,
             ];
         } catch (\Throwable $e) {
-            Log::error("Central Auth point deduction exception for {$centralAuthUuid}: " . $e->getMessage());
+            Log::error("Central Auth point deduction exception for {$centralAuthUuid}: ".$e->getMessage());
 
             return [
                 'success' => false,
-                'message' => 'Central Auth point service error: ' . $e->getMessage(),
+                'message' => 'Central Auth point service error: '.$e->getMessage(),
                 'points' => 0,
             ];
         }
@@ -170,7 +173,7 @@ class CentralAuthPointService
         }
 
         try {
-            $url = self::getBaseUrl() . '/api/v1/s2s/points/add';
+            $url = self::getBaseUrl().'/api/v1/s2s/points/add';
             $payload = [
                 'central_auth_uuid' => $centralAuthUuid,
                 'amount' => $amount,
@@ -199,11 +202,11 @@ class CentralAuthPointService
                 'points' => 0,
             ];
         } catch (\Throwable $e) {
-            Log::error("Central Auth add points exception for {$centralAuthUuid}: " . $e->getMessage());
+            Log::error("Central Auth add points exception for {$centralAuthUuid}: ".$e->getMessage());
 
             return [
                 'success' => false,
-                'message' => 'Central Auth point service error: ' . $e->getMessage(),
+                'message' => 'Central Auth point service error: '.$e->getMessage(),
                 'points' => 0,
             ];
         }
@@ -219,7 +222,7 @@ class CentralAuthPointService
         }
 
         try {
-            $url = self::getBaseUrl() . "/api/v1/s2s/points/{$centralAuthUuid}/transactions";
+            $url = self::getBaseUrl()."/api/v1/s2s/points/{$centralAuthUuid}/transactions";
             $response = Http::withHeaders(self::getHeaders())->timeout(8)->get($url, [
                 'per_page' => $perPage,
                 'page' => $page,
@@ -229,7 +232,7 @@ class CentralAuthPointService
                 return $response->json('transactions') ?? ['data' => [], 'total' => 0];
             }
         } catch (\Throwable $e) {
-            Log::warning("Failed to fetch point transactions from Central Auth for {$centralAuthUuid}: " . $e->getMessage());
+            Log::warning("Failed to fetch point transactions from Central Auth for {$centralAuthUuid}: ".$e->getMessage());
         }
 
         return ['data' => [], 'total' => 0];

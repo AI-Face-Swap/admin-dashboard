@@ -96,7 +96,7 @@ EOD,
      */
     'servers' => [
         'Production' => 'https://ai.htut.com/api',
-        'Local' => env('APP_URL', 'http://localhost:8001') . '/api',
+        'Local' => env('APP_URL', 'http://localhost:8001').'/api',
     ],
 
     'enum_cases_description_strategy' => 'description',

@@ -45,6 +45,101 @@ class HtutCentralAuthController extends Controller
     }
 
     /**
+     * Direct S2S Authorization Code Exchange & Local Account Sync for Mobile App.
+     * Exchanges code with Central Auth S2S without exposing client secrets on the device.
+     */
+    public function mobileCallback(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'code' => ['required', 'string'],
+            'redirect_uri' => ['required', 'string'],
+            'code_verifier' => ['nullable', 'string'],
+        ]);
+
+        $centralAuthUrl = rtrim(config('services.htut_central_auth.url', 'http://localhost:8000'), '/');
+        $projectId = config('services.htut_central_auth.project_id', 'htut_ai');
+        $projectSecret = config('services.htut_central_auth.project_secret');
+        $apiKey = config('services.htut_central_auth.api_key');
+
+        $headers = [
+            'Accept' => 'application/json',
+            'X-Project-Id' => $projectId,
+        ];
+
+        if ($projectSecret) {
+            $headers['X-Project-Secret'] = $projectSecret;
+        } elseif ($apiKey) {
+            $headers['X-Api-Key'] = $apiKey;
+        }
+
+        $payload = [
+            'code' => $validated['code'],
+            'redirect_uri' => $validated['redirect_uri'],
+        ];
+
+        if (! empty($validated['code_verifier'])) {
+            $payload['code_verifier'] = $validated['code_verifier'];
+        }
+
+        try {
+            $response = Http::withHeaders($headers)
+                ->timeout(10)
+                ->post("{$centralAuthUrl}/api/v1/s2s/token-exchange", $payload);
+
+            if (! $response->successful()) {
+                $errorMsg = $response->json('error_description') ?? $response->json('message') ?? 'HTUT Central Auth code exchange failed.';
+                Log::error('HTUT S2S Mobile Token Exchange Error: '.$response->body());
+
+                return response()->json([
+                    'success' => false,
+                    'message' => $errorMsg,
+                    'error' => $response->json('error') ?? 'invalid_grant',
+                ], $response->status());
+            }
+
+            $claims = $response->json();
+            $customerData = $claims['customer'] ?? [];
+            $entitlements = $claims['entitlements'] ?? [];
+            $projectAccess = $claims['project_access'] ?? [];
+
+            $ssoExpiredAt = ! empty($projectAccess['expired_at']) ? Carbon::parse($projectAccess['expired_at']) : null;
+            $isSsoExpired = (bool) ($projectAccess['is_expired'] ?? ($ssoExpiredAt ? $ssoExpiredAt->isPast() : false));
+
+            $customer = self::findOrCreateCustomer($customerData, $entitlements, $ssoExpiredAt, $isSsoExpired);
+
+            // Generate Sanctum Bearer Token for Mobile App session
+            $token = $customer->createToken('htut-ai-mobile')->plainTextToken;
+
+            return response()->json([
+                'success' => true,
+                'token' => $token,
+                'token_type' => 'Bearer',
+                'customer' => [
+                    'id' => $customer->id,
+                    'uuid' => $customer->central_auth_uuid,
+                    'name' => $customer->name,
+                    'email' => $customer->email,
+                    'phone' => $customer->phone,
+                    'avatar' => $customer->avatar,
+                    'customer_type' => $customer->customer_type,
+                    'points' => $customer->points,
+                    'expired_at' => $customer->expired_at?->toIso8601String(),
+                ],
+                'entitlements' => $entitlements,
+                'project_access' => $projectAccess,
+            ]);
+
+        } catch (\Throwable $e) {
+            Log::error('HTUT Central Auth Mobile Callback Exception: '.$e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Unable to communicate with HTUT Central Auth: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
      * Receive authorization code from Central Auth, exchange via S2S, sync Customer, and redirect to Frontend.
      */
     public function callback(Request $request): RedirectResponse
@@ -55,17 +150,20 @@ class HtutCentralAuthController extends Controller
         $error = $request->query('error');
 
         if ($error) {
-            Log::warning('HTUT Central Auth Callback returned error: ' . $error);
-            return redirect("{$frontendUrl}/auth/callback?error=" . urlencode($error));
+            Log::warning('HTUT Central Auth Callback returned error: '.$error);
+
+            return redirect("{$frontendUrl}/auth/callback?error=".urlencode($error));
         }
 
         if (empty($state) || ! Cache::pull("htut_state_{$state}")) {
             Log::warning('HTUT Central Auth: Invalid or expired state token.');
+
             return redirect("{$frontendUrl}/auth/callback?error=State+expired+or+invalid");
         }
 
         if (empty($code)) {
             Log::warning('HTUT Central Auth: Missing authorization code.');
+
             return redirect("{$frontendUrl}/auth/callback?error=Authorization+code+missing");
         }
 
@@ -100,6 +198,7 @@ class HtutCentralAuthController extends Controller
                     'status' => $response->status(),
                     'body' => $response->body(),
                 ]);
+
                 return redirect("{$frontendUrl}/auth/callback?error=Token+exchange+failed");
             }
 
@@ -111,7 +210,7 @@ class HtutCentralAuthController extends Controller
             $ssoExpiredAt = ! empty($projectAccess['expired_at']) ? Carbon::parse($projectAccess['expired_at']) : null;
             $isSsoExpired = (bool) ($projectAccess['is_expired'] ?? ($ssoExpiredAt ? $ssoExpiredAt->isPast() : false));
 
-            $customer = $this->findOrCreateCustomer($customerData, $entitlements, $ssoExpiredAt, $isSsoExpired);
+            $customer = self::findOrCreateCustomer($customerData, $entitlements, $ssoExpiredAt, $isSsoExpired);
 
             // Generate Sanctum Bearer Token for frontend session
             $token = $customer->createToken('htut-central-auth')->plainTextToken;
@@ -119,7 +218,8 @@ class HtutCentralAuthController extends Controller
             return redirect("{$frontendUrl}/auth/callback?token={$token}");
 
         } catch (\Throwable $e) {
-            Log::error('HTUT Central Auth Callback Exception: ' . $e->getMessage());
+            Log::error('HTUT Central Auth Callback Exception: '.$e->getMessage());
+
             return redirect("{$frontendUrl}/auth/callback?error=Server+error+during+authentication");
         }
     }
@@ -186,7 +286,7 @@ class HtutCentralAuthController extends Controller
         }
         if (! empty($expectedSecret) && ! empty($signatureHeader)) {
             $rawContent = $request->getContent();
-            $expectedSignature = 'sha256=' . hash_hmac('sha256', $rawContent, $expectedSecret);
+            $expectedSignature = 'sha256='.hash_hmac('sha256', $rawContent, $expectedSecret);
             if (hash_equals($expectedSignature, (string) $signatureHeader)) {
                 $authorized = true;
             }
@@ -231,6 +331,7 @@ class HtutCentralAuthController extends Controller
 
         if (! $customer) {
             Log::warning("HTUT AI Customer sync webhook: Customer not found for Central UUID {$uuid}");
+
             return response()->json([
                 'success' => false,
                 'message' => "Customer not found for Central Auth UUID {$uuid}.",
@@ -287,7 +388,7 @@ class HtutCentralAuthController extends Controller
     /**
      * Find or create local Customer record based on Central Auth payload.
      */
-    protected function findOrCreateCustomer(
+    public static function findOrCreateCustomer(
         array $customerData,
         array $entitlements,
         ?Carbon $ssoExpiredAt = null,
@@ -324,7 +425,7 @@ class HtutCentralAuthController extends Controller
 
         // 4. Create new customer if not found
         if (! $customer) {
-            $effectiveEmail = $email ?? ($uuid ? "{$uuid}@central.htut.com" : 'user_' . Str::random(8) . '@central.htut.com');
+            $effectiveEmail = $email ?? ($uuid ? "{$uuid}@central.htut.com" : 'user_'.Str::random(8).'@central.htut.com');
             $trialExpiry = $ssoExpiredAt ?? now()->addDays(7);
 
             $customer = Customer::create([

@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Log;
 class CentralAuthPackageService
 {
     public const CACHE_KEY = 'central_auth_packages_htut_ai';
+
     public const CACHE_TTL_SECONDS = 300; // 5 minutes
 
     /**
@@ -38,8 +39,8 @@ class CentralAuthPackageService
                 'X-Project-Secret' => $projectSecret,
                 'Accept' => 'application/json',
             ])
-            ->timeout(5)
-            ->get("{$centralAuthUrl}/api/v1/s2s/projects/{$projectId}/packages");
+                ->timeout(5)
+                ->get("{$centralAuthUrl}/api/v1/s2s/projects/{$projectId}/packages");
 
             if ($response->successful()) {
                 $json = $response->json();
@@ -85,10 +86,10 @@ class CentralAuthPackageService
                     return $result;
                 }
             } else {
-                Log::warning('Central Auth package fetch error: ' . $response->body());
+                Log::warning('Central Auth package fetch error: '.$response->body());
             }
         } catch (\Throwable $e) {
-            Log::warning('Central Auth package fetch exception: ' . $e->getMessage());
+            Log::warning('Central Auth package fetch exception: '.$e->getMessage());
         }
 
         // Reliable fallback if Central Auth S2S is temporarily unreachable

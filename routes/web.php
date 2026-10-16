@@ -19,16 +19,20 @@ use App\Http\Controllers\Admin\SliderController;
 use App\Http\Controllers\Admin\TemplateCategoryController;
 use App\Http\Controllers\Admin\TemplateController;
 use App\Http\Controllers\Admin\TemplateTagController;
-use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Api\Auth\SocialAuthController;
+use App\Http\Controllers\Api\HtutCentralAuthController;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'welcome')->name('home');
 
 // HTUT Central Auth SSO Web Aliases
-Route::get('v1/auth/htut/redirect', [App\Http\Controllers\Api\HtutCentralAuthController::class, 'redirect']);
-Route::get('v1/auth/htut/callback', [App\Http\Controllers\Api\HtutCentralAuthController::class, 'callback']);
-Route::post('v1/htut/customer/sync', [App\Http\Controllers\Api\HtutCentralAuthController::class, 'syncCustomerWebhook']);
-Route::post('v1/htut/packages/cache-clear', [App\Http\Controllers\Api\HtutCentralAuthController::class, 'clearPackageCache']);
+Route::post('auth/{provider}/login', [SocialAuthController::class, 'login'])->middleware('throttle:30,1');
+Route::post('v1/auth/{provider}/login', [SocialAuthController::class, 'login'])->middleware('throttle:30,1');
+Route::get('v1/auth/htut/redirect', [HtutCentralAuthController::class, 'redirect']);
+Route::get('v1/auth/htut/callback', [HtutCentralAuthController::class, 'callback']);
+Route::post('v1/auth/htut/callback', [HtutCentralAuthController::class, 'mobileCallback']);
+Route::post('v1/htut/customer/sync', [HtutCentralAuthController::class, 'syncCustomerWebhook']);
+Route::post('v1/htut/packages/cache-clear', [HtutCentralAuthController::class, 'clearPackageCache']);
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');

@@ -53,7 +53,7 @@ class PaymentPackageController extends Controller
             ], 404);
         }
 
-        $orderReference = 'HTUTAI-' . strtoupper(Str::random(10));
+        $orderReference = 'HTUTAI-'.strtoupper(Str::random(10));
         $amount = (int) $package['price'];
 
         $walmaeUrl = rtrim(config('services.walmae.url', 'https://cp.walmae.net'), '/');
@@ -93,7 +93,7 @@ class PaymentPackageController extends Controller
                     $rawPaymentUrl = $data['payment_url'] ?? null;
 
                     if ($rawPaymentUrl) {
-                        $checkoutUrl = 'https://walmae.net/kbzpay/checkout?url=' . urlencode($rawPaymentUrl);
+                        $checkoutUrl = 'https://walmae.net/kbzpay/checkout?url='.urlencode($rawPaymentUrl);
 
                         return response()->json([
                             'status' => 'success',
@@ -142,12 +142,12 @@ class PaymentPackageController extends Controller
                 ]);
             }
         } catch (\Throwable $e) {
-            Log::error('WalMae checkout exception: ' . $e->getMessage());
+            Log::error('WalMae checkout exception: '.$e->getMessage());
         }
 
         return response()->json([
             'status' => 'error',
-            'message' => 'Unable to initiate payment with ' . strtoupper($paymentMethod) . '. Please try again later.',
+            'message' => 'Unable to initiate payment with '.strtoupper($paymentMethod).'. Please try again later.',
         ], 502);
     }
 }

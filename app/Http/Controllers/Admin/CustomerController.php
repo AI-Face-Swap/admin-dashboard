@@ -135,7 +135,7 @@ class CustomerController extends Controller
             'note' => ['nullable', 'string', 'max:255'],
         ]);
 
-        $result = $customer->addPoints($validated['amount'], 'Admin manual credit: ' . ($validated['note'] ?? ''));
+        $result = $customer->addPoints($validated['amount'], 'Admin manual credit: '.($validated['note'] ?? ''));
 
         $newBalance = $result['points'] ?? $customer->points;
 

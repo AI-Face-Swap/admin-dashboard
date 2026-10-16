@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Customer;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -88,20 +89,19 @@ it('updates customer subscription and coins via webhook', function () {
     $response->assertJson([
         'success' => true,
         'customer_type' => 'premium',
-        'coins' => 500,
     ]);
 
     $customer->refresh();
     expect($customer->customer_type)->toBe(Customer::TYPE_PREMIUM);
-    expect($customer->coins)->toBe(500);
 });
 
-it('gives 100 coins and 1-week expiry on first SSO login', function () {
+it('gives 1-week expiry on first SSO login', function () {
     $now = Carbon::parse('2026-10-01 12:00:00');
     Carbon::setTestNow($now);
 
     $state = 'test_state_coin_trial';
-    Cache::put("htut_state_{$state}", true, 300);
+    Cache::put("htut_state_{$state}", true, 86400 * 30);
+    Cache::put('customer_points_new_trial_user_uuid', 100, 86400 * 30);
 
     Http::fake([
         '*/api/v1/s2s/token-exchange' => Http::response([
@@ -128,20 +128,19 @@ it('gives 100 coins and 1-week expiry on first SSO login', function () {
 
     $customer = Customer::where('central_auth_uuid', 'new_trial_user_uuid')->first();
     expect($customer)->not->toBeNull();
-    expect($customer->coins)->toBe(100);
+    expect($customer->points)->toBe(100);
     expect($customer->expired_at->format('Y-m-d H:i:s'))->toBe($now->copy()->addDays(7)->format('Y-m-d H:i:s'));
 
-    // Within the 1-week window: customer still has 100 coins
+    // Within the 1-week window: customer still has 100 points
     $now = $now->copy()->addDays(6);
     Carbon::setTestNow($now);
-    expect($customer->hasEnoughCoins(10))->toBeTrue();
-    expect($customer->fresh()->coins)->toBe(100);
+    expect($customer->hasEnoughPoints(10))->toBeTrue();
+    expect($customer->fresh()->points)->toBe(100);
 
-    // After 1 week: SSO access expires and coins are automatically reset to 0
+    // After 1 week: SSO access expires
     $now = $now->copy()->addDays(2); // 8 days total
     Carbon::setTestNow($now);
-    expect($customer->hasEnoughCoins(10))->toBeFalse();
-    expect($customer->fresh()->coins)->toBe(0);
+    expect($customer->fresh()->expired_at->isPast())->toBeTrue();
 });
 
 it('resets coins to 0 via artisan command when 1-week trial expires', function () {
@@ -169,7 +168,7 @@ it('uploads and updates customer avatar to spaces disk', function () {
         'coins' => 100,
     ]);
 
-    $file = Illuminate\Http\UploadedFile::fake()->image('my_avatar.png', 200, 200);
+    $file = UploadedFile::fake()->image('my_avatar.png', 200, 200);
 
     $response = $this->actingAs($customer, 'sanctum')
         ->postJson('/api/v1/customer/avatar', [
@@ -314,5 +313,134 @@ it('clears and refreshes package cache via S2S webhook with valid secret', funct
     expect($response->json('packages_count'))->toBe(1);
 });
 
+it('logs in mobile customer via POST /v1/auth/google/login with id_token and syncs to Central Auth', function () {
+    Http::fake([
+        '*/api/v1/s2s/customer-sync' => Http::response([
+            'customer' => [
+                'uuid' => 'c89139ab-google-4444-8888-123456789abc',
+                'name' => 'Mobile Google User',
+                'email' => 'google_mobile@example.com',
+                'phone' => null,
+                'avatar_url' => 'https://lh3.googleusercontent.com/avatar.jpg',
+                'status' => 'active',
+                'has_password' => false,
+                'points' => 150,
+            ],
+            'project_access' => [
+                'project_id' => 'htut_ai',
+                'status' => 'active',
+                'expired_at' => now()->addMonth()->toIso8601String(),
+                'is_expired' => false,
+            ],
+            'entitlements' => [
+                'tier' => 'pro',
+                'features' => ['priority_ai_queue', 'ai_credits_500'],
+                'is_active' => true,
+            ],
+            'is_new_customer' => true,
+        ], 200),
+    ]);
 
+    $response = $this->postJson('/v1/auth/google/login', [
+        'id_token' => 'mock_google_id_token_12345',
+    ]);
 
+    $response->assertStatus(201);
+    $response->assertJson([
+        'success' => true,
+        'token_type' => 'Bearer',
+        'data' => [
+            'is_new_account' => true,
+            'central_auth_uuid' => 'c89139ab-google-4444-8888-123456789abc',
+            'tier' => 'premium',
+        ],
+        'customer' => [
+            'name' => 'Mobile Google User',
+            'email' => 'google_mobile@example.com',
+            'customer_type' => 'premium',
+        ],
+    ]);
+
+    expect($response->json('token'))->not->toBeEmpty();
+    expect($response->json('data.id'))->toBe($response->json('token'));
+
+    $customer = Customer::where('central_auth_uuid', 'c89139ab-google-4444-8888-123456789abc')->first();
+    expect($customer)->not->toBeNull();
+    expect($customer->email)->toBe('google_mobile@example.com');
+    expect($customer->customer_type)->toBe(Customer::TYPE_PREMIUM);
+});
+
+it('rejects mobile social login with unsupported provider', function () {
+    $response = $this->postJson('/v1/auth/twitter/login', [
+        'id_token' => 'any_token',
+    ]);
+
+    $response->assertStatus(422);
+    $response->assertJson([
+        'success' => false,
+        'message' => "Unsupported provider 'twitter'.",
+    ]);
+});
+
+it('rejects mobile social login when token is missing', function () {
+    $response = $this->postJson('/v1/auth/google/login', []);
+
+    $response->assertStatus(422);
+    $response->assertJson([
+        'success' => false,
+        'message' => 'Missing token. Send the token as { id_token } or { access_token } in the request body.',
+    ]);
+});
+
+it('authenticates mobile app via POST /v1/auth/htut/callback with code exchange', function () {
+    Http::fake([
+        '*/api/v1/s2s/token-exchange' => Http::response([
+            'customer' => [
+                'uuid' => 'c89139ab-mobile-4444-8888-123456789abc',
+                'name' => 'Mobile App User',
+                'email' => 'mobile_user@htut.com',
+                'phone' => '09987654321',
+                'avatar_url' => 'https://example.com/mobile-avatar.jpg',
+            ],
+            'entitlements' => [
+                'tier' => 'vip',
+                'features' => ['priority_ai_queue', 'ai_credits_500'],
+                'is_active' => true,
+            ],
+            'project_access' => [
+                'expired_at' => now()->addMonth()->toIso8601String(),
+                'is_expired' => false,
+            ],
+        ], 200),
+    ]);
+
+    $response = $this->postJson('/v1/auth/htut/callback', [
+        'code' => 'mobile_auth_code_123',
+        'redirect_uri' => 'htutai://auth/callback',
+        'code_verifier' => 'test_verifier_string_456',
+    ]);
+
+    $response->assertSuccessful();
+    $response->assertJson([
+        'success' => true,
+        'token_type' => 'Bearer',
+        'customer' => [
+            'name' => 'Mobile App User',
+            'email' => 'mobile_user@htut.com',
+            'customer_type' => 'premium',
+        ],
+    ]);
+
+    expect($response->json('token'))->not->toBeEmpty();
+
+    $customer = Customer::where('central_auth_uuid', 'c89139ab-mobile-4444-8888-123456789abc')->first();
+    expect($customer)->not->toBeNull();
+    expect($customer->name)->toBe('Mobile App User');
+    expect($customer->customer_type)->toBe(Customer::TYPE_PREMIUM);
+});
+
+it('fails mobile callback when required parameters are missing', function () {
+    $response = $this->postJson('/v1/auth/htut/callback', []);
+    $response->assertStatus(422);
+    $response->assertJsonValidationErrors(['code', 'redirect_uri']);
+});

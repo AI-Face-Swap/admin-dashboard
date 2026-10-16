@@ -83,8 +83,8 @@ test('admin can update ai model', function () {
     ]);
 });
 
-test('api coin-costs returns dynamic models list', function () {
-    $response = $this->getJson('/api/v1/coin-costs');
+test('api point-costs returns dynamic models list', function () {
+    $response = $this->getJson('/api/v1/point-costs');
 
     $response->assertStatus(200)
         ->assertJsonStructure([
