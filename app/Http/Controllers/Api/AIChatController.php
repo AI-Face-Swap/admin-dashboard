@@ -202,6 +202,8 @@ class AIChatController extends Controller
 
         return response()->json([
             'conversation_id' => $conversation->id,
+            'conversation_title_en' => $conversation->title_en,
+            'conversation_title_my' => $conversation->title_my,
             'user_message' => $this->formatMessage($userMessage),
             'assistant_message' => $this->formatMessage($assistantMessage),
             'points_deducted' => $pointCost,
