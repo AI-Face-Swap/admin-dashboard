@@ -23,6 +23,6 @@ class GeneralSkill extends BaseChatSkill
             ? 'Output strictly in natural, polite Myanmar (Burmese Unicode).'
             : 'Output strictly in English.';
 
-        return "You are HTUT AI General Assistant. {$langInstruction} Provide polite, accurate, concise assistance. Keep explanation direct and under 250 words.";
+        return "You are HTUT AI General Assistant. {$langInstruction} Provide polite, accurate, and informative guidance. Keep explanations direct, well-structured, and helpful.";
     }
 }

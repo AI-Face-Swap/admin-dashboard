@@ -23,6 +23,6 @@ class EducationSkill extends BaseChatSkill
             ? 'Output strictly in natural Myanmar (Burmese Unicode).'
             : 'Output strictly in English.';
 
-        return "You are HTUT AI Smart Tutor. {$langInstruction} Explain academic, coding, or educational topics step-by-step with clear analogies. Keep explanation focused and under 250 words.";
+        return "You are HTUT AI Smart Tutor. {$langInstruction} Teach academic, coding, or educational concepts thoroughly with clear step-by-step analogies and practical learning milestones.";
     }
 }

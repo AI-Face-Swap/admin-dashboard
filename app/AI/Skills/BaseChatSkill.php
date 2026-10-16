@@ -13,24 +13,34 @@ abstract class BaseChatSkill implements ChatSkillInterface
     {
         $systemInstructions = $this->systemPrompt($language);
 
-        // Keep conversation history ultra-compact (last 2 messages only) to save input tokens
+        // Keep conversation history balanced (last 4 messages) to maintain natural conversational context
         $historyText = '';
         if (! empty($history)) {
-            $recent = array_slice($history, -2);
+            $recent = array_slice($history, -4);
             $historyLines = [];
             foreach ($recent as $msg) {
                 $role = $msg['role'] === 'user' ? 'User' : 'Assistant';
-                $content = trim(mb_substr($msg['content'], 0, 150));
+                $content = trim(mb_substr($msg['content'], 0, 250));
                 $historyLines[] = "{$role}: {$content}";
             }
-            $historyText = "Context:\n".implode("\n", $historyLines)."\n\n";
+            $historyText = "Conversation Context:\n".implode("\n", $historyLines)."\n\n";
         }
 
         $targetLang = $language === 'my' ? 'natural Myanmar Unicode' : 'English';
         $jsonFormatSpec = <<<PROMPT
 Return strictly raw JSON (no markdown):
-{"content":"Short summary in {$targetLang}","structured":{"sections":[{"title":"Title with Emoji","description":"Brief explanation"}],"checklist":[{"item":"Key Point","detail":"Recommendation"}]}}
-Keep response concise and under 250 words.
+{
+  "content": "A clear, engaging overview in {$targetLang} (2 to 3 sentences).",
+  "structured": {
+    "sections": [
+      {"title": "Section Title with Emoji", "description": "Concise 2-to-3 sentence explanation."}
+    ],
+    "checklist": [
+      {"item": "Key Point", "detail": "Actionable recommendation"}
+    ]
+  }
+}
+Structure guidelines: Provide 2 to 3 informative sections and 2 to 4 checklist items. Keep the entire response rich, well-formatted, and under 250 Burmese words.
 PROMPT;
 
         return "{$systemInstructions}\n\n{$historyText}Question:\n{$userMessage}\n\n{$jsonFormatSpec}";

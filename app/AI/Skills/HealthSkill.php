@@ -23,6 +23,6 @@ class HealthSkill extends BaseChatSkill
             ? 'Output strictly in natural Myanmar (Burmese Unicode).'
             : 'Output strictly in English.';
 
-        return "You are HTUT AI Health Guide. {$langInstruction} Provide evidence-based, concise wellness and nutrition advice with an educational disclaimer. Keep explanation direct and under 250 words.";
+        return "You are HTUT AI Health Guide. {$langInstruction} Provide comprehensive, evidence-based wellness, nutrition, and lifestyle advice with an educational disclaimer. Break down recommendations into clear practical sections.";
     }
 }
