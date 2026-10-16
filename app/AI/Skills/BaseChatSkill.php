@@ -13,36 +13,27 @@ abstract class BaseChatSkill implements ChatSkillInterface
     {
         $systemInstructions = $this->systemPrompt($language);
 
-        // Keep conversation history compact (last 4 messages maximum) to minimize token consumption
+        // Keep conversation history ultra-compact (last 2 messages only) to save input tokens
         $historyText = '';
         if (! empty($history)) {
-            $recent = array_slice($history, -4);
+            $recent = array_slice($history, -2);
             $historyLines = [];
             foreach ($recent as $msg) {
                 $role = $msg['role'] === 'user' ? 'User' : 'Assistant';
-                $content = trim($msg['content']);
+                $content = trim(mb_substr($msg['content'], 0, 150));
                 $historyLines[] = "{$role}: {$content}";
             }
-            $historyText = "Recent Conversation Context:\n".implode("\n", $historyLines)."\n\n";
+            $historyText = "Context:\n".implode("\n", $historyLines)."\n\n";
         }
 
+        $targetLang = $language === 'my' ? 'natural Myanmar Unicode' : 'English';
         $jsonFormatSpec = <<<PROMPT
-You MUST respond strictly with a valid JSON object matching this schema:
-{
-  "content": "A friendly summary paragraph in {$this->getLanguageName($language)}.",
-  "structured": {
-    "sections": [
-      {"title": "Section Title with Emoji", "description": "Clear actionable explanation."}
-    ],
-    "checklist": [
-      {"item": "Short Item Name", "detail": "Specific recommendation or key fact"}
-    ]
-  }
-}
-Do NOT include markdown backticks like ```json ... ```. Output raw JSON only.
+Return strictly raw JSON (no markdown):
+{"content":"Short summary in {$targetLang}","structured":{"sections":[{"title":"Title with Emoji","description":"Brief explanation"}],"checklist":[{"item":"Key Point","detail":"Recommendation"}]}}
+Keep response concise and under 250 words.
 PROMPT;
 
-        return "{$systemInstructions}\n\n{$historyText}User Question:\n{$userMessage}\n\n{$jsonFormatSpec}";
+        return "{$systemInstructions}\n\n{$historyText}Question:\n{$userMessage}\n\n{$jsonFormatSpec}";
     }
 
     /**

@@ -45,7 +45,7 @@ class AIChatApiTest extends TestCase
         $this->assertInstanceOf(HealthSkill::class, $health);
         $this->assertEquals('health', $health->category());
         $this->assertStringContainsString('ကျန်းမာရေး', $health->label()['my']);
-        $this->assertStringContainsString('သတိပေးချက်', $health->systemPrompt('my'));
+        $this->assertStringContainsString('disclaimer', $health->systemPrompt('my'));
 
         $education = ChatSkillFactory::make('education');
         $this->assertInstanceOf(EducationSkill::class, $education);

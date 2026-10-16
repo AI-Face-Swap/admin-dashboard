@@ -69,6 +69,7 @@ class AIChatService
             ])->timeout(30)->post($endpoint, [
                 'prompt' => $fullPrompt,
                 'response_format' => ['type' => 'json_object'],
+                'max_tokens' => (int) config('ai.chat_max_tokens', 650),
             ]);
 
             $durationMs = (int) round((hrtime(true) - $startedAt) / 1e6);
