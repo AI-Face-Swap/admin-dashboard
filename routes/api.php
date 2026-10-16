@@ -66,9 +66,6 @@ Route::prefix('v1')->group(function () {
     Route::get('partners', [HomePageController::class, 'partners']);
     Route::get('packages', [PaymentPackageController::class, 'index']);
     Route::get('settings/footer', [HomePageController::class, 'footerSettings']);
-
-    // Public / Hybrid Chat endpoint (Supports both guest trial & authenticated customer with points deduction)
-    Route::post('chat/send', [AIChatController::class, 'send'])->middleware('throttle:30,1');
 });
 
 Route::prefix('v1')->middleware(['auth:sanctum', 'customer.not-banned'])->group(function () {
@@ -81,6 +78,8 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'customer.not-banned'])->group(
     Route::get('chat/conversations', [AIChatController::class, 'index']);
     Route::get('chat/conversations/{conversation}', [AIChatController::class, 'show']);
     Route::delete('chat/conversations/{conversation}', [AIChatController::class, 'destroy']);
+        // Public / Hybrid Chat endpoint (Supports both guest trial & authenticated customer with points deduction)
+    Route::post('chat/send', [AIChatController::class, 'send'])->middleware('throttle:30,1');
 
     Route::post('ai/face-swap', [AIFaceSwapController::class, 'store'])->middleware('throttle:30,1');
     Route::post('ai/video-face-swap', [AIVideoFaceSwapController::class, 'store'])->middleware('throttle:10,1');
