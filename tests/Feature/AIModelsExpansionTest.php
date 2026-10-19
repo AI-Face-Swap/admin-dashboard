@@ -104,10 +104,10 @@ class AIModelsExpansionTest extends TestCase
 
         $response->assertOk()
             ->assertJsonPath('status', 'completed')
-            ->assertJsonPath('generation.coins_spent', 12)
-            ->assertJsonPath('generation.coins_remaining', 38);
+            ->assertJsonPath('generation.points_spent', 12)
+            ->assertJsonPath('generation.points_remaining', 38);
 
-        $this->assertEquals(38, $customer->fresh()->coins);
+        $this->assertEquals(38, $customer->fresh()->points);
     }
 
     public function test_bria_extract_object_successful_generation(): void
@@ -138,10 +138,10 @@ class AIModelsExpansionTest extends TestCase
 
         $response->assertOk()
             ->assertJsonPath('status', 'completed')
-            ->assertJsonPath('generation.coins_spent', 6)
-            ->assertJsonPath('generation.coins_remaining', 44);
+            ->assertJsonPath('generation.points_spent', 6)
+            ->assertJsonPath('generation.points_remaining', 44);
 
-        $this->assertEquals(44, $customer->fresh()->coins);
+        $this->assertEquals(44, $customer->fresh()->points);
     }
 
     public function test_ideogram_4_5_text_to_image_generation(): void
@@ -171,10 +171,10 @@ class AIModelsExpansionTest extends TestCase
 
         $response->assertOk()
             ->assertJsonPath('status', 'completed')
-            ->assertJsonPath('generation.coins_spent', 8)
-            ->assertJsonPath('generation.coins_remaining', 42);
+            ->assertJsonPath('generation.points_spent', 8)
+            ->assertJsonPath('generation.points_remaining', 42);
 
-        $this->assertEquals(42, $customer->fresh()->coins);
+        $this->assertEquals(42, $customer->fresh()->points);
     }
 
     public function test_wan_3_video_prime_1080p_generation(): void
@@ -206,10 +206,10 @@ class AIModelsExpansionTest extends TestCase
 
         $response->assertOk()
             ->assertJsonPath('status', 'completed')
-            ->assertJsonPath('generation.coins_spent', 35)
-            ->assertJsonPath('generation.coins_remaining', 65);
+            ->assertJsonPath('generation.points_spent', 35)
+            ->assertJsonPath('generation.points_remaining', 65);
 
-        $this->assertEquals(65, $customer->fresh()->coins);
+        $this->assertEquals(65, $customer->fresh()->points);
     }
 
     public function test_ai_models_api_endpoint_returns_active_models_and_filters_by_type(): void
@@ -225,7 +225,7 @@ class AIModelsExpansionTest extends TestCase
                         'model_name',
                         'type',
                         'provider_name',
-                        'coin_cost',
+                        'point_cost',
                         'resolution_costs',
                         'duration_costs',
                         'is_default',

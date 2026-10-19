@@ -248,4 +248,49 @@ class AIChatApiTest extends TestCase
             ->assertJsonPath('required_points', 5)
             ->assertJsonPath('current_points', 0);
     }
+
+    public function test_partial_insufficient_points_returns_402(): void
+    {
+        /** @var Customer $customer */
+        $customer = Customer::factory()->create([
+            'central_auth_uuid' => 'test-uuid-4-points',
+        ]);
+
+        Sanctum::actingAs($customer);
+
+        Http::fake([
+            '*/api/v1/s2s/points/*' => Http::response([
+                'success' => true,
+                'points' => 4,
+            ], 200),
+        ]);
+
+        $response = $this->postJson('/api/v1/chat/send', [
+            'prompt' => 'Tell me a story',
+            'category' => 'general',
+        ]);
+
+        $response->assertStatus(402)
+            ->assertJsonPath('required_points', 5)
+            ->assertJsonPath('current_points', 4);
+    }
+
+    public function test_banned_customer_cannot_send_chat_question(): void
+    {
+        /** @var Customer $customer */
+        $customer = Customer::factory()->create([
+            'central_auth_uuid' => 'test-uuid-banned',
+            'is_banned' => true,
+        ]);
+
+        Sanctum::actingAs($customer);
+
+        $response = $this->postJson('/api/v1/chat/send', [
+            'prompt' => 'Hello banned user',
+            'category' => 'general',
+        ]);
+
+        $response->assertStatus(403);
+    }
 }
+

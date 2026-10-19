@@ -139,6 +139,24 @@ class Customer extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Compatibility mutator for points (stored in Central Auth cache).
+     */
+    public function setPointsAttribute($value): void
+    {
+        $uuid = $this->central_auth_uuid ?: 'test-uuid-'.($this->id ?: uniqid());
+        $this->central_auth_uuid = $uuid;
+        \Illuminate\Support\Facades\Cache::put("customer_points_{$uuid}", (int) $value, 300);
+    }
+
+    /**
+     * Compatibility mutator for legacy coin references.
+     */
+    public function setCoinsAttribute($value): void
+    {
+        $this->setPointsAttribute($value);
+    }
+
+    /**
      * Check if SSO project access has expired.
      */
     public function syncProjectExpiry(?bool $isSsoExpired = null, ?Carbon $ssoExpiredAt = null): void

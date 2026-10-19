@@ -66,8 +66,8 @@ class ImageEditApiTest extends TestCase
                 'operation' => 'image-editing',
                 'status' => 'completed',
                 'cost' => '0.0400',
-                'coins_spent' => 10,
-                'coins_remaining' => 90,
+                'points_spent' => 10,
+                'points_remaining' => 90,
             ],
         ]);
 
