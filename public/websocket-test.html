@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTUT AI — WebSocket & SSE Live Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        pre, code { font-family: 'JetBrains Mono', monospace; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen p-6 md:p-10">
+    <div class="max-w-5xl mx-auto space-y-6">
+        
+        <!-- HEADER -->
+        <div class="border-b border-slate-800 pb-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+                <h1 class="text-2xl font-bold text-white flex items-center gap-2">
+                    ⚡ HTUT AI Real-Time Tester
+                </h1>
+                <p class="text-sm text-slate-400 mt-1">
+                    Visual tester for Laravel Reverb (WebSockets) and AI Chat (SSE Streaming).
+                </p>
+            </div>
+            <div class="flex items-center gap-2 text-xs">
+                <span class="px-2.5 py-1 rounded-full bg-slate-900 border border-slate-700 text-slate-300">
+                    Reverb: <code class="text-amber-400">ws://localhost:8080</code>
+                </span>
+                <span class="px-2.5 py-1 rounded-full bg-slate-900 border border-slate-700 text-slate-300">
+                    API: <code class="text-cyan-400">http://localhost:8000</code>
+                </span>
+            </div>
+        </div>
+
+        <!-- HELPER BANNER (NO DEVTOOLS CONSOLE NEEDED) -->
+        <div class="bg-indigo-950/40 border border-indigo-500/30 rounded-xl p-4 flex items-start gap-3 text-xs text-indigo-200">
+            <span class="text-base">💡</span>
+            <div>
+                <strong class="text-white">Zero Browser Console Required:</strong>
+                You do not need to open or copy-paste anything into the browser developer console. Simply use the buttons below!
+                <span class="text-slate-400 block mt-0.5">(Note: If your browser ever blocks copy-pasting in DevTools, typing <code class="text-amber-300 bg-slate-900 px-1 py-0.5 rounded">allow pasting</code> unblocks it, but it is not needed here).</span>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            
+            <!-- SECTION 1: WEBSOCKET / REVERB TEST -->
+            <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-5">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-lg font-semibold text-white flex items-center gap-2">
+                            🔌 Laravel Reverb WebSockets
+                        </h2>
+                        <p class="text-xs text-slate-400">Channel: <code class="text-amber-400">test-channel</code></p>
+                    </div>
+                    <span id="ws-status" class="px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/30 flex items-center gap-1.5">
+                        <span class="h-2 w-2 rounded-full bg-amber-400 animate-pulse"></span>
+                        Connecting...
+                    </span>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-3">
+                    <button id="btn-reconnect" onclick="connectWebSocket()" class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition cursor-pointer">
+                        🔄 Reconnect
+                    </button>
+                    <button id="btn-test-broadcast" onclick="triggerTestBroadcast()" class="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold transition flex items-center gap-1.5 shadow-lg shadow-amber-500/20 cursor-pointer">
+                        <span>📢 Trigger Broadcast Event</span>
+                    </button>
+                </div>
+
+                <div>
+                    <div class="flex items-center justify-between text-xs text-slate-400 mb-2">
+                        <span>Live WebSocket Messages Log:</span>
+                        <button onclick="clearWsLog()" class="hover:text-slate-200 text-[11px] underline">Clear</button>
+                    </div>
+                    <div id="ws-log" class="bg-slate-950 border border-slate-800 rounded-xl p-4 h-72 overflow-y-auto space-y-2 text-xs font-mono">
+                        <div class="text-slate-500">// Connecting to ws://localhost:8080...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 2: SSE STREAMING CHAT TEST -->
+            <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-5">
+                <div>
+                    <h2 class="text-lg font-semibold text-white flex items-center gap-2">
+                        💬 AI Chat — SSE Streaming
+                    </h2>
+                    <p class="text-xs text-slate-400">Server-Sent Events word-by-word streaming</p>
+                </div>
+
+                <div class="space-y-3">
+                    <div class="flex gap-2">
+                        <input id="chat-prompt" type="text" value="Why is HTUT AI asynchronous queue and streaming so powerful?" placeholder="Type prompt here..." class="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
+                        <button id="btn-stream" onclick="startStreamChat()" class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer">
+                            <span>⚡ Stream Answer</span>
+                        </button>
+                    </div>
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="text-slate-400">Endpoint: <code class="text-emerald-400">/api/v1/test/stream-chat</code></span>
+                        <span class="text-emerald-400 font-mono text-[11px]">Accept: text/event-stream</span>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="flex items-center justify-between text-xs text-slate-400 mb-2">
+                        <span>Live Streamed Response:</span>
+                        <span id="stream-status" class="text-[11px] text-slate-500">Idle</span>
+                    </div>
+                    <div id="chat-output" class="bg-slate-950 border border-slate-800 rounded-xl p-4 h-72 overflow-y-auto text-xs text-slate-200 whitespace-pre-wrap leading-relaxed">
+                        <span class="text-slate-500">// Click "⚡ Stream Answer" above to watch response stream word-by-word in real time...</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <script>
+        let ws = null;
+        const REVERB_KEY = 'tneujtzoo6fxizyh1cxz';
+        const WS_URL = `ws://localhost:8080/app/${REVERB_KEY}?protocol=7&client=js&version=8.4.0`;
+
+        function logWs(msg, type = 'info') {
+            const container = document.getElementById('ws-log');
+            const time = new Date().toLocaleTimeString();
+            let color = 'text-slate-300';
+            if (type === 'success') color = 'text-emerald-400';
+            if (type === 'error') color = 'text-rose-400';
+            if (type === 'event') color = 'text-amber-300';
+
+            const div = document.createElement('div');
+            div.className = `${color} border-b border-slate-900/60 pb-1.5 break-all`;
+            div.innerHTML = `<span class="text-slate-500">[${time}]</span> ${msg}`;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function clearWsLog() {
+            document.getElementById('ws-log').innerHTML = '';
+        }
+
+        function connectWebSocket() {
+            if (ws) {
+                try { ws.close(); } catch(e) {}
+            }
+
+            const statusEl = document.getElementById('ws-status');
+            statusEl.className = 'px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/30 flex items-center gap-1.5';
+            statusEl.innerHTML = '<span class="h-2 w-2 rounded-full bg-amber-400 animate-pulse"></span> Connecting...';
+
+            logWs(`Connecting to Reverb at ${WS_URL}...`);
+
+            try {
+                ws = new WebSocket(WS_URL);
+
+                ws.onopen = () => {
+                    statusEl.className = 'px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5';
+                    statusEl.innerHTML = '<span class="h-2 w-2 rounded-full bg-emerald-400"></span> Connected ✅';
+                    logWs('WebSocket handshake complete! Connected to Laravel Reverb.', 'success');
+                };
+
+                ws.onmessage = (e) => {
+                    try {
+                        const payload = JSON.parse(e.data);
+                        
+                        if (payload.event === 'pusher:connection_established') {
+                            const data = JSON.parse(payload.data);
+                            logWs(`Connection established! Socket ID: <b class="text-white">${data.socket_id}</b>`, 'success');
+
+                            // Subscribe to test-channel
+                            ws.send(JSON.stringify({
+                                event: 'pusher:subscribe',
+                                data: { channel: 'test-channel' }
+                            }));
+                            logWs('Sent subscription request for channel: <b class="text-amber-300">test-channel</b>');
+
+                        } else if (payload.event === 'pusher_internal:subscription_succeeded') {
+                            logWs(`Successfully subscribed to channel: <b class="text-emerald-400">${payload.channel}</b>`, 'success');
+                        
+                        } else if (payload.event === 'test.ping' || payload.event === 'generation.updated' || payload.event === 'App\\Events\\TestBroadcastEvent') {
+                            let eventData = payload.data;
+                            try { eventData = JSON.parse(eventData); } catch(_) {}
+                            logWs(`🎉 <b>EVENT RECEIVED!</b> [${payload.event}] on [${payload.channel}]:<br><pre class="text-[11px] text-white bg-slate-900 p-2 rounded mt-1 overflow-x-auto">${JSON.stringify(eventData, null, 2)}</pre>`, 'event');
+                        
+                        } else {
+                            logWs(`📩 Received: <b>${payload.event}</b> ${payload.channel ? `on ${payload.channel}` : ''}`, 'info');
+                        }
+                    } catch (parseErr) {
+                        logWs(`📩 Raw message: ${e.data}`, 'info');
+                    }
+                };
+
+                ws.onerror = (err) => {
+                    statusEl.className = 'px-3 py-1 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/30 flex items-center gap-1.5';
+                    statusEl.innerHTML = '<span class="h-2 w-2 rounded-full bg-rose-400"></span> Connection Error ❌';
+                    logWs('WebSocket error: Ensure "php artisan reverb:start" is running on port 8080.', 'error');
+                };
+
+                ws.onclose = () => {
+                    statusEl.className = 'px-3 py-1 rounded-full text-xs font-semibold bg-slate-800 text-slate-400 border border-slate-700 flex items-center gap-1.5';
+                    statusEl.innerHTML = 'Disconnected';
+                    logWs('WebSocket disconnected.', 'info');
+                };
+            } catch (err) {
+                logWs(`Exception: ${err.message}`, 'error');
+            }
+        }
+
+        async function triggerTestBroadcast() {
+            logWs('Triggering broadcast event via <code>GET /api/v1/test/broadcast</code>...');
+            try {
+                const res = await fetch('/api/v1/test/broadcast');
+                if (res.ok) {
+                    const data = await res.json();
+                    logWs(`Backend dispatched broadcast! Status: ${data.status} (${data.timestamp})`, 'success');
+                } else {
+                    logWs(`HTTP ${res.status} from backend.`, 'error');
+                }
+            } catch (err) {
+                logWs(`Failed to trigger: ${err.message}`, 'error');
+            }
+        }
+
+        // Auto connect on page load
+        window.addEventListener('DOMContentLoaded', connectWebSocket);
+
+        // SSE STREAMING CHAT
+        async function startStreamChat() {
+            const prompt = document.getElementById('chat-prompt').value.trim();
+            if (!prompt) return;
+
+            const btn = document.getElementById('btn-stream');
+            const status = document.getElementById('stream-status');
+            const output = document.getElementById('chat-output');
+
+            btn.disabled = true;
+            status.textContent = 'Streaming...';
+            status.className = 'text-[11px] text-emerald-400 animate-pulse';
+            output.textContent = '';
+
+            try {
+                const response = await fetch('/api/v1/test/stream-chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'text/event-stream'
+                    },
+                    body: JSON.stringify({ prompt })
+                });
+
+                if (!response.ok) {
+                    output.textContent = `Error ${response.status}: ${response.statusText}`;
+                    btn.disabled = false;
+                    status.textContent = 'Failed';
+                    status.className = 'text-[11px] text-rose-400';
+                    return;
+                }
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let done = false;
+
+                while (!done) {
+                    const { value, done: readerDone } = await reader.read();
+                    done = readerDone;
+                    if (value) {
+                        const chunk = decoder.decode(value, { stream: true });
+                        const lines = chunk.split('\n');
+
+                        for (const line of lines) {
+                            if (line.startsWith('data: ')) {
+                                const dataStr = line.slice(6).trim();
+                                if (dataStr === '[DONE]') {
+                                    status.textContent = 'Finished ✅';
+                                    status.className = 'text-[11px] text-emerald-400';
+                                    continue;
+                                }
+                                try {
+                                    const parsed = JSON.parse(dataStr);
+                                    if (parsed.type === 'chunk' && parsed.content) {
+                                        output.textContent += parsed.content;
+                                        output.scrollTop = output.scrollHeight;
+                                    }
+                                } catch (e) {
+                                    output.textContent += dataStr;
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (err) {
+                output.textContent += `\n[Stream Error: ${err.message}]`;
+                status.textContent = 'Error';
+                status.className = 'text-[11px] text-rose-400';
+            } finally {
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>

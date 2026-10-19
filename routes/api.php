@@ -66,6 +66,64 @@ Route::prefix('v1')->group(function () {
     Route::get('partners', [HomePageController::class, 'partners']);
     Route::get('packages', [PaymentPackageController::class, 'index']);
     Route::get('settings/footer', [HomePageController::class, 'footerSettings']);
+
+    // Local Dev Testing Routes (WebSockets & SSE Streaming)
+    Route::get('test/broadcast', function () {
+        broadcast(new \App\Events\TestBroadcastEvent(
+            message: 'Hello from Laravel Reverb! WebSocket real-time broadcast is active 🚀',
+            meta: ['triggered_by' => 'web_tester', 'sent_at' => now()->toIso8601String()]
+        ));
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Event broadcasted to Reverb on channel [test-channel]!',
+            'timestamp' => now()->toIso8601String(),
+        ]);
+    });
+
+    Route::match(['GET', 'POST'], 'test/stream-chat', function (\Illuminate\Http\Request $request) {
+        $prompt = $request->input('prompt', 'Why is HTUT AI so fast?');
+        return response()->stream(function () use ($prompt) {
+            $words = [
+                '✨', 'Hello!', 'This', 'is', 'a', 'live', 'SSE', '(Server-Sent', 'Events)', 'stream', 'from', 'HTUT', 'AI.',
+                "\n\n",
+                'You', 'asked:', '"' . htmlspecialchars($prompt) . '"',
+                "\n\n",
+                '⚡', 'Real-time', 'tokens', 'stream', 'directly', 'from', 'our', 'backend',
+                'to', 'your', 'client', 'without', 'waiting', 'for', 'the', 'entire', 'response', 'to', 'finish.',
+                "\n\n",
+                '🚀', 'Laravel', 'Reverb', 'handles', 'the', 'WebSockets,', 'and', 'PHP', 'SSE', 'handles', 'the', 'conversational', 'streaming!',
+                "\n\n",
+                'Everything', 'is', 'working', 'perfectly! ✅'
+            ];
+
+            foreach ($words as $word) {
+                if (connection_aborted()) {
+                    break;
+                }
+                $payload = json_encode([
+                    'type' => 'chunk',
+                    'content' => $word . ' ',
+                ]);
+                echo "data: {$payload}\n\n";
+                if (ob_get_level() > 0) {
+                    ob_flush();
+                }
+                flush();
+                usleep(80000); // 80ms delay per word to simulate AI generation
+            }
+
+            echo "data: [DONE]\n\n";
+            if (ob_get_level() > 0) {
+                ob_flush();
+            }
+            flush();
+        }, 200, [
+            'Content-Type' => 'text/event-stream',
+            'Cache-Control' => 'no-cache',
+            'Connection' => 'keep-alive',
+            'X-Accel-Buffering' => 'no',
+        ]);
+    });
 });
 
 Route::prefix('v1')->middleware(['auth:sanctum', 'customer.not-banned'])->group(function () {
