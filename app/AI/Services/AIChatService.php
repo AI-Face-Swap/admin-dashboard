@@ -223,13 +223,16 @@ class AIChatService
             }
 
             $responseData = $response->json();
-            $accumulatedContent = $responseData['choices'][0]['message']['content'] ?? '';
+            $rawContent = $responseData['choices'][0]['message']['content'] ?? '';
             $usage = $responseData['usage'] ?? [];
             $totalTokens = (int) ($usage['total_tokens'] ?? 0);
 
-            // Stream tokens progressively to the client with smooth typewriter effect
-            if ($onChunk && ! empty($accumulatedContent)) {
-                $words = preg_split('/(\s+)/u', $accumulatedContent, -1, PREG_SPLIT_DELIM_CAPTURE);
+            $durationMs = (int) round((hrtime(true) - $startedAt) / 1e6);
+            $normalized = $skill->formatResponse($rawContent, $language);
+
+            // Stream clean human conversational text progressively to the client — NEVER raw JSON syntax!
+            if ($onChunk && ! empty($normalized['content'])) {
+                $words = preg_split('/(\s+)/u', $normalized['content'], -1, PREG_SPLIT_DELIM_CAPTURE);
                 if (is_array($words)) {
                     foreach ($words as $w) {
                         if (connection_aborted()) {
@@ -237,14 +240,11 @@ class AIChatService
                         }
                         if ($w !== '') {
                             $onChunk($w);
-                            usleep(18000); // 18ms smooth typewriter effect
+                            usleep(20000); // 20ms smooth typewriter effect
                         }
                     }
                 }
             }
-
-            $durationMs = (int) round((hrtime(true) - $startedAt) / 1e6);
-            $normalized = $skill->formatResponse($accumulatedContent, $language);
 
             $generation->update([
                 'status' => AIGeneration::STATUS_COMPLETED,
