@@ -292,5 +292,63 @@ class AIChatApiTest extends TestCase
 
         $response->assertStatus(403);
     }
+
+    public function test_customer_can_stream_chat_response_via_sse(): void
+    {
+        /** @var Customer $customer */
+        $customer = Customer::factory()->create([
+            'central_auth_uuid' => 'test-uuid-sse-customer',
+        ]);
+        \Illuminate\Support\Facades\Cache::put('customer_points_test-uuid-sse-customer', 100, 30);
+
+        Sanctum::actingAs($customer);
+
+        Http::fake([
+            '*/v1/qwen-flash' => Http::response([
+                'id' => 'chatcmpl-stream-test',
+                'choices' => [
+                    [
+                        'message' => [
+                            'content' => json_encode([
+                                'content' => 'Streaming response chunk test.',
+                                'structured' => [
+                                    'sections' => [],
+                                    'checklist' => [],
+                                ],
+                            ]),
+                        ],
+                    ],
+                ],
+                'usage' => ['total_tokens' => 50, 'prompt_tokens' => 20, 'completion_tokens' => 30],
+            ], 200),
+            '*/api/v1/s2s/points/deduct' => Http::response([
+                'success' => true,
+                'points' => 95,
+                'deducted' => 5,
+            ], 200),
+            '*/api/v1/s2s/points/*' => Http::response([
+                'success' => true,
+                'points' => 100,
+            ], 200),
+        ]);
+
+        $response = $this->postJson('/api/v1/chat/send', [
+            'prompt' => 'Tell me a quick tip',
+            'category' => 'general',
+            'stream' => true,
+        ], [
+            'Accept' => 'text/event-stream',
+        ]);
+
+        $response->assertStatus(200);
+        $this->assertStringStartsWith('text/event-stream', $response->headers->get('Content-Type'));
+        $this->assertEquals('no', $response->headers->get('X-Accel-Buffering'));
+
+        $content = $response->streamedContent();
+        $this->assertStringContainsString('data: {"type":"start"', $content);
+        $this->assertStringContainsString('data: {"type":"chunk"', $content);
+        $this->assertStringContainsString('data: {"type":"done"', $content);
+        $this->assertStringContainsString('data: [DONE]', $content);
+    }
 }
 

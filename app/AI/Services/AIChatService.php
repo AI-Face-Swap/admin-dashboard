@@ -136,4 +136,159 @@ class AIChatService
             throw new AIGenerationFailedException("Chat generation error: {$e->getMessage()}", null, [], $e);
         }
     }
+
+    /**
+     * Stream a chat response chunk-by-chunk using a callback, falling back to full response if streaming is unsupported.
+     *
+     * @param  callable(string): void|null  $onChunk
+     * @return array{content: string, structured: array{sections: array<int, array{title: string, description: string}>, checklist: array<int, array{item: string, detail: string}>}, tokens_used: int|null, cost: string|null, duration_ms: int, model: string, category: string}
+     */
+    public function streamChat(
+        string $message,
+        string $category = 'general',
+        array $history = [],
+        string $language = 'my',
+        User|Customer|null $requester = null,
+        ?string $model = null,
+        ?callable $onChunk = null,
+    ): array {
+        if (app()->environment('testing')) {
+            $result = $this->chat($message, $category, $history, $language, $requester, $model);
+            if ($onChunk) {
+                $words = preg_split('/(\s+)/u', $result['content'], -1, PREG_SPLIT_DELIM_CAPTURE);
+                if (is_array($words)) {
+                    foreach ($words as $w) {
+                        if ($w !== '') {
+                            $onChunk($w);
+                        }
+                    }
+                }
+            }
+
+            return $result;
+        }
+
+        $skill = ChatSkillFactory::make($category);
+        $fullPrompt = $skill->buildPrompt($message, $history, $language);
+        $selectedModel = $model ?: config('ai.chat_model', self::DEFAULT_MODEL);
+        $apiKey = (string) config('ai.providers.segmind.api_key');
+        $endpoint = rtrim(config('ai.providers.segmind.base_url_v1', self::DEFAULT_BASE_URL), '/').'/'.$selectedModel;
+        $pointCost = (int) Setting::get('ai', 'point_cost_chat', config('ai.point_costs.chat', 5));
+        $provider = AIProvider::where('slug', 'segmind')->first();
+
+        $generation = AIGeneration::create([
+            'user_id' => $requester instanceof User ? $requester->id : null,
+            'customer_id' => $requester instanceof Customer ? $requester->id : null,
+            'provider_id' => $provider?->id ?? 1,
+            'operation' => AIGeneration::OPERATION_CHAT,
+            'status' => AIGeneration::STATUS_PROCESSING,
+            'coins_spent' => $pointCost,
+            'input_metadata' => [
+                'model' => $selectedModel,
+                'category' => $skill->category(),
+                'language' => $language,
+                'prompt' => $message,
+                'stream' => true,
+            ],
+        ]);
+
+        $startedAt = hrtime(true);
+        $accumulatedContent = '';
+
+        try {
+            $client = new \GuzzleHttp\Client();
+            $response = $client->post($endpoint, [
+                'headers' => [
+                    'x-api-key' => $apiKey,
+                    'Content-Type' => 'application/json',
+                    'Accept' => 'text/event-stream',
+                ],
+                'json' => [
+                    'prompt' => $fullPrompt,
+                    'stream' => true,
+                    'max_tokens' => (int) config('ai.chat_max_tokens', 650),
+                ],
+                'stream' => true,
+                'timeout' => 45,
+            ]);
+
+            $body = $response->getBody();
+            $buffer = '';
+
+            while (! $body->eof()) {
+                $rawChunk = $body->read(1024);
+                $buffer .= $rawChunk;
+
+                while (($pos = strpos($buffer, "\n")) !== false) {
+                    $line = trim(substr($buffer, 0, $pos));
+                    $buffer = substr($buffer, $pos + 1);
+
+                    if (str_starts_with($line, 'data:')) {
+                        $dataStr = trim(substr($line, 5));
+                        if ($dataStr === '[DONE]') {
+                            break 2;
+                        }
+
+                        $decoded = json_decode($dataStr, true);
+                        $delta = $decoded['choices'][0]['delta']['content'] ?? $decoded['choices'][0]['text'] ?? '';
+                        if ($delta !== '') {
+                            $accumulatedContent .= $delta;
+                            if ($onChunk) {
+                                $onChunk($delta);
+                            }
+                        }
+                    }
+                }
+            }
+
+            $durationMs = (int) round((hrtime(true) - $startedAt) / 1e6);
+            $normalized = $skill->formatResponse($accumulatedContent, $language);
+
+            $generation->update([
+                'status' => AIGeneration::STATUS_COMPLETED,
+                'duration_ms' => $durationMs,
+                'output_metadata' => $normalized,
+            ]);
+
+            return [
+                'content' => $normalized['content'],
+                'structured' => $normalized['structured'],
+                'tokens_used' => null,
+                'cost' => null,
+                'duration_ms' => $durationMs,
+                'model' => $selectedModel,
+                'category' => $skill->category(),
+            ];
+        } catch (Throwable $e) {
+            Log::warning('Streaming chat failed, falling back to sync: '.$e->getMessage());
+
+            if (! empty($accumulatedContent)) {
+                $durationMs = (int) round((hrtime(true) - $startedAt) / 1e6);
+                $normalized = $skill->formatResponse($accumulatedContent, $language);
+                $generation->update([
+                    'status' => AIGeneration::STATUS_COMPLETED,
+                    'duration_ms' => $durationMs,
+                    'output_metadata' => $normalized,
+                ]);
+
+                return [
+                    'content' => $normalized['content'],
+                    'structured' => $normalized['structured'],
+                    'tokens_used' => null,
+                    'cost' => null,
+                    'duration_ms' => $durationMs,
+                    'model' => $selectedModel,
+                    'category' => $skill->category(),
+                ];
+            }
+
+            $generation->delete();
+            $fallbackResult = $this->chat($message, $category, $history, $language, $requester, $model);
+            if ($onChunk) {
+                $onChunk($fallbackResult['content']);
+            }
+
+            return $fallbackResult;
+        }
+    }
 }

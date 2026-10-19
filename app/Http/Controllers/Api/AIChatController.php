@@ -60,7 +60,7 @@ class AIChatController extends Controller
     /**
      * Send a question to HTUT AI, invoke Segmind with the selected skill, and deduct points.
      */
-    public function send(SendChatMessageRequest $request, AIChatService $chatService): JsonResponse
+    public function send(SendChatMessageRequest $request, AIChatService $chatService): JsonResponse|\Symfony\Component\HttpFoundation\StreamedResponse
     {
         /** @var Customer|null $customer */
         $customer = $request->user('sanctum') ?? $request->user();
@@ -128,6 +128,98 @@ class AIChatController extends Controller
             ])
             ->values()
             ->toArray();
+
+        $shouldStream = $request->boolean('stream') || $request->header('Accept') === 'text/event-stream';
+
+        if ($shouldStream) {
+            return response()->stream(function () use (
+                $chatService,
+                $prompt,
+                $category,
+                $history,
+                $language,
+                $customer,
+                $model,
+                $conversation,
+                $userMessage,
+                $pointCost
+            ) {
+                if (ob_get_level() > 0) {
+                    @ob_flush();
+                }
+                flush();
+
+                echo 'data: '.json_encode([
+                    'type' => 'start',
+                    'conversation_id' => $conversation->id,
+                    'user_message' => $this->formatMessage($userMessage),
+                ])."\n\n";
+                flush();
+
+                try {
+                    $aiResult = $chatService->streamChat(
+                        message: $prompt,
+                        category: $category,
+                        history: $history,
+                        language: $language,
+                        requester: $customer,
+                        model: $model,
+                        onChunk: function (string $chunk) {
+                            echo 'data: '.json_encode([
+                                'type' => 'chunk',
+                                'content' => $chunk,
+                            ])."\n\n";
+                            flush();
+                        }
+                    );
+
+                    $assistantMessage = ChatMessage::create([
+                        'conversation_id' => $conversation->id,
+                        'role' => 'assistant',
+                        'content' => $aiResult['content'],
+                        'category' => $category,
+                        'structured' => $aiResult['structured'],
+                        'tokens_used' => $aiResult['tokens_used'],
+                        'cost' => $aiResult['cost'],
+                    ]);
+
+                    $conversation->touch();
+
+                    $customer->spendPoints(
+                        cost: $pointCost,
+                        description: "HTUT AI Chat ({$category})",
+                        referenceId: "chat_msg_{$assistantMessage->id}",
+                        metadata: [
+                            'conversation_id' => $conversation->id,
+                            'model' => $aiResult['model'],
+                        ],
+                    );
+
+                    echo 'data: '.json_encode([
+                        'type' => 'done',
+                        'conversation_id' => $conversation->id,
+                        'conversation_title_en' => $conversation->title_en,
+                        'conversation_title_my' => $conversation->title_my,
+                        'assistant_message' => $this->formatMessage($assistantMessage),
+                        'points_deducted' => $pointCost,
+                        'points_remaining' => $customer->fresh()->points,
+                    ])."\n\n";
+                    echo "data: [DONE]\n\n";
+                    flush();
+                } catch (\Throwable $e) {
+                    echo 'data: '.json_encode([
+                        'type' => 'error',
+                        'message' => $e->getMessage(),
+                    ])."\n\n";
+                    flush();
+                }
+            }, 200, [
+                'Content-Type' => 'text/event-stream',
+                'Cache-Control' => 'no-cache, no-store, must-revalidate',
+                'Connection' => 'keep-alive',
+                'X-Accel-Buffering' => 'no',
+            ]);
+        }
 
         // Call Segmind via AIChatService
         $aiResult = $chatService->chat(
