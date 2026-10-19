@@ -1,89 +1,69 @@
-# HTUT AI — Docker commands (local dev + production)
+# HTUT AI — Production Docker Commands
 #
-# Safe by default: `down` / `prod-down` never delete volumes (database survives).
-# Only `fresh` is destructive — it asks for confirmation first.
-#
-# Production targets require .env.production on the machine (see DOCKER.md).
+# Docker is used strictly for production deployment.
+# Requires .env.production (see .env.production.example & DOCKER.md).
+# Safe by default: `down` never deletes volumes (database & redis survive).
 
-COMPOSE := docker compose
 PROD := docker compose --env-file .env.production -f docker-compose.production.yml
 
-.PHONY: help up down restart ps logs shell migrate fresh optimize-clear npm-install wayfinder tinker \
+.PHONY: help guard up down restart ps logs shell migrate \
+        reverb-logs queue-logs scheduler-logs deploy rollback \
         prod-up prod-down prod-restart prod-ps prod-logs prod-shell prod-migrate prod-deploy prod-rollback
 
 help: ## Show available commands
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
-# ── Local development ────────────────────────────────────────────────────────
+guard:
+	@test -f .env.production || (echo "ERROR: .env.production not found. Run: cp .env.production.example .env.production (then fill it in)"; exit 1)
 
-up: ## Start all services in the background
-	$(COMPOSE) up -d
+# ── Primary Production Commands ──────────────────────────────────────────────
 
-down: ## Stop all services (keeps mysql_data / redis_data / node_modules)
-	$(COMPOSE) down
-
-restart: ## Restart all services
-	$(COMPOSE) restart
-
-ps: ## Show service status and health
-	$(COMPOSE) ps
-
-logs: ## Tail logs from all services
-	$(COMPOSE) logs -f --tail=100
-
-shell: ## Bash into the php container
-	$(COMPOSE) exec php bash
-
-migrate: ## Run database migrations inside the php container
-	$(COMPOSE) exec php php artisan migrate --force
-
-fresh: ## DESTRUCTIVE — drop & re-create the database, then seed
-	@echo "WARNING: this destroys ALL data in the htut-ai database."
-	@read -p "Type 'yes' to continue: " confirm && [ "$$confirm" = "yes" ] || (echo "Aborted."; exit 1)
-	$(COMPOSE) exec php php artisan migrate:fresh --seed --force
-
-optimize-clear: ## Clear Laravel caches inside the php container
-	$(COMPOSE) exec php php artisan optimize:clear
-
-npm-install: ## Install/update frontend dependencies in the node container
-	$(COMPOSE) exec node npm install --no-audit --no-fund --no-save
-
-wayfinder: ## Regenerate Wayfinder typed routes (run after changing routes/controllers)
-	$(COMPOSE) exec php php artisan wayfinder:generate --with-form
-
-tinker: ## Laravel Tinker REPL
-	$(COMPOSE) exec php php artisan tinker
-
-# ── Production (run on the VPS, inside the repo) ────────────────────────────
-# Requires .env.production — see DOCKER.md for one-time server setup.
-
-prod-guard:
-	@test -f .env.production || (echo "ERROR: .env.production not found. Run: cp .env.production.example .env.production  (then fill it in — see DOCKER.md)"; exit 1)
-
-prod-up: prod-guard ## Start the production stack
+up: guard ## Start all production services in the background (php, reverb, queue, scheduler, mysql, redis)
 	$(PROD) up -d
 
-prod-down: prod-guard ## Stop the production stack (keeps volumes/database)
+down: guard ## Stop all services (keeps mysql_data, redis_data, and logs)
 	$(PROD) down
 
-prod-restart: prod-guard ## Restart the production stack
+restart: guard ## Restart all production services
 	$(PROD) restart
 
-prod-ps: prod-guard ## Show production status and health
+ps: guard ## Show status and health of all containers
 	$(PROD) ps
 
-prod-logs: prod-guard ## Tail production logs (filter with: make prod-logs s=php)
+logs: guard ## Tail logs from all services (or specify s=<service>, e.g. make logs s=reverb)
 	$(PROD) logs -f --tail=100 $(s)
 
-prod-shell: prod-guard ## Bash into the production php container
+reverb-logs: guard ## Tail logs from the Reverb WebSocket server
+	$(PROD) logs -f --tail=100 reverb
+
+queue-logs: guard ## Tail logs from the Redis Queue worker
+	$(PROD) logs -f --tail=100 queue
+
+scheduler-logs: guard ## Tail logs from the Cron scheduler
+	$(PROD) logs -f --tail=100 scheduler
+
+shell: guard ## Bash shell inside the php container
 	$(PROD) exec php bash
 
-prod-migrate: prod-guard ## Run migrations in production (normally automatic on deploy)
+migrate: guard ## Run database migrations inside the php container
 	$(PROD) exec php php artisan migrate --force
 
-prod-deploy: prod-guard ## Pull latest image and apply it (manual deploy on the server)
+deploy: guard ## Pull latest production image and apply zero-downtime rolling restart
 	$(PROD) pull && $(PROD) up -d --remove-orphans
 
-prod-rollback: prod-guard ## Roll back to a previous build: make prod-rollback SHA=<short-sha>
-	@test -n "$(SHA)" || (echo "Usage: make prod-rollback SHA=<short-sha>"; exit 1)
+rollback: guard ## Roll back to a previous build SHA: make rollback SHA=<short-sha>
+	@test -n "$(SHA)" || (echo "Usage: make rollback SHA=<short-sha>"; exit 1)
 	IMAGE_TAG=$(SHA) $(PROD) up -d --remove-orphans
+
+# ── Backwards-Compatible Aliases (prod-*) ─────────────────────────────────────
+
+prod-guard: guard
+prod-up: up
+prod-down: down
+prod-restart: restart
+prod-ps: ps
+prod-logs: logs
+prod-shell: shell
+prod-migrate: migrate
+prod-deploy: deploy
+prod-rollback: rollback
