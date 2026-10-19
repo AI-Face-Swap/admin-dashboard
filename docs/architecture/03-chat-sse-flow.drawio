@@ -1,0 +1,83 @@
+<mxfile host="Electron" modified="2026-10-19T07:40:00.000Z" agent="Antigravity Architecture Documentation" version="24.0.0" type="device">
+  <diagram id="easy-chat-sse" name="3. Chat SSE Flow (Simple)">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1500" pageHeight="950" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- HEADER BANNER -->
+        <mxCell id="hdr3" value="&lt;b style=&quot;font-size: 22px;&quot;&gt;HTUT AI — How Live AI Chat Streaming Works (SSE Sequence)&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size: 14px; color: #555;&quot;&gt;ChatGPT ကဲ့သို့ စာလုံးတစ်လုံးချင်းစီ Live ပေါ်လာပုံနှင့် ၅ ပွိုင့် ဖြတ်တောက်ပုံ (Word-by-word streaming &amp;amp; points)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f0f4f8;strokeColor=#bcccdc;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="50" y="30" width="1400" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- PARTICIPANTS ROW -->
+        <mxCell id="p_user" value="&lt;b style=&quot;font-size: 15px;&quot;&gt;1. User on React Chat UI&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size: 11px; color: #555;&quot;&gt;Browser or Mobile (/chat)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1f5fe;strokeColor=#0288d1;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="80" y="130" width="260" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p_laravel" value="&lt;b style=&quot;font-size: 15px;&quot;&gt;2. Laravel Backend API&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size: 11px; color: #555;&quot;&gt;AIChatController &amp;amp; AIChatService&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff8e1;strokeColor=#ffa000;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="460" y="130" width="280" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p_ai" value="&lt;b style=&quot;font-size: 15px;&quot;&gt;3. AI Model Engine&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size: 11px; color: #555;&quot;&gt;Segmind / OpenAI LLM&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eceff1;strokeColor=#455a64;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="850" y="130" width="260" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p_points" value="&lt;b style=&quot;font-size: 15px;&quot;&gt;4. Central Auth Points&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size: 11px; color: #555;&quot;&gt;Customer Points Ledger&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f5e9;strokeColor=#2e7d32;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1200" y="130" width="240" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- STEP CARDS -->
+        <!-- Step 1 -->
+        <mxCell id="st1" value="&lt;b style=&quot;font-size: 14px;&quot;&gt;Step 1: User Sends Question&lt;/b&gt;&lt;br&gt;User types: &lt;i&gt;&amp;quot;What is the best diet for heart health?&amp;quot;&lt;/i&gt;&lt;br&gt;React sends: &lt;code&gt;POST /api/v1/chat/send&lt;/code&gt; with &lt;code&gt;stream: true&lt;/code&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#0288d1;align=left;spacingLeft=15;" vertex="1" parent="1">
+          <mxGeometry x="80" y="230" width="660" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Step 2 -->
+        <mxCell id="st2" value="&lt;b style=&quot;font-size: 14px;&quot;&gt;Step 2: Point &amp;amp; Session Check&lt;/b&gt;&lt;br&gt;Laravel verifies customer has at least &lt;b&gt;5 Points&lt;/b&gt;.&lt;br&gt;Creates a &lt;code&gt;ChatConversation&lt;/code&gt; and stores the user message in database." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#ffa000;align=left;spacingLeft=15;" vertex="1" parent="1">
+          <mxGeometry x="460" y="320" width="650" height="65" as="geometry" />
+        </mxCell>
+
+        <!-- Step 3 -->
+        <mxCell id="st3" value="&lt;b style=&quot;font-size: 14px;&quot;&gt;Step 3: AI Starts Answering in Real-Time (Tokens)&lt;/b&gt;&lt;br&gt;AI engine streams words token-by-token: &lt;i&gt;&amp;quot;A healthy diet...&amp;quot;&lt;/i&gt; &amp;gt; &lt;i&gt;&amp;quot;includes vegetables...&amp;quot;&lt;/i&gt;&lt;br&gt;No need to wait 15 seconds for the full paragraph — it starts typing in &lt;b style=&quot;color: #0288d1;&quot;&gt;0.5 seconds&lt;/b&gt;!" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#455a64;align=left;spacingLeft=15;" vertex="1" parent="1">
+          <mxGeometry x="850" y="415" width="590" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- Step 4 -->
+        <mxCell id="st4" value="&lt;b style=&quot;font-size: 14px; color: #0277bd;&quot;&gt;Step 4: Live Words Stream Directly to Screen (SSE)&lt;/b&gt;&lt;br&gt;Laravel immediately forwards each word to React: &lt;code&gt;data: {&amp;quot;type&amp;quot;:&amp;quot;chunk&amp;quot;, &amp;quot;content&amp;quot;:&amp;quot;words...&amp;quot;}&lt;/code&gt;&lt;br&gt;The user sees the answer being typed live on screen with a blinking cursor!" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1f5fe;strokeColor=#0288d1;align=left;spacingLeft=15;" vertex="1" parent="1">
+          <mxGeometry x="80" y="515" width="660" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- Step 5 -->
+        <mxCell id="st5" value="&lt;b style=&quot;font-size: 14px; color: #1b5e20;&quot;&gt;Step 5: Completion &amp;amp; Exact 5-Point Deduction&lt;/b&gt;&lt;br&gt;1. AI finishes answer &amp;amp; sends &lt;code&gt;[DONE]&lt;/code&gt;.&lt;br&gt;2. Laravel saves assistant response to database.&lt;br&gt;3. Deducts exactly &lt;b&gt;5 Points&lt;/b&gt; via Central Auth with reference &lt;code&gt;chat_msg_{id}&lt;/code&gt;.&lt;br&gt;4. React updates point balance on screen (e.g. 100 → 95)." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f5e9;strokeColor=#2e7d32;align=left;spacingLeft=15;" vertex="1" parent="1">
+          <mxGeometry x="460" y="615" width="980" height="85" as="geometry" />
+        </mxCell>
+
+        <!-- CONNECTING ARROWS -->
+        <mxCell id="ar_s1" value="1. Send Question" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#0288d1;strokeWidth=2;" edge="1" parent="1" source="p_user" target="st1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ar_s2" value="2. Verify" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#ffa000;strokeWidth=2;" edge="1" parent="1" source="st1" target="st2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ar_s3" value="3. Generate Stream" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#455a64;strokeWidth=2;" edge="1" parent="1" source="st2" target="st3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ar_s4" value="4. Words Stream Back" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#0288d1;strokeWidth=2;" edge="1" parent="1" source="st3" target="st4">
+          <mxGeometry relative="1" as="geometry">
+            <Array points="790 450; 790 550" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ar_s5" value="5. Deduct 5 Points" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#2e7d32;strokeWidth=2;" edge="1" parent="1" source="st4" target="st5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- FOOTER EXPLANATION -->
+        <mxCell id="ftr3" value="&lt;b&gt;Two Modes Supported (စနစ်နှစ်မျိုးစလုံး အဆင်ပြေစေရန်):&lt;/b&gt;&#10;• &lt;b&gt;Modern Web (Streaming Mode):&lt;/b&gt; Uses SSE to type words live on the browser screen with zero waiting time.&#10;• &lt;b&gt;Mobile App (Normal Mode):&lt;/b&gt; If mobile apps don't support SSE, they can still request normal JSON and get the full answer in one response without any code breaks!" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fafafa;strokeColor=#bdbdbd;align=left;spacingLeft=15;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="50" y="730" width="1400" height="75" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

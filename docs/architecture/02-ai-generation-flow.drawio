@@ -1,0 +1,166 @@
+<mxfile host="Electron" modified="2026-10-19T08:00:00.000Z" agent="Antigravity Architecture Documentation" version="24.0.0" type="device">
+  <diagram id="unified-generation-flow" name="2. AI Generation Flow (Unified Queue)">
+    <mxGraphModel dx="1500" dy="950" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1580" pageHeight="950" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- HEADER BANNER -->
+        <mxCell id="hdr2" value="&lt;b style=&quot;font-size: 22px;&quot;&gt;HTUT AI — Unified Asynchronous Generation Pipeline (All 5 AI Types)&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size: 14px; color: #555;&quot;&gt;ပုံဖန်တီးခြင်း၊ မျက်နှာလဲခြင်းနှင့် ဗီဒီယိုဖန်တီးခြင်း (၅ မျိုးစလုံး) 100% Asynchronous Queue ဖြင့် တစ်ပြေးညီ အလုပ်လုပ်ပုံ&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f0f4f8;strokeColor=#bcccdc;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="40" y="25" width="1500" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- STAGE 1: CLIENT & API GATEWAY -->
+        <mxCell id="col_stage1" value="STAGE 1: FAST API GATEWAY (&amp;lt; 200ms)&#10;တောင်းဆိုမှု လက်ခံခြင်းနှင့် ပွိုင့်ထိန်းချုပ်ခြင်း" style="swimlane;whiteSpace=wrap;html=1;fillColor=#e1f5fe;strokeColor=#0288d1;fontStyle=1;fontSize=13;startSize=40;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="115" width="350" height="665" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s1_step1" value="&lt;b style=&quot;font-size: 13px;&quot;&gt;Step 1: User Request Validation&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size: 11px; color: #555;&quot;&gt;Client sends prompt or source photo.&lt;br&gt;Clean payload: &lt;b style=&quot;color:#0288d1;&quot;&gt;No async flag needed&lt;/b&gt;.&lt;br&gt;Passes FormRequest validation rules.&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#0288d1;align=left;spacingLeft=12;" vertex="1" parent="col_stage1">
+          <mxGeometry x="20" y="55" width="310" height="75" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s1_step2" value="&lt;b style=&quot;font-size: 13px;&quot;&gt;Step 2: Idempotency Verification&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size: 11px; color: #555;&quot;&gt;&lt;code&gt;AIIdempotencyService::check()&lt;/code&gt;&lt;br&gt;• If repeat request: Returns existing result.&lt;br&gt;• If conflict: Rejects with HTTP 409.&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#0288d1;align=left;spacingLeft=12;" vertex="1" parent="col_stage1">
+          <mxGeometry x="20" y="150" width="310" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s1_step3" value="&lt;b style=&quot;font-size: 13px;&quot;&gt;Step 3: Upfront Point Lock (S2S)&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size: 11px; color: #555;&quot;&gt;Calls Central Auth &lt;code&gt;spendPoints()&lt;/code&gt;.&lt;br&gt;Points locked with unique reference ID.&lt;br&gt;&lt;b style=&quot;color: #2e7d32;&quot;&gt;Cannot be double-charged!&lt;/b&gt;&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#0288d1;align=left;spacingLeft=12;" vertex="1" parent="col_stage1">
+          <mxGeometry x="20" y="240" width="310" height="75" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s1_step4" value="&lt;b style=&quot;font-size: 13px;&quot;&gt;Step 4: Create Queued Record&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size: 11px; color: #555;&quot;&gt;&lt;code&gt;AIGeneration::create(['status'=&amp;gt;'queued'])&lt;/code&gt;&lt;br&gt;Dispatches job to Redis queue immediately.&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#0288d1;align=left;spacingLeft=12;" vertex="1" parent="col_stage1">
+          <mxGeometry x="20" y="335" width="310" height="65" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s1_step5" value="&lt;b style=&quot;font-size: 14px; color: #01579b;&quot;&gt;Step 5: Immediate HTTP 202 Accepted&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size: 11px; color: #333;&quot;&gt;Returns in &amp;lt; 200ms with generation ID.&lt;br&gt;&lt;b style=&quot;color: #0288d1;&quot;&gt;Client browser / app never hangs or blocks!&lt;/b&gt;&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#b3e5fc;strokeColor=#0288d1;align=left;spacingLeft=12;" vertex="1" parent="col_stage1">
+          <mxGeometry x="20" y="420" width="310" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s1_note" value="&lt;b&gt;Unified Coverage:&lt;/b&gt;&lt;br&gt;• Text-to-Image • Image Editing&lt;br&gt;• Photo Face Swap • Video Face Swap&lt;br&gt;• Image-to-Video" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e0f7fa;strokeColor=#80deea;align=center;fontSize=11;" vertex="1" parent="col_stage1">
+          <mxGeometry x="20" y="520" width="310" height="115" as="geometry" />
+        </mxCell>
+
+        <!-- STAGE 2: REDIS QUEUE & WORKERS -->
+        <mxCell id="col_stage2" value="STAGE 2: REDIS QUEUE &amp;amp; WORKERS&#10;နောက်ကွယ်မှ အလုပ်သမားများ စတင်လုပ်ဆောင်ခြင်း" style="swimlane;whiteSpace=wrap;html=1;fillColor=#fff8e1;strokeColor=#f57f17;fontStyle=1;fontSize=13;startSize=40;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="420" y="115" width="350" height="665" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s2_step1" value="&lt;b style=&quot;font-size: 13px;&quot;&gt;Redis 7 In-Memory Queue&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size: 11px; color: #555;&quot;&gt;Stores pending jobs safely in Redis buffer.&lt;br&gt;Enforces concurrency control &amp;amp; rate limits.&lt;/span&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=8;fillColor=#ffffff;strokeColor=#f57f17;align=left;spacingLeft=12;" vertex="1" parent="col_stage2">
+          <mxGeometry x="20" y="55" width="310" height="75" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s2_step2" value="&lt;b style=&quot;font-size: 13px;&quot;&gt;Queue Worker Picks Up Job&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size: 11px; color: #555;&quot;&gt;&lt;code&gt;php artisan queue:work&lt;/code&gt;&lt;br&gt;• Status marked as: &lt;b style=&quot;color: #e65100;&quot;&gt;PROCESSING&lt;/b&gt;&lt;br&gt;• Broadcasts &lt;code&gt;AIGenerationUpdated&lt;/code&gt;&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#f57f17;align=left;spacingLeft=12;" vertex="1" parent="col_stage2">
+          <mxGeometry x="20" y="150" width="310" height="75" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s2_jobs" value="&lt;b style=&quot;font-size: 12px;&quot;&gt;5 Dedicated Background Jobs:&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size: 11px; color: #444;&quot;&gt;• &lt;b&gt;ProcessImageGeneration&lt;/b&gt; (Seedream/Flux)&lt;br&gt;• &lt;b&gt;ProcessFaceSwap&lt;/b&gt; (Hyperswap Photo)&lt;br&gt;• &lt;b&gt;ProcessImageEdit&lt;/b&gt; (Kontext/Seedream)&lt;br&gt;• &lt;b&gt;ProcessImageToVideo&lt;/b&gt; (Kling AI)&lt;br&gt;• &lt;b&gt;ProcessVideoFaceSwap&lt;/b&gt; (Hyperswap Video)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#f57f17;align=left;spacingLeft=12;" vertex="1" parent="col_stage2">
+          <mxGeometry x="20" y="245" width="310" height="145" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s2_note" value="&lt;b&gt;Key Advantage (အားသာချက်):&lt;/b&gt;&lt;br&gt;Server never freezes. If 1,000 users request at once, workers process requests reliably without timeouts." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff9c4;strokeColor=#fbc02d;align=center;fontSize=11;" vertex="1" parent="col_stage2">
+          <mxGeometry x="20" y="520" width="310" height="115" as="geometry" />
+        </mxCell>
+
+        <!-- STAGE 3: AI PROVIDER & STORAGE -->
+        <mxCell id="col_stage3" value="STAGE 3: AI CLUSTER &amp;amp; CLOUD STORAGE&#10;AI စနစ်များနှင့် ဖိုင်သိမ်းဆည်းခြင်း" style="swimlane;whiteSpace=wrap;html=1;fillColor=#fbe9e7;strokeColor=#d84315;fontStyle=1;fontSize=13;startSize=40;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="800" y="115" width="350" height="665" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s3_step1" value="&lt;b style=&quot;font-size: 13px;&quot;&gt;Invoke Segmind AI Cluster&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size: 11px; color: #555;&quot;&gt;Worker executes GPU generation task.&lt;br&gt;Image tasks finish in ~3-8 seconds.&lt;br&gt;Video tasks render in ~2-4 minutes.&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d84315;align=left;spacingLeft=12;" vertex="1" parent="col_stage3">
+          <mxGeometry x="20" y="55" width="310" height="75" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s3_step2" value="&lt;b style=&quot;font-size: 13px;&quot;&gt;Store to Cloud Storage (Spaces S3)&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size: 11px; color: #555;&quot;&gt;Generated image or MP4 video streamed to S3.&lt;br&gt;CDN public URL generated and saved into database.&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d84315;align=left;spacingLeft=12;" vertex="1" parent="col_stage3">
+          <mxGeometry x="20" y="150" width="310" height="75" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s3_dec" value="AI Provider&#10;Succeeded?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d84315;fontStyle=1;fontSize=12;" vertex="1" parent="col_stage3">
+          <mxGeometry x="85" y="255" width="180" height="65" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s3_note" value="&lt;b&gt;Provider Decoupling:&lt;/b&gt;&lt;br&gt;Worker is fully abstracted from AI providers. Can switch between Segmind, Replicate, or self-hosted GPU seamlessly." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffccbc;strokeColor=#ff8a65;align=center;fontSize=11;" vertex="1" parent="col_stage3">
+          <mxGeometry x="20" y="520" width="310" height="115" as="geometry" />
+        </mxCell>
+
+        <!-- STAGE 4: REAL-TIME BROADCAST & SAFETY -->
+        <mxCell id="col_stage4" value="STAGE 4: NOTIFICATION &amp;amp; 100% REFUND&#10;ရလဒ်ပေးပို့ခြင်းနှင့် ပွိုင့်ပြန်အမ်းခြင်း အာမခံချက်" style="swimlane;whiteSpace=wrap;html=1;fillColor=#e8f5e9;strokeColor=#2e7d32;fontStyle=1;fontSize=13;startSize=40;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="1180" y="115" width="360" height="665" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s4_success" value="&lt;b style=&quot;font-size: 14px; color: #2e7d32;&quot;&gt;SUCCESS PATH (အောင်မြင်ခြင်း)&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size: 11px; color: #333;&quot;&gt;• Status marked: &lt;b style=&quot;color: #2e7d32;&quot;&gt;COMPLETED&lt;/b&gt;&lt;br&gt;• Reverb broadcasts &lt;code&gt;AIGenerationUpdated&lt;/code&gt;&lt;br&gt;• React UI displays photo/video instantly!&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#c8e6c9;strokeColor=#2e7d32;align=left;spacingLeft=12;" vertex="1" parent="col_stage4">
+          <mxGeometry x="20" y="55" width="320" height="90" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s4_fail" value="&lt;b style=&quot;font-size: 14px; color: #c62828;&quot;&gt;100% AUTOMATIC REFUND (ပြန်အမ်းခြင်း)&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size: 11px; color: #333;&quot;&gt;• If AI provider times out or fails:&lt;br&gt;• Worker calls &lt;code&gt;refundPointsOnce()&lt;/code&gt;&lt;br&gt;• Central Auth restores points immediately!&lt;br&gt;• Status marked: &lt;b style=&quot;color: #c62828;&quot;&gt;FAILED&lt;/b&gt;&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffcdd2;strokeColor=#c62828;align=left;spacingLeft=12;" vertex="1" parent="col_stage4">
+          <mxGeometry x="20" y="180" width="320" height="95" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s4_reverb" value="&lt;b style=&quot;font-size: 13px;&quot;&gt;Laravel Reverb WebSocket&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size: 11px; color: #555;&quot;&gt;Broadcasts on private channel:&lt;br&gt;&lt;code&gt;private-customer.{id}&lt;/code&gt;&lt;br&gt;Zero manual refreshing required!&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#2e7d32;align=left;spacingLeft=12;" vertex="1" parent="col_stage4">
+          <mxGeometry x="20" y="310" width="320" height="75" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s4_guarantee" value="&lt;b style=&quot;font-size: 13px; color: #1b5e20;&quot;&gt;Zero-Loss Guarantee (ပွိုင့်ဆုံးရှုံးမှု မရှိစေရ)&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size: 11px; color: #444;&quot;&gt;Exact-once refund guarantee protected by DB locks and unique transaction references. If generation takes over 2 minutes and crashes, customer NEVER loses points.&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcedc8;strokeColor=#689f38;align=left;spacingLeft=12;" vertex="1" parent="col_stage4">
+          <mxGeometry x="20" y="520" width="320" height="115" as="geometry" />
+        </mxCell>
+
+        <!-- STAGE 1 INTERNAL ARROWS -->
+        <mxCell id="arr_s1_1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#0288d1;strokeWidth=2;" edge="1" parent="col_stage1" source="s1_step1" target="s1_step2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arr_s1_2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#0288d1;strokeWidth=2;" edge="1" parent="col_stage1" source="s1_step2" target="s1_step3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arr_s1_3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#0288d1;strokeWidth=2;" edge="1" parent="col_stage1" source="s1_step3" target="s1_step4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arr_s1_4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#0288d1;strokeWidth=2;" edge="1" parent="col_stage1" source="s1_step4" target="s1_step5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- INTER-STAGE CONNECTORS -->
+        <mxCell id="arr_stage1_to_2" value="Push Job to Queue" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#f57f17;strokeWidth=2;dashed=0;" edge="1" parent="1" source="s1_step4" target="s2_step1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="arr_s2_1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#f57f17;strokeWidth=2;" edge="1" parent="col_stage2" source="s2_step1" target="s2_step2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arr_s2_2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#f57f17;strokeWidth=2;" edge="1" parent="col_stage2" source="s2_step2" target="s2_jobs">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="arr_stage2_to_3" value="Worker Invokes AI" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#d84315;strokeWidth=2;" edge="1" parent="1" source="s2_jobs" target="s3_step1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="arr_s3_1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#d84315;strokeWidth=2;" edge="1" parent="col_stage3" source="s3_step1" target="s3_step2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arr_s3_2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#d84315;strokeWidth=2;" edge="1" parent="col_stage3" source="s3_step2" target="s3_dec">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- STAGE 3 TO STAGE 4 ARROWS -->
+        <mxCell id="arr_s3_yes" value="YES" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#2e7d32;strokeWidth=2;" edge="1" parent="1" source="s3_dec" target="s4_success">
+          <mxGeometry relative="1" as="geometry">
+            <Array points="1070 395; 1070 215" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arr_s3_no" value="NO (Fail / Timeout)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#c62828;strokeWidth=2;" edge="1" parent="1" source="s3_dec" target="s4_fail">
+          <mxGeometry relative="1" as="geometry">
+            <Array points="1070 415; 1070 340" />
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="arr_s4_reverb" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#2e7d32;strokeWidth=2;" edge="1" parent="col_stage4" source="s4_success" target="s4_reverb">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- FOOTER -->
+        <mxCell id="ftr2" value="&lt;b&gt;Summary (အနှစ်ချုပ်):&lt;/b&gt; All 5 generation types (Images, Face Swap &amp;amp; Videos) execute asynchronously through the Redis Queue. Client receives HTTP 202 Accepted in &amp;lt; 200ms. Server never blocks or times out. Exact-once refund guarantee restores points automatically if any task fails." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fafafa;strokeColor=#bdbdbd;align=center;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="40" y="805" width="1500" height="50" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -1,0 +1,123 @@
+<mxfile host="Electron" modified="2026-10-19T08:00:00.000Z" agent="Antigravity Architecture Documentation" version="24.0.0" type="device">
+  <diagram id="easy-system-overview" name="1. System Overview (Simple)">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1500" pageHeight="950" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- HEADER BANNER -->
+        <mxCell id="hdr" value="&lt;b style=&quot;font-size: 22px;&quot;&gt;HTUT AI — High-Level System Architecture Overview&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size: 14px; color: #555;&quot;&gt;စနစ်တစ်ခုလုံး အလုပ်လုပ်ပုံ အကျဉ်းချုပ် (How everything connects together simply with Unified Async Queue)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f0f4f8;strokeColor=#bcccdc;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="50" y="30" width="1400" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- COLUMN 1: USER & CLIENT -->
+        <mxCell id="col_user" value="1. USER / CLIENTS&#10;(အသုံးပြုသူများ)" style="swimlane;whiteSpace=wrap;html=1;fillColor=#e1f5fe;strokeColor=#0288d1;fontStyle=1;fontSize=14;startSize=35;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="50" y="130" width="230" height="600" as="geometry" />
+        </mxCell>
+        <mxCell id="card_user" value="&lt;b style=&quot;font-size: 15px;&quot;&gt;End User&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size: 12px; color: #444;&quot;&gt;Web Browser &amp;amp; Mobile App&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#0288d1;fontStyle=1;" vertex="1" parent="col_user">
+          <mxGeometry x="20" y="50" width="190" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="card_react" value="&lt;b style=&quot;font-size: 14px;&quot;&gt;React 19 Frontend&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size: 11px; color: #555;&quot;&gt;(htut_ai/frontend)&lt;/span&gt;&lt;br&gt;&lt;br&gt;• &lt;b&gt;AI Chat Page&lt;/b&gt; (/chat)&lt;br&gt;• &lt;b&gt;Image Studio&lt;/b&gt; (/generate)&lt;br&gt;• &lt;b&gt;Image Edit&lt;/b&gt; (/image-edit)&lt;br&gt;• &lt;b&gt;Face Swap&lt;/b&gt; (/templates)&lt;br&gt;• &lt;b&gt;Video Studio&lt;/b&gt; (/templates)&lt;br&gt;&lt;br&gt;&lt;i style=&quot;font-size: 11px; color: #0277bd;&quot;&gt;REST API, SSE Stream &amp;amp;&#10;Reverb WebSocket Updates&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#0288d1;align=left;spacingLeft=12;" vertex="1" parent="col_user">
+          <mxGeometry x="20" y="135" width="190" height="245" as="geometry" />
+        </mxCell>
+        <mxCell id="note_client_feat" value="&lt;b&gt;Features:&lt;/b&gt;&lt;br&gt;• Instant Chat SSE Stream&lt;br&gt;• Instant 202 Accepted&lt;br&gt;• Live Reverb Push Updates" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e0f7fa;strokeColor=#0097a7;fontSize=11;align=left;spacingLeft=10;" vertex="1" parent="col_user">
+          <mxGeometry x="20" y="410" width="190" height="90" as="geometry" />
+        </mxCell>
+
+        <!-- COLUMN 2: API BACKEND -->
+        <mxCell id="col_api" value="2. HTUT AI BACKEND&#10;(အဓိက API ဆာဗာ)" style="swimlane;whiteSpace=wrap;html=1;fillColor=#fff8e1;strokeColor=#f57f17;fontStyle=1;fontSize=14;startSize=35;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="330" y="130" width="300" height="600" as="geometry" />
+        </mxCell>
+        <mxCell id="box_api_chat" value="&lt;b style=&quot;font-size: 13px;&quot;&gt;① AI Chat Service&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size: 11px; color: #666;&quot;&gt;SSE Streaming (Word-by-word)&lt;br&gt;Direct streaming response&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#f57f17;align=left;spacingLeft=10;" vertex="1" parent="col_api">
+          <mxGeometry x="15" y="50" width="270" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="box_api_gen" value="&lt;b style=&quot;font-size: 13px;&quot;&gt;② All 5 Generation Endpoints&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size: 11px; color: #666;&quot;&gt;&lt;b style=&quot;color: #e65100;&quot;&gt;100% Async Queued — Returns 202&lt;/b&gt;&lt;br&gt;Images, Edit, Face Swap, Video, I2V&lt;br&gt;Deducts points upfront &amp;amp; dispatches job&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#f57f17;align=left;spacingLeft=10;" vertex="1" parent="col_api">
+          <mxGeometry x="15" y="125" width="270" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="box_api_idemp" value="&lt;b style=&quot;font-size: 13px; color: #2e7d32;&quot;&gt;③ Idempotency &amp;amp; Safety Guard&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size: 11px; color: #555;&quot;&gt;Prevents double-charges and duplicate tasks.&lt;br&gt;Locks points via Central Auth S2S.&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f5e9;strokeColor=#2e7d32;align=left;spacingLeft=10;" vertex="1" parent="col_api">
+          <mxGeometry x="15" y="220" width="270" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="box_api_reverb" value="&lt;b style=&quot;font-size: 13px; color: #c2185b;&quot;&gt;④ Laravel Reverb (WebSocket)&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size: 11px; color: #555;&quot;&gt;Broadcasts live updates when any generation starts, finishes, or fails.&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fce4ec;strokeColor=#c2185b;align=left;spacingLeft=10;" vertex="1" parent="col_api">
+          <mxGeometry x="15" y="300" width="270" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="box_api_db" value="&lt;b style=&quot;font-size: 12px;&quot;&gt;Database (MariaDB)&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size: 11px; color: #555;&quot;&gt;Stores chat history, generations &amp;amp; points&lt;/span&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=8;fillColor=#ffffff;strokeColor=#f57f17;" vertex="1" parent="col_api">
+          <mxGeometry x="15" y="385" width="270" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- COLUMN 3: REDIS QUEUE & WORKERS -->
+        <mxCell id="col_queue" value="3. BACKGROUND WORKERS&#10;(နောက်ကွယ်မှ အလုပ်သမားများ)" style="swimlane;whiteSpace=wrap;html=1;fillColor=#fbe9e7;strokeColor=#d84315;fontStyle=1;fontSize=14;startSize=35;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="670" y="130" width="260" height="600" as="geometry" />
+        </mxCell>
+        <mxCell id="card_redis" value="&lt;b style=&quot;font-size: 14px;&quot;&gt;Redis 7 Queue&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size: 11px; color: #555;&quot;&gt;Holds all generation jobs safely&lt;/span&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=8;fillColor=#ffffff;strokeColor=#d84315;" vertex="1" parent="col_queue">
+          <mxGeometry x="20" y="55" width="220" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="card_workers" value="&lt;b style=&quot;font-size: 13px;&quot;&gt;5 Dedicated Queue Jobs:&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size: 11px; color: #444;&quot;&gt;• &lt;b&gt;ProcessImageGeneration&lt;/b&gt;&lt;br&gt;• &lt;b&gt;ProcessFaceSwap&lt;/b&gt;&lt;br&gt;• &lt;b&gt;ProcessImageEdit&lt;/b&gt;&lt;br&gt;• &lt;b&gt;ProcessImageToVideo&lt;/b&gt;&lt;br&gt;• &lt;b&gt;ProcessVideoFaceSwap&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;br&gt;&lt;i style=&quot;font-size: 11px; color: #d84315;&quot;&gt;Processes jobs asynchronously so server never freezes or crashes!&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d84315;align=left;spacingLeft=10;" vertex="1" parent="col_queue">
+          <mxGeometry x="20" y="145" width="220" height="195" as="geometry" />
+        </mxCell>
+        <mxCell id="card_refund_guarantee" value="&lt;b style=&quot;font-size: 13px; color: #2e7d32;&quot;&gt;100% Refund Guarantee&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size: 11px; color: #444;&quot;&gt;If any AI task fails or times out, worker automatically restores points via &lt;code&gt;refundPointsOnce()&lt;/code&gt;.&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f5e9;strokeColor=#2e7d32;align=left;spacingLeft=10;" vertex="1" parent="col_queue">
+          <mxGeometry x="20" y="360" width="220" height="90" as="geometry" />
+        </mxCell>
+
+        <!-- COLUMN 4: CENTRAL AUTH (POINTS & IDENTITY) -->
+        <mxCell id="col_auth" value="4. HTUT CENTRAL AUTH&#10;(ပွိုင့်နှင့် အကောင့်ထိန်းချုပ်စနစ်)" style="swimlane;whiteSpace=wrap;html=1;fillColor=#e8f5e9;strokeColor=#2e7d32;fontStyle=1;fontSize=14;startSize=35;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="970" y="130" width="230" height="600" as="geometry" />
+        </mxCell>
+        <mxCell id="card_sso" value="&lt;b style=&quot;font-size: 14px;&quot;&gt;Central SSO Login&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size: 11px; color: #555;&quot;&gt;Google &amp;amp; HTUT ID Login&lt;br&gt;Identifies customer account&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#2e7d32;" vertex="1" parent="col_auth">
+          <mxGeometry x="20" y="55" width="190" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="card_points" value="&lt;b style=&quot;font-size: 14px;&quot;&gt;Points Ledger&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size: 11px; color: #555;&quot;&gt;S2S Points API&lt;/span&gt;&lt;br&gt;&lt;br&gt;• &lt;b&gt;Deduct Points:&lt;/b&gt; Locked when job begins&lt;br&gt;&lt;br&gt;• &lt;b&gt;Refund Points:&lt;/b&gt; Recredited if job fails&lt;br&gt;&lt;br&gt;&lt;b style=&quot;color: #2e7d32; font-size: 11px;&quot;&gt;Unique Index Protection: Cannot double charge!&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#2e7d32;align=left;spacingLeft=10;" vertex="1" parent="col_auth">
+          <mxGeometry x="20" y="145" width="190" height="195" as="geometry" />
+        </mxCell>
+        <mxCell id="card_ca_db" value="&lt;b style=&quot;font-size: 12px;&quot;&gt;Points Database&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size: 11px; color: #555;&quot;&gt;customer_point_transactions&lt;/span&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=8;fillColor=#ffffff;strokeColor=#2e7d32;" vertex="1" parent="col_auth">
+          <mxGeometry x="20" y="360" width="190" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- COLUMN 5: EXTERNAL AI PROVIDER -->
+        <mxCell id="col_ai" value="5. EXTERNAL AI ENGINES&#10;(အပြင် AI ဝန်ဆောင်မှုများ)" style="swimlane;whiteSpace=wrap;html=1;fillColor=#eceff1;strokeColor=#455a64;fontStyle=1;fontSize=14;startSize=35;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="1250" y="130" width="200" height="600" as="geometry" />
+        </mxCell>
+        <mxCell id="card_segmind" value="&lt;b style=&quot;font-size: 14px;&quot;&gt;Segmind AI&lt;/b&gt;&lt;br&gt;&lt;br&gt;• &lt;b&gt;Kling AI:&lt;/b&gt; Image-to-Video&lt;br&gt;• &lt;b&gt;Hyperswap:&lt;/b&gt; Face Swap&lt;br&gt;• &lt;b&gt;Seedream:&lt;/b&gt; Text-to-Image&lt;br&gt;• &lt;b&gt;Flux:&lt;/b&gt; Image Editing" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#455a64;align=left;spacingLeft=10;" vertex="1" parent="col_ai">
+          <mxGeometry x="15" y="55" width="170" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="card_chat_ai" value="&lt;b style=&quot;font-size: 14px;&quot;&gt;AI Chat Model&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size: 11px; color: #555;&quot;&gt;(OpenAI / Segmind)&lt;/span&gt;&lt;br&gt;&lt;br&gt;• Streams words word-by-word back to user." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#455a64;align=left;spacingLeft=10;" vertex="1" parent="col_ai">
+          <mxGeometry x="15" y="235" width="170" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="card_spaces" value="&lt;b style=&quot;font-size: 14px;&quot;&gt;DigitalOcean Spaces&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size: 11px; color: #555;&quot;&gt;Cloud Storage (S3)&lt;br&gt;Stores generated videos &amp;amp; high-res images permanently.&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#455a64;" vertex="1" parent="col_ai">
+          <mxGeometry x="15" y="360" width="170" height="90" as="geometry" />
+        </mxCell>
+
+        <!-- ARROWS & CONNECTIONS (CLEAR & NUMBERED) -->
+        <mxCell id="arr_1" value="1. Submit Request" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#0288d1;strokeWidth=2;" edge="1" parent="1" source="card_react" target="box_api_gen">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arr_2" value="2. Deduct Points (S2S)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#2e7d32;strokeWidth=2;" edge="1" parent="1" source="box_api_idemp" target="card_points">
+          <mxGeometry relative="1" as="geometry">
+            <Array points="620 375; 950 375; 950 240" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arr_3" value="3. Push Job to Queue" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#f57f17;strokeWidth=2;" edge="1" parent="1" source="box_api_gen" target="card_redis">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arr_4" value="4. Return HTTP 202 Accepted (&amp;lt;200ms)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#0288d1;strokeWidth=2;dashed=1;" edge="1" parent="1" source="box_api_gen" target="card_react">
+          <mxGeometry relative="1" as="geometry">
+            <Array points="310 280; 310 320" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arr_5" value="5. Worker Invokes AI" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#d84315;strokeWidth=2;" edge="1" parent="1" source="card_workers" target="card_segmind">
+          <mxGeometry relative="1" as="geometry">
+            <Array points="910 370; 1230 370; 1230 210" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arr_6" value="6. If Failed, Auto-Refund" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#2e7d32;strokeWidth=2;" edge="1" parent="1" source="card_refund_guarantee" target="card_points">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- FOOTER LEGEND / EXPLANATION -->
+        <mxCell id="ftr" value="&lt;b&gt;Key Takeaway (မှတ်သားရန် အဓိကအချက်များ):&lt;/b&gt;&#10;1. &lt;b&gt;Unified Queue Flow:&lt;/b&gt; All 5 generation types (Images, Editing, Face Swap &amp;amp; Videos) run asynchronously via Redis background workers. Client gets HTTP 202 Accepted in &amp;lt; 200ms.&#10;2. &lt;b&gt;Chat SSE Streaming:&lt;/b&gt; Real-time word-by-word streaming delivers natural conversational AI experience.&#10;3. &lt;b&gt;Point Safety:&lt;/b&gt; Every transaction is protected with exact-once unique keys — users are NEVER double charged and ALWAYS refunded on failure." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fafafa;strokeColor=#bdbdbd;align=left;spacingLeft=15;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="50" y="760" width="1400" height="90" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -1,0 +1,72 @@
+<mxfile host="Electron" modified="2026-10-19T07:45:00.000Z" agent="Antigravity Architecture Documentation" version="24.0.0" type="device">
+  <diagram id="easy-points-safety" name="4. Points &amp; Refund Safety (Simple)">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1500" pageHeight="950" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- HEADER BANNER -->
+        <mxCell id="hdr4" value="&lt;b style=&quot;font-size: 22px;&quot;&gt;HTUT AI — Point Balance Protection &amp;amp; 100% Automatic Refund Safety&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size: 14px; color: #555;&quot;&gt;ပွိုင့်နှစ်ခါမပြတ်စေရန်နှင့် ဗီဒီယိုမရပါက အလိုအလျောက် ပွိုင့်ပြန်အမ်းသည့် အဓိက လုံခြုံရေး မဏ္ဍိုင် (၃) ခု&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f0f4f8;strokeColor=#bcccdc;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="50" y="30" width="1400" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- PILLAR 1: IDEMPOTENCY -->
+        <mxCell id="pil1" value="PILLAR 1: NEVER DOUBLE CHARGE&#10;(နှိပ်မှားသော်လည်း ပွိုင့် ၂ ခါ မဖြတ်စေရန်)" style="swimlane;whiteSpace=wrap;html=1;fillColor=#e3f2fd;strokeColor=#1565c0;fontStyle=1;fontSize=13;startSize=40;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="60" y="130" width="440" height="570" as="geometry" />
+        </mxCell>
+        <mxCell id="c1_problem" value="&lt;b style=&quot;color: #c62828;&quot;&gt;The Real Problem:&lt;/b&gt;&lt;br&gt;User clicks &amp;quot;Generate Video&amp;quot; 3 times fast because their internet is slow. Without protection, they get charged 3 times!" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffebee;strokeColor=#c62828;align=left;spacingLeft=10;" vertex="1" parent="pil1">
+          <mxGeometry x="20" y="55" width="400" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="c1_solution" value="&lt;b style=&quot;color: #1565c0;&quot;&gt;How HTUT AI Solves It:&lt;/b&gt;&lt;br&gt;1. Each request has a &lt;code&gt;client_idempotency_token&lt;/code&gt;.&lt;br&gt;2. Server checks if this token was already processed.&lt;br&gt;3. If token exists and prompt is the same:&lt;br&gt;   → Returns the existing generation result.&lt;br&gt;   → &lt;b style=&quot;color: #2e7d32;&quot;&gt;ZERO extra points are deducted!&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#1565c0;align=left;spacingLeft=10;" vertex="1" parent="pil1">
+          <mxGeometry x="20" y="140" width="400" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="c1_conflict" value="&lt;b&gt;Conflict Guard (HTTP 409):&lt;/b&gt;&lt;br&gt;If someone tries to send a completely different prompt with an old token, server rejects with &lt;b style=&quot;color: #c62828;&quot;&gt;HTTP 409 Conflict&lt;/b&gt; to protect against tampering." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#1565c0;align=left;spacingLeft=10;" vertex="1" parent="pil1">
+          <mxGeometry x="20" y="270" width="400" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="c1_box_badge" value="&lt;b style=&quot;color: #1565c0; font-size: 13px;&quot;&gt;Verified by: AIIdempotencyService&lt;/b&gt;&lt;br&gt;Works across all 5 AI features." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#bbdefb;strokeColor=#1976d2;align=center;" vertex="1" parent="pil1">
+          <mxGeometry x="20" y="375" width="400" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- PILLAR 2: AUTOMATIC REFUND -->
+        <mxCell id="pil2" value="PILLAR 2: 100% AUTOMATIC REFUND&#10;(ဗီဒီယိုမရပါက အလိုအလျောက် ပွိုင့်ပြန်အမ်းခြင်း)" style="swimlane;whiteSpace=wrap;html=1;fillColor=#fff8e1;strokeColor=#f57f17;fontStyle=1;fontSize=13;startSize=40;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="530" y="130" width="440" height="570" as="geometry" />
+        </mxCell>
+        <mxCell id="c2_problem" value="&lt;b style=&quot;color: #c62828;&quot;&gt;The Real Problem:&lt;/b&gt;&lt;br&gt;A 5-minute video generation times out on Segmind AI or the server restarts during processing." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffebee;strokeColor=#c62828;align=left;spacingLeft=10;" vertex="1" parent="pil2">
+          <mxGeometry x="20" y="55" width="400" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="c2_solution" value="&lt;b style=&quot;color: #f57f17;&quot;&gt;How HTUT AI Solves It:&lt;/b&gt;&lt;br&gt;1. Points are locked upfront when video is requested.&lt;br&gt;2. If the AI provider fails or errors occur:&lt;br&gt;   → The worker catch block calls &lt;code&gt;refundPointsOnce()&lt;/code&gt;.&lt;br&gt;   → Restores 100% of points back to user's wallet!&lt;br&gt;   → User gets notification &amp;amp; sees points restored." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#f57f17;align=left;spacingLeft=10;" vertex="1" parent="pil2">
+          <mxGeometry x="20" y="140" width="400" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="c2_exact" value="&lt;b&gt;Exact-Once Refund Guarantee:&lt;/b&gt;&lt;br&gt;The refund checks &lt;code&gt;points_refunded === null&lt;/code&gt; inside a strict database transaction. It is &lt;b style=&quot;color: #2e7d32;&quot;&gt;impossible to refund twice&lt;/b&gt; or cause accounting errors." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#f57f17;align=left;spacingLeft=10;" vertex="1" parent="pil2">
+          <mxGeometry x="20" y="270" width="400" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="c2_box_badge" value="&lt;b style=&quot;color: #e65100; font-size: 13px;&quot;&gt;Verified by: AIGeneration::refundPointsOnce()&lt;/b&gt;&lt;br&gt;Protects customer money under all failure scenarios." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe0b2;strokeColor=#f57f17;align=center;" vertex="1" parent="pil2">
+          <mxGeometry x="20" y="375" width="400" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- PILLAR 3: CENTRAL AUTH UNIQUENESS -->
+        <mxCell id="pil3" value="PILLAR 3: DATABASE LEDGER UNIQUENESS&#10;(ဒေတာဘေ့စ်အဆင့် ပွိုင့်လုံခြုံရေး)" style="swimlane;whiteSpace=wrap;html=1;fillColor=#e8f5e9;strokeColor=#2e7d32;fontStyle=1;fontSize=13;startSize=40;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="1000" y="130" width="440" height="570" as="geometry" />
+        </mxCell>
+        <mxCell id="c3_problem" value="&lt;b style=&quot;color: #c62828;&quot;&gt;The Real Problem:&lt;/b&gt;&lt;br&gt;If network delays cause the refund command to be sent twice over the network, could points be given twice?" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffebee;strokeColor=#c62828;align=left;spacingLeft=10;" vertex="1" parent="pil3">
+          <mxGeometry x="20" y="55" width="400" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="c3_solution" value="&lt;b style=&quot;color: #2e7d32;&quot;&gt;How Central Auth Solves It:&lt;/b&gt;&lt;br&gt;1. Every deduction uses ref: &lt;code&gt;&amp;quot;gen_{id}_deduct&amp;quot;&lt;/code&gt;.&lt;br&gt;2. Every refund uses ref: &lt;code&gt;&amp;quot;gen_{id}_refund&amp;quot;&lt;/code&gt;.&lt;br&gt;3. The database has a &lt;b&gt;UNIQUE INDEX&lt;/b&gt; on &lt;code&gt;[project_id, reference_id, type]&lt;/code&gt;.&lt;br&gt;4. Even if called 10 times, the DB rejects duplicates!" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#2e7d32;align=left;spacingLeft=10;" vertex="1" parent="pil3">
+          <mxGeometry x="20" y="140" width="400" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="c3_test" value="&lt;b&gt;Automated Verification:&lt;/b&gt;&lt;br&gt;Tested with &lt;code&gt;CustomerPointIdempotencyTest&lt;/code&gt;:&lt;br&gt;Sending duplicate deductions or duplicate refunds produces &lt;b style=&quot;color: #2e7d32;&quot;&gt;100% correct single-charge results&lt;/b&gt;." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#2e7d32;align=left;spacingLeft=10;" vertex="1" parent="pil3">
+          <mxGeometry x="20" y="270" width="400" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="c3_box_badge" value="&lt;b style=&quot;color: #1b5e20; font-size: 13px;&quot;&gt;Central Auth DB Unique Index&lt;/b&gt;&lt;br&gt;Passing 170 Central Auth test suite assertions." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#c8e6c9;strokeColor=#388e3c;align=center;" vertex="1" parent="pil3">
+          <mxGeometry x="20" y="375" width="400" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- FOOTER -->
+        <mxCell id="ftr4" value="&lt;b&gt;Bottom Line (အဓိကအာမခံချက်):&lt;/b&gt; Customers are NEVER double-charged, NEVER lose points if AI fails, and ALWAYS have their transactions protected at the database level." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fafafa;strokeColor=#bdbdbd;align=center;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="50" y="730" width="1400" height="50" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
