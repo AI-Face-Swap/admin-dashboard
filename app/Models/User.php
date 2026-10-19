@@ -88,4 +88,13 @@ class User extends Authenticatable implements PasskeyUser
     {
         return $this->roles()->where('slug', 'super-admin')->exists();
     }
+
+    /**
+     * Assign a role to the user.
+     */
+    public function assignRole(string|Role $role): void
+    {
+        $roleModel = is_string($role) ? Role::where('slug', $role)->firstOrFail() : $role;
+        $this->roles()->syncWithoutDetaching([$roleModel->id]);
+    }
 }

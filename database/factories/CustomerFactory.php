@@ -31,6 +31,7 @@ class CustomerFactory extends Factory
             'avatar' => null,
             'auth_provider' => null,
             'auth_provider_id' => null,
+            'central_auth_uuid' => 'cust-uuid-'.Str::uuid(),
             'customer_type' => Customer::TYPE_FREE,
             'email_verified_at' => now(),
             'last_active_at' => null,
