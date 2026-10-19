@@ -13,12 +13,14 @@ use App\Http\Controllers\Admin\HomeShowcaseController;
 use App\Http\Controllers\Admin\PartnerController;
 use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\ProviderController;
+use App\Http\Controllers\Admin\QueueController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\SliderController;
 use App\Http\Controllers\Admin\TemplateCategoryController;
 use App\Http\Controllers\Admin\TemplateController;
 use App\Http\Controllers\Admin\TemplateTagController;
+use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Api\Auth\SocialAuthController;
 use App\Http\Controllers\Api\HtutCentralAuthController;
 use Illuminate\Support\Facades\Route;
@@ -63,6 +65,10 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
 
     Route::get('ai', [AIController::class, 'index'])->middleware('permission:ai.view')->name('ai.index');
     Route::get('ai/generations/{generation}/download', [AIController::class, 'download'])->middleware('permission:ai.view')->name('ai.download');
+
+    Route::get('queue', [QueueController::class, 'index'])->middleware('permission:ai.view')->name('queue.index');
+    Route::get('queue/metrics', [QueueController::class, 'metrics'])->middleware('permission:ai.view')->name('queue.metrics');
+    Route::post('queue/{generation}/retry', [QueueController::class, 'retry'])->middleware('permission:ai.view')->name('queue.retry');
 
     Route::get('api-playground', [APIPlaygroundController::class, 'index'])->middleware('permission:api.playground')->name('api-playground.index');
 

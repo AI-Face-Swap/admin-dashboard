@@ -1,5 +1,6 @@
 import { Link } from '@inertiajs/react';
 import {
+    Activity,
     BookOpen,
     Cpu,
     LayoutGrid,
@@ -37,6 +38,12 @@ const mainNavItems: NavItem[] = [
         title: 'Dashboard',
         href: dashboard(),
         icon: LayoutGrid,
+    },
+    {
+        title: 'Queue Monitor',
+        href: '/admin/queue',
+        icon: Activity,
+        permission: 'ai.view',
     },
     {
         title: 'AI Generation',
