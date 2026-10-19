@@ -29,8 +29,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
 
         // API and S2S webhook routes use Bearer tokens or S2S credentials, not session cookies.
-        // CSRF is not needed — skip it for all /api/* and /v1/* routes.
-        $middleware->validateCsrfTokens(except: ['api/*', 'v1/*']);
+        // CSRF is not needed — skip it for all /api/*, /v1/*, and broadcasting/auth routes.
+        $middleware->validateCsrfTokens(except: ['api/*', 'v1/*', 'broadcasting/auth']);
 
         $middleware->alias([
             'permission' => EnsureUserHasPermission::class,
