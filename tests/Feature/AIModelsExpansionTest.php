@@ -26,6 +26,7 @@ class AIModelsExpansionTest extends TestCase
         $this->seed(AIModelSeeder::class);
 
         Storage::fake('spaces');
+        \Illuminate\Support\Facades\Queue::fake();
     }
 
     public function test_point_costs_api_returns_all_eight_new_models(): void
@@ -102,8 +103,8 @@ class AIModelsExpansionTest extends TestCase
                 'quality' => 'medium',
             ]);
 
-        $response->assertOk()
-            ->assertJsonPath('status', 'completed')
+        $response->assertStatus(202)
+            ->assertJsonPath('status', 'queued')
             ->assertJsonPath('generation.points_spent', 12)
             ->assertJsonPath('generation.points_remaining', 38);
 
@@ -114,21 +115,6 @@ class AIModelsExpansionTest extends TestCase
     {
         $customer = Customer::factory()->create(['coins' => 50]);
 
-        Http::fake([
-            'api.segmind.com/v2/bria-extract-object' => Http::response([
-                'request_id' => 'req_bria_123',
-                'status_url' => 'https://api.segmind.com/v2/requests/req_bria_123/status',
-                'response_url' => 'https://api.segmind.com/v2/requests/req_bria_123',
-            ], 200),
-            'api.segmind.com/v2/requests/req_bria_123/status' => Http::response([
-                'status' => 'COMPLETED',
-            ], 200),
-            'api.segmind.com/v2/requests/req_bria_123' => Http::response([
-                'output' => base64_encode('fake-bria-cutout-png'),
-                'metrics' => ['inference_time' => 1.5, 'cost' => 0.04],
-            ], 200),
-        ]);
-
         $response = $this->actingAs($customer, 'sanctum')
             ->postJson('/api/v1/ai/image-edit', [
                 'model' => 'bria-extract-object',
@@ -136,8 +122,8 @@ class AIModelsExpansionTest extends TestCase
                 'input_image_url' => 'https://example.com/portrait.jpg',
             ]);
 
-        $response->assertOk()
-            ->assertJsonPath('status', 'completed')
+        $response->assertStatus(202)
+            ->assertJsonPath('status', 'queued')
             ->assertJsonPath('generation.points_spent', 6)
             ->assertJsonPath('generation.points_remaining', 44);
 
@@ -148,29 +134,14 @@ class AIModelsExpansionTest extends TestCase
     {
         $customer = Customer::factory()->create(['coins' => 50]);
 
-        Http::fake([
-            'api.segmind.com/v2/ideogram-4.5' => Http::response([
-                'request_id' => 'req_t2i_123',
-                'status_url' => 'https://api.segmind.com/v2/requests/req_t2i_123/status',
-                'response_url' => 'https://api.segmind.com/v2/requests/req_t2i_123',
-            ], 200),
-            'api.segmind.com/v2/requests/req_t2i_123/status' => Http::response([
-                'status' => 'COMPLETED',
-            ], 200),
-            'api.segmind.com/v2/requests/req_t2i_123' => Http::response([
-                'output' => base64_encode('fake-t2i-image-data'),
-                'metrics' => ['inference_time' => 2.0, 'cost' => 0.08],
-            ], 200),
-        ]);
-
         $response = $this->actingAs($customer, 'sanctum')
             ->postJson('/api/v1/ai/images', [
                 'model' => 'ideogram-4.5',
                 'prompt' => 'A coffee cup with the text MORNING BREW written on it',
             ]);
 
-        $response->assertOk()
-            ->assertJsonPath('status', 'completed')
+        $response->assertStatus(202)
+            ->assertJsonPath('status', 'queued')
             ->assertJsonPath('generation.points_spent', 8)
             ->assertJsonPath('generation.points_remaining', 42);
 
@@ -181,21 +152,6 @@ class AIModelsExpansionTest extends TestCase
     {
         $customer = Customer::factory()->create(['coins' => 100]);
 
-        Http::fake([
-            'api.segmind.com/v2/wan3.0-video-prime' => Http::response([
-                'request_id' => 'req_vid_123',
-                'status_url' => 'https://api.segmind.com/v2/requests/req_vid_123/status',
-                'response_url' => 'https://api.segmind.com/v2/requests/req_vid_123',
-            ], 200),
-            'api.segmind.com/v2/requests/req_vid_123/status' => Http::response([
-                'status' => 'COMPLETED',
-            ], 200),
-            'api.segmind.com/v2/requests/req_vid_123' => Http::response([
-                'output' => ['https://example.com/video_1080p.mp4'],
-                'metrics' => ['inference_time' => 10.0, 'cost' => 0.35],
-            ], 200),
-        ]);
-
         $response = $this->actingAs($customer, 'sanctum')
             ->postJson('/api/v1/ai/image-to-video', [
                 'model' => 'wan3.0-video-prime',
@@ -204,8 +160,8 @@ class AIModelsExpansionTest extends TestCase
                 'resolution' => '1080p',
             ]);
 
-        $response->assertOk()
-            ->assertJsonPath('status', 'completed')
+        $response->assertStatus(202)
+            ->assertJsonPath('status', 'queued')
             ->assertJsonPath('generation.points_spent', 35)
             ->assertJsonPath('generation.points_remaining', 65);
 

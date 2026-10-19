@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Events\AIGenerationUpdated;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\VideoFaceSwapRequest;
 use App\Jobs\ProcessVideoFaceSwap;
@@ -10,6 +11,7 @@ use App\Models\AIProvider;
 use App\Models\Customer;
 use App\Models\Template;
 use App\Models\User;
+use App\Services\AIIdempotencyService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\UploadedFile;
@@ -54,10 +56,7 @@ class AIVideoFaceSwapController extends Controller
         }
 
         $requester = $request->user();
-
-        if ($requester instanceof Customer) {
-            $this->authorizeCustomerPoints($requester, $templateCost);
-        }
+        $idempotencyToken = $request->string('client_idempotency_token')->toString() ?: null;
 
         // Build the payload for the provider.
         $payload = [
@@ -68,6 +67,20 @@ class AIVideoFaceSwapController extends Controller
             'target_face_index' => $request->integer('target_face_index', 0),
         ];
 
+        // Check for existing generation with the same idempotency token
+        if ($idempotencyResponse = AIIdempotencyService::check(
+            $requester,
+            $idempotencyToken,
+            AIGeneration::OPERATION_VIDEO_FACE_SWAP,
+            $payload
+        )) {
+            return $idempotencyResponse;
+        }
+
+        if ($requester instanceof Customer) {
+            $this->authorizeCustomerPoints($requester, $templateCost);
+        }
+
         // Create the generation row (status: queued).
         $generation = AIGeneration::create([
             'user_id' => $requester instanceof User ? $requester->id : null,
@@ -77,7 +90,15 @@ class AIVideoFaceSwapController extends Controller
             'operation' => AIGeneration::OPERATION_VIDEO_FACE_SWAP,
             'status' => AIGeneration::STATUS_QUEUED,
             'input_metadata' => $payload,
+            'client_idempotency_token' => $idempotencyToken,
         ]);
+
+        if ($requester instanceof Customer && $templateCost > 0) {
+            $requester->spendPoints($templateCost, "Video face swap ({$generation->id})", "gen_{$generation->id}_deduct");
+            $generation->update(['points_spent' => $templateCost]);
+        }
+
+        event(new AIGenerationUpdated($generation));
 
         // Dispatch the queued job.
         ProcessVideoFaceSwap::dispatch(
@@ -94,6 +115,8 @@ class AIVideoFaceSwapController extends Controller
                 'id' => $generation->id,
                 'operation' => $generation->operation,
                 'status' => $generation->status,
+                'points_spent' => $generation->points_spent,
+                'points_remaining' => $requester instanceof Customer ? $requester->points : null,
                 'message' => 'Video face-swap job dispatched. Poll /api/v1/ai/generations/'.$generation->id.' for status.',
             ],
         ], 202);

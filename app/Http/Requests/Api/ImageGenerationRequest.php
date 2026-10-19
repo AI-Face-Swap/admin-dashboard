@@ -33,6 +33,7 @@ class ImageGenerationRequest extends FormRequest
             'seed' => ['nullable', 'integer', 'min:0'],
             'image_format' => ['nullable', 'string', 'in:png,jpg,webp'],
             'quality' => ['nullable', 'integer', 'in:80,85,90,95'],
+            'client_idempotency_token' => ['nullable', 'string', 'max:255'],
         ];
     }
 }

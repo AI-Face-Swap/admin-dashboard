@@ -28,10 +28,10 @@ class FaceSwapRequest extends FormRequest
         return [
             'face_image' => ['nullable', 'image', 'max:10240'], // 10 MB
             'face_image_url' => ['nullable', 'url', 'max:2048'],
-            'template_slug' => ['nullable', 'string', 'max:255'],
-            'target_image_url' => ['nullable', 'url', 'max:2048'],
+            'template_slug' => ['nullable', 'string', 'max:255'],'target_image_url' => ['nullable', 'url', 'max:2048'],
+            'client_idempotency_token' => ['nullable', 'string', 'max:255'],
         ];
-    }
+}
 
     /**
      * Ensure exactly one face source and one target are provided.

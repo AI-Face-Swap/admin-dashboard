@@ -24,25 +24,12 @@ class ImageGenerationApiTest extends TestCase
         Storage::fake('spaces');
     }
 
-    /** Image generation creates a generation and returns 200 */
+    /** Image generation creates a queued generation and returns 202 */
     public function test_image_generation_creates_generation(): void
     {
-        $customer = Customer::factory()->create(['coins' => 200]);
+        \Illuminate\Support\Facades\Queue::fake();
 
-        Http::fake([
-            'api.segmind.com/v2/seedream-v5-lite-text-to-image' => Http::response([
-                'request_id' => 'req_abc123',
-                'status_url' => 'https://api.segmind.com/v2/requests/req_abc123/status',
-                'response_url' => 'https://api.segmind.com/v2/requests/req_abc123',
-            ], 200),
-            'api.segmind.com/v2/requests/req_abc123/status' => Http::response([
-                'status' => 'COMPLETED',
-            ], 200),
-            'api.segmind.com/v2/requests/req_abc123' => Http::response([
-                'output' => base64_encode('fake-image-data'),
-                'metrics' => ['inference_time' => 1.5, 'cost' => 0.02],
-            ], 200),
-        ]);
+        $customer = Customer::factory()->create(['coins' => 200]);
 
         $response = $this->actingAs($customer, 'sanctum')
             ->postJson('/api/v1/ai/images', [
@@ -50,13 +37,50 @@ class ImageGenerationApiTest extends TestCase
                 'model' => 'seedream-v5-lite-text-to-image',
             ]);
 
-        $response->assertOk()->assertJson([
-            'status' => 'completed',
+        $response->assertStatus(202)->assertJson([
+            'status' => 'queued',
             'generation' => [
                 'operation' => 'image-generation',
-                'status' => 'completed',
+                'status' => 'queued',
             ],
         ]);
+    }
+
+    /** Image generation dispatches queued job */
+    public function test_image_generation_dispatches_queued_job(): void
+    {
+        \Illuminate\Support\Facades\Queue::fake();
+
+        $customer = Customer::factory()->create(['coins' => 200]);
+        \Illuminate\Support\Facades\Cache::put("customer_points_{$customer->central_auth_uuid}", 200, 30);
+
+        \Illuminate\Support\Facades\Http::fake([
+            '*/api/v1/s2s/points*' => \Illuminate\Support\Facades\Http::response(['success' => true, 'points' => 195], 200),
+        ]);
+
+        $response = $this->actingAs($customer, 'sanctum')
+            ->postJson('/api/v1/ai/images', [
+                'prompt' => 'A magical forest with glowing fireflies',
+                'model' => 'seedream-v5-lite-text-to-image',
+                'client_idempotency_token' => 'tok_async_img_123',
+            ]);
+
+        $response->assertStatus(202)
+            ->assertJsonPath('status', 'queued')
+            ->assertJsonPath('generation.status', 'queued');
+
+        \Illuminate\Support\Facades\Queue::assertPushed(\App\Jobs\ProcessImageGeneration::class);
+
+        // Repeated request with same token returns idempotent duplicate without re-dispatching
+        $duplicateResponse = $this->actingAs($customer, 'sanctum')
+            ->postJson('/api/v1/ai/images', [
+                'prompt' => 'A magical forest with glowing fireflies',
+                'model' => 'seedream-v5-lite-text-to-image',
+                'client_idempotency_token' => 'tok_async_img_123',
+            ]);
+
+        $duplicateResponse->assertStatus(202)
+            ->assertJsonPath('idempotency.duplicate', true);
     }
 
     /** Prompt is required */
@@ -110,6 +134,8 @@ class ImageGenerationApiTest extends TestCase
     /** Validation accepts valid parameters */
     public function test_valid_parameters_are_accepted(): void
     {
+        \Illuminate\Support\Facades\Queue::fake();
+
         $customer = Customer::factory()->create(['coins' => 200]);
 
         Http::fake([
@@ -154,6 +180,100 @@ class ImageGenerationApiTest extends TestCase
                 'quality' => 95,
             ]);
 
-        $response->assertOk();
+        $response->assertStatus(202);
+    }
+
+    /** ProcessImageGeneration job executes and completes generation */
+    public function test_process_image_generation_job_executes_and_completes(): void
+    {
+        $customer = Customer::factory()->create(['coins' => 100]);
+        \Illuminate\Support\Facades\Cache::put("customer_points_{$customer->central_auth_uuid}", 100, 30);
+
+        Http::fake([
+            'api.segmind.com/v2/seedream-v5-lite-text-to-image' => Http::response([
+                'request_id' => 'req_job_123',
+                'status_url' => 'https://api.segmind.com/v2/requests/req_job_123/status',
+                'response_url' => 'https://api.segmind.com/v2/requests/req_job_123',
+            ], 200),
+            'api.segmind.com/v2/requests/req_job_123/status' => Http::response(['status' => 'COMPLETED'], 200),
+            'api.segmind.com/v2/requests/req_job_123' => Http::response([
+                'output' => base64_encode('fake-image-data'),
+                'metrics' => ['inference_time' => 1.2, 'cost' => 0.01],
+            ], 200),
+            '*/api/v1/s2s/points*' => Http::response(['success' => true, 'points' => 95], 200),
+        ]);
+
+        $provider = \App\Models\AIProvider::where('slug', 'segmind')->first();
+
+        $generation = \App\Models\AIGeneration::create([
+            'customer_id' => $customer->id,
+            'provider_id' => $provider?->id ?? 1,
+            'operation' => \App\Models\AIGeneration::OPERATION_IMAGE,
+            'status' => \App\Models\AIGeneration::STATUS_QUEUED,
+            'input_metadata' => ['prompt' => 'A sunset over mountains'],
+        ]);
+
+        $job = new \App\Jobs\ProcessImageGeneration(
+            generationId: $generation->id,
+            payload: ['prompt' => 'A sunset over mountains'],
+            customerId: $customer->id,
+            pointCost: 5,
+            model: 'seedream-v5-lite-text-to-image'
+        );
+
+        $job->handle(app(\App\AI\Services\AIService::class));
+
+        $generation->refresh();
+        $this->assertEquals(\App\Models\AIGeneration::STATUS_COMPLETED, $generation->status);
+        $this->assertEquals(5, $generation->points_spent);
+        $this->assertNotEmpty($generation->output_metadata);
+    }
+
+    /** ProcessImageGeneration job refunds points on failure */
+    public function test_process_image_generation_job_refunds_on_failure(): void
+    {
+        $customer = Customer::factory()->create(['coins' => 100]);
+        \Illuminate\Support\Facades\Cache::put("customer_points_{$customer->central_auth_uuid}", 100, 30);
+
+        Http::fake([
+            'api.segmind.com/v2/seedream-v5-lite-text-to-image' => Http::response([
+                'request_id' => 'req_fail_123',
+                'status_url' => 'https://api.segmind.com/v2/requests/req_fail_123/status',
+                'response_url' => 'https://api.segmind.com/v2/requests/req_fail_123',
+            ], 200),
+            'api.segmind.com/v2/requests/req_fail_123/status' => Http::response(['status' => 'FAILED', 'error' => 'GPU out of memory'], 200),
+            '*/api/v1/s2s/points*' => Http::response(['success' => true, 'points' => 100], 200),
+        ]);
+
+        $provider = \App\Models\AIProvider::where('slug', 'segmind')->first();
+
+        $generation = \App\Models\AIGeneration::create([
+            'customer_id' => $customer->id,
+            'provider_id' => $provider?->id ?? 1,
+            'operation' => \App\Models\AIGeneration::OPERATION_IMAGE,
+            'status' => \App\Models\AIGeneration::STATUS_QUEUED,
+            'points_spent' => 5,
+            'input_metadata' => ['prompt' => 'A failing test image'],
+        ]);
+
+        $job = new \App\Jobs\ProcessImageGeneration(
+            generationId: $generation->id,
+            payload: ['prompt' => 'A failing test image'],
+            customerId: $customer->id,
+            pointCost: 5,
+            model: 'seedream-v5-lite-text-to-image'
+        );
+
+        try {
+            $job->handle(app(\App\AI\Services\AIService::class));
+            $this->fail('Expected exception was not thrown');
+        } catch (\Throwable $e) {
+            // Expected
+        }
+
+        $generation->refresh();
+        $this->assertEquals(\App\Models\AIGeneration::STATUS_FAILED, $generation->status);
+        $this->assertEquals(5, $generation->points_refunded);
+        $this->assertNotNull($generation->refunded_at);
     }
 }

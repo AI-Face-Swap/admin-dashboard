@@ -26,7 +26,7 @@ beforeEach(function () {
 });
 
 test('admin session cookie authenticates the shared API without a token', function () {
-    fakeFaceSwapApi();
+    \Illuminate\Support\Facades\Queue::fake();
 
     config(['session.driver' => 'database']);
 
@@ -49,9 +49,9 @@ test('admin session cookie authenticates the shared API without a token', functi
         'target_image_url' => 'https://example.com/target.jpg',
     ]);
 
-    $response->assertOk()
-        ->assertJsonPath('status', 'completed')
-        ->assertJsonPath('generation.request_id', 'req-api-1');
+    $response->assertStatus(202)
+        ->assertJsonPath('status', 'queued')
+        ->assertJsonPath('generation.status', 'queued');
 
     $generation = AIGeneration::first();
 

@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\AI\DTOs\GenerationRequest;
 use App\AI\Services\AIService;
+use App\Events\AIGenerationUpdated;
 use App\Models\AIGeneration;
 use App\Models\Customer;
 use Illuminate\Bus\Queueable;
@@ -61,7 +62,13 @@ class ProcessVideoFaceSwap implements ShouldQueue
             return;
         }
 
-        $generation->update(['status' => AIGeneration::STATUS_PROCESSING]);
+        $generation->update([
+            'status' => AIGeneration::STATUS_PROCESSING,
+            'submission_state' => AIGeneration::SUBMISSION_SUBMITTING,
+            'submitted_at' => now(),
+        ]);
+
+        event(new AIGenerationUpdated($generation));
 
         $requester = $this->customerId
             ? Customer::find($this->customerId)
@@ -79,12 +86,18 @@ class ProcessVideoFaceSwap implements ShouldQueue
                 $generation,
             );
 
-            // Deduct points on successful completion.
+            $generation->update([
+                'submission_state' => AIGeneration::SUBMISSION_SUBMITTED,
+            ]);
+
+            // Deduct points on successful completion if not already deducted upfront
             $cost = $this->pointCost > 0 ? $this->pointCost : $this->coinCost;
-            if ($requester instanceof Customer && $cost > 0 && $result->status === 'completed') {
-                $requester->spendPoints($cost, "Video face swap ({$generation->id})", $generation->request_id);
+            if ($requester instanceof Customer && $cost > 0 && ($generation->points_spent ?? 0) <= 0 && $result->status === 'completed') {
+                $requester->spendPoints($cost, "Video face swap ({$generation->id})", "gen_{$generation->id}_deduct");
                 $generation->update(['points_spent' => $cost]);
             }
+
+            event(new AIGenerationUpdated($generation->fresh()));
         } catch (\Throwable $exception) {
             Log::error("ProcessVideoFaceSwap failed for generation {$this->generationId}: {$exception->getMessage()}");
 
@@ -92,6 +105,11 @@ class ProcessVideoFaceSwap implements ShouldQueue
                 'status' => AIGeneration::STATUS_FAILED,
                 'error' => $exception->getMessage(),
             ]);
+
+            // Durably refund points if already spent
+            $generation->refundPointsOnce("Refund for failed video face-swap ({$generation->id})");
+
+            event(new AIGenerationUpdated($generation->fresh()));
 
             throw $exception;
         }

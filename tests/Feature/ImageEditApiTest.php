@@ -27,10 +27,13 @@ class ImageEditApiTest extends TestCase
         $this->seed(AIProviderSeeder::class);
 
         Storage::fake('spaces');
+        \Illuminate\Support\Facades\Queue::fake();
     }
 
     public function test_flux_kontext_dev_creates_completed_generation(): void
     {
+        \Illuminate\Support\Facades\Queue::fake();
+
         $customer = Customer::factory()->create(['coins' => 100]);
 
         Http::fake([
@@ -60,43 +63,40 @@ class ImageEditApiTest extends TestCase
                 'output_quality' => 90,
             ]);
 
-        $response->assertOk()->assertJson([
-            'status' => 'completed',
+        $response->assertStatus(202)->assertJson([
+            'status' => 'queued',
             'generation' => [
                 'operation' => 'image-editing',
-                'status' => 'completed',
-                'cost' => '0.0400',
+                'status' => 'queued',
                 'points_spent' => 10,
                 'points_remaining' => 90,
             ],
         ]);
 
+        \Illuminate\Support\Facades\Queue::assertPushed(\App\Jobs\ProcessImageEdit::class);
+
         $this->assertEquals(90, $customer->fresh()->coins);
-        $this->assertDatabaseHas('ai_generations', [
-            'operation' => 'image-editing',
-            'status' => 'completed',
-            'coins_spent' => 10,
-        ]);
+        $generation = AIGeneration::first();
+        $this->assertEquals('queued', $generation->status);
+
+        // Execute background job
+        $job = new \App\Jobs\ProcessImageEdit(
+            generationId: $generation->id,
+            payload: $generation->input_metadata,
+            customerId: $customer->id,
+            pointCost: 10,
+            model: 'flux-kontext-dev',
+        );
+        $job->handle(app(\App\AI\Services\AIService::class));
+
+        $this->assertEquals('completed', $generation->fresh()->status);
     }
 
     public function test_multi_image_kontext_max_with_uploaded_files(): void
     {
-        $customer = Customer::factory()->create(['coins' => 100]);
+        \Illuminate\Support\Facades\Queue::fake();
 
-        Http::fake([
-            'api.segmind.com/v2/multi-image-kontext-max' => Http::response([
-                'request_id' => 'req_multi_456',
-                'status_url' => 'https://api.segmind.com/v2/requests/req_multi_456/status',
-                'response_url' => 'https://api.segmind.com/v2/requests/req_multi_456',
-            ], 200),
-            'api.segmind.com/v2/requests/req_multi_456/status' => Http::response([
-                'status' => 'COMPLETED',
-            ], 200),
-            'api.segmind.com/v2/requests/req_multi_456' => Http::response([
-                'output' => base64_encode('fake-multi-image-data'),
-                'metrics' => ['inference_time' => 3.2, 'cost' => 0.05],
-            ], 200),
-        ]);
+        $customer = Customer::factory()->create(['coins' => 100]);
 
         $img1 = UploadedFile::fake()->image('base.jpg');
         $img2 = UploadedFile::fake()->image('dress.png');
@@ -112,13 +112,15 @@ class ImageEditApiTest extends TestCase
                 'safety_tolerance' => 1,
             ]);
 
-        $response->assertOk()->assertJson([
-            'status' => 'completed',
+        $response->assertStatus(202)->assertJson([
+            'status' => 'queued',
             'generation' => [
                 'operation' => 'image-editing',
-                'status' => 'completed',
+                'status' => 'queued',
             ],
         ]);
+
+        \Illuminate\Support\Facades\Queue::assertPushed(\App\Jobs\ProcessImageEdit::class);
     }
 
     public function test_validation_rejects_missing_image_sources(): void
@@ -220,33 +222,19 @@ class ImageEditApiTest extends TestCase
                 'watermark' => 'false',
             ]);
 
-        $response->assertOk()->assertJson([
-            'status' => 'completed',
+        $response->assertStatus(202)->assertJson([
+            'status' => 'queued',
             'generation' => [
                 'operation' => 'image-editing',
-                'status' => 'completed',
+                'status' => 'queued',
             ],
         ]);
+        \Illuminate\Support\Facades\Queue::assertPushed(\App\Jobs\ProcessImageEdit::class);
     }
 
     public function test_gpt_image_1_5_edit_creates_completed_generation(): void
     {
         $customer = Customer::factory()->create(['coins' => 100]);
-
-        Http::fake([
-            'api.segmind.com/v2/gpt-image-1.5-edit' => Http::response([
-                'request_id' => 'req_gpt_999',
-                'status_url' => 'https://api.segmind.com/v2/requests/req_gpt_999/status',
-                'response_url' => 'https://api.segmind.com/v2/requests/req_gpt_999',
-            ], 200),
-            'api.segmind.com/v2/requests/req_gpt_999/status' => Http::response([
-                'status' => 'COMPLETED',
-            ], 200),
-            'api.segmind.com/v2/requests/req_gpt_999' => Http::response([
-                'output' => base64_encode('fake-gpt-image-data'),
-                'metrics' => ['inference_time' => 5.0, 'cost' => 0.08],
-            ], 200),
-        ]);
 
         $response = $this->actingAs($customer, 'sanctum')
             ->postJson('/api/v1/ai/image-edit', [
@@ -258,33 +246,19 @@ class ImageEditApiTest extends TestCase
                 'output_compression' => 100,
             ]);
 
-        $response->assertOk()->assertJson([
-            'status' => 'completed',
+        $response->assertStatus(202)->assertJson([
+            'status' => 'queued',
             'generation' => [
                 'operation' => 'image-editing',
-                'status' => 'completed',
+                'status' => 'queued',
             ],
         ]);
+        \Illuminate\Support\Facades\Queue::assertPushed(\App\Jobs\ProcessImageEdit::class);
     }
 
     public function test_kling_3_image2image_creates_completed_generation(): void
     {
         $customer = Customer::factory()->create(['coins' => 100]);
-
-        Http::fake([
-            'api.segmind.com/v2/kling-3-image2image' => Http::response([
-                'request_id' => 'req_kling_111',
-                'status_url' => 'https://api.segmind.com/v2/requests/req_kling_111/status',
-                'response_url' => 'https://api.segmind.com/v2/requests/req_kling_111',
-            ], 200),
-            'api.segmind.com/v2/requests/req_kling_111/status' => Http::response([
-                'status' => 'COMPLETED',
-            ], 200),
-            'api.segmind.com/v2/requests/req_kling_111' => Http::response([
-                'output' => base64_encode('fake-kling-image-data'),
-                'metrics' => ['inference_time' => 6.2, 'cost' => 0.06],
-            ], 200),
-        ]);
 
         $response = $this->actingAs($customer, 'sanctum')
             ->postJson('/api/v1/ai/image-edit', [
@@ -295,33 +269,19 @@ class ImageEditApiTest extends TestCase
                 'aspect_ratio' => '16:9',
             ]);
 
-        $response->assertOk()->assertJson([
-            'status' => 'completed',
+        $response->assertStatus(202)->assertJson([
+            'status' => 'queued',
             'generation' => [
                 'operation' => 'image-editing',
-                'status' => 'completed',
+                'status' => 'queued',
             ],
         ]);
+        \Illuminate\Support\Facades\Queue::assertPushed(\App\Jobs\ProcessImageEdit::class);
     }
 
     public function test_nano_banana_pro_creates_completed_generation(): void
     {
         $customer = Customer::factory()->create(['coins' => 100]);
-
-        Http::fake([
-            'api.segmind.com/v2/nano-banana-pro' => Http::response([
-                'request_id' => 'req_nano_222',
-                'status_url' => 'https://api.segmind.com/v2/requests/req_nano_222/status',
-                'response_url' => 'https://api.segmind.com/v2/requests/req_nano_222',
-            ], 200),
-            'api.segmind.com/v2/requests/req_nano_222/status' => Http::response([
-                'status' => 'COMPLETED',
-            ], 200),
-            'api.segmind.com/v2/requests/req_nano_222' => Http::response([
-                'output' => base64_encode('fake-nano-banana-data'),
-                'metrics' => ['inference_time' => 3.8, 'cost' => 0.05],
-            ], 200),
-        ]);
 
         $response = $this->actingAs($customer, 'sanctum')
             ->postJson('/api/v1/ai/image-edit', [
@@ -332,12 +292,13 @@ class ImageEditApiTest extends TestCase
                 'output_resolution' => '4K',
             ]);
 
-        $response->assertOk()->assertJson([
-            'status' => 'completed',
+        $response->assertStatus(202)->assertJson([
+            'status' => 'queued',
             'generation' => [
                 'operation' => 'image-editing',
-                'status' => 'completed',
+                'status' => 'queued',
             ],
         ]);
+        \Illuminate\Support\Facades\Queue::assertPushed(\App\Jobs\ProcessImageEdit::class);
     }
 }

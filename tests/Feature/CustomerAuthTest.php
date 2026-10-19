@@ -140,6 +140,7 @@ test('an invalid token is rejected with 401', function () {
 });
 
 test('a customer can call face swap with a token and coins are deducted', function () {
+    \Illuminate\Support\Facades\Queue::fake();
     fakeCustomerFaceSwap();
 
     $template = Template::create([
@@ -155,9 +156,9 @@ test('a customer can call face swap with a token and coins are deducted', functi
     $this->withToken($token)->postJson('/api/v1/ai/face-swap', [
         'face_image' => UploadedFile::fake()->image('face.jpg'),
         'template_slug' => $template->slug,
-    ])->assertOk()
-        ->assertJsonPath('generation.coins_spent', 20)
-        ->assertJsonPath('generation.coins_remaining', 80);
+    ])->assertStatus(202)
+        ->assertJsonPath('generation.points_spent', 20)
+        ->assertJsonPath('generation.points_remaining', 80);
 
     $generation = AIGeneration::first();
 
@@ -193,7 +194,9 @@ test('a customer without enough coins gets 402 and no generation is made', funct
         ->and($customer->fresh()->coins)->toBe(10);
 });
 
-test('coins are not deducted when the generation fails', function () {
+test('coins are refunded when the generation job fails', function () {
+    \Illuminate\Support\Facades\Queue::fake();
+    $currentBalance = 100;
     Http::fake([
         'https://api.segmind.com/v2/faceswap-v5' => Http::response([
             'request_id' => 'req-fail-1',
@@ -204,6 +207,17 @@ test('coins are not deducted when the generation fails', function () {
             ['status' => 'FAILED', 'error' => 'Content blocked by RAI'],
             422,
         ),
+        '*/api/v1/s2s/points/deduct' => function () use (&$currentBalance) {
+            $currentBalance -= 20;
+            return Http::response(['success' => true, 'points' => $currentBalance], 200);
+        },
+        '*/api/v1/s2s/points/add' => function () use (&$currentBalance) {
+            $currentBalance += 20;
+            return Http::response(['success' => true, 'points' => $currentBalance], 200);
+        },
+        '*/api/v1/s2s/points/*' => function () use (&$currentBalance) {
+            return Http::response(['points' => $currentBalance], 200);
+        },
     ]);
 
     $template = Template::create([
@@ -214,12 +228,34 @@ test('coins are not deducted when the generation fails', function () {
     ]);
 
     $customer = Customer::factory()->create(['coins' => 100]);
+    \Illuminate\Support\Facades\Cache::put("customer_points_{$customer->central_auth_uuid}", 100, 30);
     $token = $customer->createToken('test')->plainTextToken;
 
     $this->withToken($token)->postJson('/api/v1/ai/face-swap', [
         'face_image_url' => 'https://example.com/face.jpg',
         'template_slug' => $template->slug,
-    ])->assertStatus(500);
+    ])->assertStatus(202);
 
+    // Coins deducted upfront
+    expect($customer->fresh()->coins)->toBe(80);
+
+    $generation = AIGeneration::first();
+
+    // Now execute job and simulate provider failure
+    $job = new \App\Jobs\ProcessFaceSwap(
+        generationId: $generation->id,
+        payload: $generation->input_metadata,
+        templateId: $generation->template_id,
+        customerId: $customer->id,
+        pointCost: 20,
+    );
+
+    try {
+        $job->handle(app(\App\AI\Services\AIService::class));
+    } catch (\Throwable $e) {
+        // Expected
+    }
+
+    // Coins refunded
     expect($customer->fresh()->coins)->toBe(100);
 });

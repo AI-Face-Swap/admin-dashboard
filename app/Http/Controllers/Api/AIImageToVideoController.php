@@ -2,16 +2,18 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\AI\DTOs\GenerationRequest;
-use App\AI\Exceptions\AIGenerationFailedException;
-use App\AI\Exceptions\AIGenerationTimeoutException;
-use App\AI\Services\AIService;
+use App\Events\AIGenerationUpdated;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\ImageToVideoRequest;
+use App\Jobs\ProcessImageToVideo;
+use App\Models\AIGeneration;
 use App\Models\AIModel;
+use App\Models\AIProvider;
 use App\Models\Customer;
 use App\Models\Setting;
+use App\Models\User;
+use App\Services\AIIdempotencyService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -20,51 +22,13 @@ use RuntimeException;
 
 class AIImageToVideoController extends Controller
 {
-    public function __construct(
-        private readonly AIService $aiService,
-    ) {}
 
-    /**
-     * Generate a video from an image using Wan 2.2 I2V Flash.
-     *
-     * Uses Segmind's Wan Image-to-Video model to generate short,
-     * coherent videos from a single reference image plus a text prompt.
-     *
-     * **Cost:** 20 points per generation (configurable in admin settings).
-     *
-     * **Parameters:**
-     * - `prompt` (required): Vividly describe motion, camera behavior, atmosphere.
-     * - `image` (required): Upload image file OR provide `image_url`.
-     * - `image_url` (required if no `image`): Base image URL.
-     * - `negative_prompt` (optional): Exclude unwanted elements.
-     * - `resolution` (optional): "480p" ($0.075) or "720p" ($0.18, default).
-     * - `prompt_extend` (optional, default true): Auto-enhance prompt for richer detail.
-     * - `seed` (optional): Lock randomness for reproducible outputs.
-     * - `watermark` (optional): Add "AI Generated" tag.
-     *
-     * @response 200 {"status": "completed", "generation": {"id": 1, "operation": "image-to-video", "output": ["https://...mp4"], "points_spent": 20, "points_remaining": 80}}
-     * @response 402 {"message": "Not enough points — top up to continue."}
-     * @response 422 {"status": "failed", "message": "Segmind generation failed: ..."}
-     */
-    public function store(Request $request): JsonResponse
+    public function store(ImageToVideoRequest $request): JsonResponse
     {
-        $request->validate([
-            'prompt' => 'required|string|max:2000',
-            'image' => 'required_without:image_url|file|image|max:10240',
-            'image_url' => 'required_without:image|url',
-            'negative_prompt' => 'nullable|string|max:1000',
-            'model' => 'nullable|string|max:255',
-            'aspect_ratio' => 'nullable|string|in:1:1,9:16,16:9,4:3,3:4',
-            'resolution' => 'nullable|string|in:480p,720p,1080p',
-            'duration' => 'nullable|string|max:50',
-            'prompt_extend' => 'nullable|string|in:true,false,0,1',
-            'seed' => 'nullable|integer|min:0',
-            'watermark' => 'nullable|string|in:true,false,0,1',
-        ]);
-
         $requester = $request->user();
         $resolution = $request->string('resolution', '720p')->toString();
         $modelName = $request->string('model', 'wan-2.2-i2v-flash')->toString();
+        $idempotencyToken = $request->string('client_idempotency_token')->toString() ?: null;
 
         $aiModel = AIModel::where('model_name', $modelName)->where('is_active', true)->first();
 
@@ -102,17 +66,13 @@ class AIImageToVideoController extends Controller
             $templateCost = (int) Setting::get('ai', $costKey, Setting::get('ai', $legacyCostKey, config($configKey, config(str_replace('point_costs', 'coin_costs', $configKey), $defaultCost))));
         }
 
-        if ($requester instanceof Customer) {
-            $this->authorizeCustomerPoints($requester, $templateCost);
-        }
-
         // Resolve image URL (upload file or use provided URL)
         $imageUrl = $this->imageUrl($request);
 
         $payload = [
             'prompt' => $request->string('prompt')->toString(),
             'image' => $imageUrl,
-            // 'duration' => 10, // Default duration in seconds
+            'model' => $modelName,
         ];
 
         if ($request->filled('negative_prompt')) {
@@ -143,55 +103,64 @@ class AIImageToVideoController extends Controller
             $payload['watermark'] = $request->boolean('watermark');
         }
 
+        // Check for existing generation with the same idempotency token
+        if ($idempotencyResponse = AIIdempotencyService::check(
+            $requester,
+            $idempotencyToken,
+            AIGeneration::OPERATION_IMAGE_TO_VIDEO,
+            $payload
+        )) {
+            return $idempotencyResponse;
+        }
+
+        if ($requester instanceof Customer) {
+            $this->authorizeCustomerPoints($requester, $templateCost);
+        }
+
         Log::info('Image-to-video request', [
             'customer_id' => $requester?->id,
             'image_url' => $imageUrl,
         ]);
 
         $model = $request->string('model', 'kling-o1-reference-image-to-video')->toString();
+        $provider = AIProvider::where('slug', 'segmind')->first();
 
-        try {
-            $generation = $this->aiService->imageToVideo(
-                new GenerationRequest(
-                    operation: 'image-to-video',
-                    payload: $payload,
-                    model: $model,
-                ),
-                $requester,
-            );
+        $generation = AIGeneration::create([
+            'user_id' => $requester instanceof User ? $requester->id : null,
+            'customer_id' => $requester instanceof Customer ? $requester->id : null,
+            'provider_id' => $provider?->id ?? 1,
+            'operation' => AIGeneration::OPERATION_IMAGE_TO_VIDEO,
+            'status' => AIGeneration::STATUS_QUEUED,
+            'input_metadata' => $payload,
+            'client_idempotency_token' => $idempotencyToken,
+        ]);
 
-            if ($requester instanceof Customer && $generation->status === 'completed') {
-                $requester->spendPoints($templateCost, "Video generation ({$generation->id})", $generation->request_id);
-                // Save points spent to generation record
-                $generation->update(['points_spent' => $templateCost]);
-            }
-
-            return response()->json([
-                'status' => $generation->status,
-                'generation' => [
-                    'id' => $generation->id,
-                    'request_id' => $generation->request_id,
-                    'operation' => $generation->operation,
-                    'status' => $generation->status,
-                    'cost' => $generation->cost,
-                    'currency' => $generation->currency,
-                    'duration_ms' => $generation->duration_ms,
-                    'output' => $generation->output_metadata ?? [],
-                    'points_spent' => $requester instanceof Customer ? $templateCost : null,
-                    'points_remaining' => $requester instanceof Customer ? $requester->points : null,
-                ],
-            ]);
-        } catch (AIGenerationFailedException $e) {
-            return response()->json([
-                'status' => 'failed',
-                'message' => $e->getMessage(),
-            ], 422);
-        } catch (AIGenerationTimeoutException $e) {
-            return response()->json([
-                'status' => 'failed',
-                'message' => $e->getMessage(),
-            ], 408);
+        if ($requester instanceof Customer && $templateCost > 0) {
+            $requester->spendPoints($templateCost, "Video generation ({$generation->id})", "gen_{$generation->id}_deduct");
+            $generation->update(['points_spent' => $templateCost]);
         }
+
+        event(new AIGenerationUpdated($generation));
+
+        ProcessImageToVideo::dispatch(
+            generationId: $generation->id,
+            payload: $payload,
+            customerId: $requester instanceof Customer ? $requester->id : null,
+            pointCost: $templateCost,
+            model: $model,
+        );
+
+        return response()->json([
+            'status' => 'queued',
+            'generation' => [
+                'id' => $generation->id,
+                'operation' => $generation->operation,
+                'status' => $generation->status,
+                'points_spent' => $generation->points_spent,
+                'points_remaining' => $requester instanceof Customer ? $requester->points : null,
+                'message' => 'Image-to-video job dispatched. Poll /api/v1/ai/generations/'.$generation->id.' for status.',
+            ],
+        ], 202);
     }
 
     /**
@@ -207,7 +176,7 @@ class AIImageToVideoController extends Controller
     /**
      * Resolve the image to a public URL (upload it if needed).
      */
-    private function imageUrl(Request $request): string
+    private function imageUrl(ImageToVideoRequest $request): string
     {
         if ($request->hasFile('image')) {
             /** @var UploadedFile $image */

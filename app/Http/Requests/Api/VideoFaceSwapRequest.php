@@ -30,6 +30,7 @@ class VideoFaceSwapRequest extends FormRequest
             'face_image_url' => 'nullable|url|max:2048',
             'template_slug' => 'nullable|string|max:255',
             'target_video_url' => 'nullable|url|max:2048',
+            'client_idempotency_token' => 'nullable|string|max:255',
             'model_name' => 'nullable|string|max:255',
             'face_detector_score' => 'nullable|numeric|min:0|max:1',
             'target_face_index' => 'nullable|integer|min:0',

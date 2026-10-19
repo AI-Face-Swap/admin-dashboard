@@ -1,6 +1,11 @@
 <?php
 
 use App\Models\User;
+use Database\Seeders\RolePermissionSeeder;
+
+beforeEach(function () {
+    $this->seed(RolePermissionSeeder::class);
+});
 
 test('admin can view generation types', function () {
     $user = User::factory()->create();

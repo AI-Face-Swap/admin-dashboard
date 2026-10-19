@@ -78,6 +78,7 @@ class ImageEditRequest extends FormRequest
             'system_prompt' => ['nullable', 'string', 'max:2000'],
             'output_resolution' => ['nullable', 'string', 'max:20'],
             'response_modalities' => ['nullable', 'string', 'max:30'],
+            'client_idempotency_token' => ['nullable', 'string', 'max:255'],
         ];
     }
 

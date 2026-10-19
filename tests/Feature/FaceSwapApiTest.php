@@ -35,12 +35,14 @@ function fakeFaceSwapApi(): void
 beforeEach(function () {
     Storage::fake('spaces', ['url' => 'https://bucket.example.com']);
     AIProvider::factory()->create();
+    \Illuminate\Support\Facades\Queue::fake();
 
     $this->user = User::factory()->create();
     $this->actingAs($this->user);
 });
 
 test('face swap with an uploaded face and a template completes', function () {
+    \Illuminate\Support\Facades\Queue::fake();
     fakeFaceSwapApi();
 
     Template::create([
@@ -54,17 +56,17 @@ test('face swap with an uploaded face and a template completes', function () {
         'template_slug' => 'superman-suit',
     ]);
 
-    $response->assertOk()
-        ->assertJsonPath('status', 'completed')
-        ->assertJsonPath('generation.request_id', 'req-api-1')
-        ->assertJsonPath('generation.cost', '0.0500')
-        ->assertJsonPath('generation.currency', 'USD')
-        ->assertJsonStructure(['generation' => ['output']]);
+    $response->assertStatus(202)
+        ->assertJsonPath('status', 'queued')
+        ->assertJsonPath('generation.status', 'queued')
+        ->assertJsonPath('generation.operation', 'face-swap');
+
+    \Illuminate\Support\Facades\Queue::assertPushed(\App\Jobs\ProcessFaceSwap::class);
 
     $generation = AIGeneration::first();
 
     expect($generation)->not->toBeNull()
-        ->and($generation->status)->toBe('completed')
+        ->and($generation->status)->toBe('queued')
         ->and($generation->user_id)->toBe($this->user->id)
         ->and($generation->template_id)->not->toBeNull()
         ->and($generation->input_metadata['source_image'])->toStartWith('https://bucket.example.com/faces/')
@@ -72,6 +74,21 @@ test('face swap with an uploaded face and a template completes', function () {
 
     $facePath = 'faces/'.basename($generation->input_metadata['source_image']);
     Storage::disk('spaces')->assertExists($facePath);
+
+    // Test job execution
+    $job = new \App\Jobs\ProcessFaceSwap(
+        generationId: $generation->id,
+        payload: $generation->input_metadata,
+        templateId: $generation->template_id,
+        customerId: null,
+    );
+    $job->handle(app(\App\AI\Services\AIService::class));
+
+    $generation->refresh();
+    expect($generation->status)->toBe('completed')
+        ->and($generation->request_id)->toBe('req-api-1')
+        ->and($generation->cost)->toBe('0.0500')
+        ->and($generation->currency)->toBe('USD');
 });
 
 test('face swap with urls only completes', function () {
@@ -80,8 +97,9 @@ test('face swap with urls only completes', function () {
     $this->postJson('/api/v1/ai/face-swap', [
         'face_image_url' => 'https://example.com/face.jpg',
         'target_image_url' => 'https://example.com/target.jpg',
-    ])->assertOk()
-        ->assertJsonPath('generation.request_id', 'req-api-1');
+    ])->assertStatus(202)
+        ->assertJsonPath('status', 'queued')
+        ->assertJsonPath('generation.status', 'queued');
 });
 
 test('validation requires exactly one face source and one target', function () {
@@ -124,17 +142,17 @@ test('every api request is logged with headers, body, and duration', function ()
     $this->postJson('/api/v1/ai/face-swap', [
         'face_image_url' => 'https://example.com/face.jpg',
         'target_image_url' => 'https://example.com/target.jpg',
-    ])->assertOk();
+    ])->assertStatus(202);
 
     $log = ApiRequestLog::first();
 
     expect($log)->not->toBeNull()
         ->and($log->method)->toBe('POST')
         ->and($log->path)->toBe('api/v1/ai/face-swap')
-        ->and($log->response_status)->toBe(200)
+        ->and($log->response_status)->toBe(202)
         ->and($log->duration_ms)->not->toBeNull()
         ->and($log->request_body['face_image_url'])->toBe('https://example.com/face.jpg')
-        ->and($log->response_body['status'])->toBe('completed')
+        ->and($log->response_body['status'])->toBe('queued')
         ->and($log->response_headers)->not->toBeEmpty()
         ->and($log->request_headers)->not->toHaveKey('authorization')
         ->and($log->request_headers)->not->toHaveKey('cookie')

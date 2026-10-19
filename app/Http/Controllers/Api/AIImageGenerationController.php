@@ -2,22 +2,21 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\AI\DTOs\GenerationRequest;
-use App\AI\Exceptions\AIGenerationFailedException;
-use App\AI\Exceptions\AIGenerationTimeoutException;
-use App\AI\Services\AIService;
+use App\Events\AIGenerationUpdated;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\ImageGenerationRequest;
+use App\Jobs\ProcessImageGeneration;
+use App\Models\AIGeneration;
 use App\Models\AIModel;
+use App\Models\AIProvider;
 use App\Models\Customer;
 use App\Models\Setting;
+use App\Models\User;
+use App\Services\AIIdempotencyService;
 use Illuminate\Http\JsonResponse;
 
 class AIImageGenerationController extends Controller
 {
-    public function __construct(
-        private readonly AIService $aiService,
-    ) {}
 
     /**
      * Generate an image from a text prompt.
@@ -37,16 +36,7 @@ class AIImageGenerationController extends Controller
     {
         $requester = $request->user();
         $modelName = $request->string('model')->toString();
-
-        $aiModel = null;
-        if (! empty($modelName)) {
-            $aiModel = AIModel::where('model_name', $modelName)->where('is_active', true)->first();
-        }
-        $templateCost = $aiModel?->point_cost ?? (int) Setting::get('ai', 'point_cost_image_generation', Setting::get('ai', 'coin_cost_image_generation', config('ai.point_costs.image_generation', config('ai.coin_costs.image_generation', 5))));
-
-        if ($requester instanceof Customer) {
-            $this->authorizeCustomerPoints($requester, $templateCost);
-        }
+        $idempotencyToken = $request->string('client_idempotency_token')->toString() ?: null;
 
         $payload = [
             'prompt' => $request->string('prompt')->toString(),
@@ -80,48 +70,65 @@ class AIImageGenerationController extends Controller
             $payload['quality'] = $request->integer('quality');
         }
 
-        try {
-            $generation = $this->aiService->generateImage(
-                new GenerationRequest(
-                    operation: 'image-generation',
-                    payload: $payload,
-                    model: $request->string('model', 'seedream-v5-lite-text-to-image')->toString(),
-                ),
-                $requester,
-            );
-
-            if ($requester instanceof Customer && $generation->status === 'completed') {
-                $requester->spendPoints($templateCost, "Image generation ({$generation->id})", $generation->request_id);
-                // Save points spent to generation record
-                $generation->update(['points_spent' => $templateCost]);
-            }
-
-            return response()->json([
-                'status' => $generation->status,
-                'generation' => [
-                    'id' => $generation->id,
-                    'request_id' => $generation->request_id,
-                    'operation' => $generation->operation,
-                    'status' => $generation->status,
-                    'cost' => $generation->cost,
-                    'currency' => $generation->currency,
-                    'duration_ms' => $generation->duration_ms,
-                    'output' => $generation->output_metadata ?? [],
-                    'points_spent' => $requester instanceof Customer ? $templateCost : null,
-                    'points_remaining' => $requester instanceof Customer ? $requester->points : null,
-                ],
-            ]);
-        } catch (AIGenerationFailedException $e) {
-            return response()->json([
-                'status' => 'failed',
-                'message' => $e->getMessage(),
-            ], 422);
-        } catch (AIGenerationTimeoutException $e) {
-            return response()->json([
-                'status' => 'failed',
-                'message' => $e->getMessage(),
-            ], 408);
+        // Check for existing generation with the same idempotency token
+        if ($idempotencyResponse = AIIdempotencyService::check(
+            $requester,
+            $idempotencyToken,
+            AIGeneration::OPERATION_IMAGE,
+            $payload
+        )) {
+            return $idempotencyResponse;
         }
+
+        $aiModel = null;
+        if (! empty($modelName)) {
+            $aiModel = AIModel::where('model_name', $modelName)->where('is_active', true)->first();
+        }
+        $templateCost = $aiModel?->point_cost ?? (int) Setting::get('ai', 'point_cost_image_generation', Setting::get('ai', 'coin_cost_image_generation', config('ai.point_costs.image_generation', config('ai.coin_costs.image_generation', 5))));
+
+        if ($requester instanceof Customer) {
+            $this->authorizeCustomerPoints($requester, $templateCost);
+        }
+
+        $model = $request->string('model', 'seedream-v5-lite-text-to-image')->toString();
+        $provider = AIProvider::where('slug', 'segmind')->first();
+
+        $generation = AIGeneration::create([
+            'user_id' => $requester instanceof User ? $requester->id : null,
+            'customer_id' => $requester instanceof Customer ? $requester->id : null,
+            'provider_id' => $provider?->id ?? 1,
+            'operation' => AIGeneration::OPERATION_IMAGE,
+            'status' => AIGeneration::STATUS_QUEUED,
+            'input_metadata' => $payload,
+            'client_idempotency_token' => $idempotencyToken,
+        ]);
+
+        if ($requester instanceof Customer && $templateCost > 0) {
+            $requester->spendPoints($templateCost, "Image generation ({$generation->id})", "gen_{$generation->id}_deduct");
+            $generation->update(['points_spent' => $templateCost]);
+        }
+
+        event(new AIGenerationUpdated($generation));
+
+        ProcessImageGeneration::dispatch(
+            generationId: $generation->id,
+            payload: $payload,
+            customerId: $requester instanceof Customer ? $requester->id : null,
+            pointCost: $templateCost,
+            model: $model,
+        );
+
+        return response()->json([
+            'status' => 'queued',
+            'generation' => [
+                'id' => $generation->id,
+                'operation' => $generation->operation,
+                'status' => $generation->status,
+                'points_spent' => $generation->points_spent,
+                'points_remaining' => $requester instanceof Customer ? $requester->points : null,
+                'message' => 'Image generation job dispatched. Poll /api/v1/ai/generations/'.$generation->id.' for status.',
+            ],
+        ], 202);
     }
 
     /**
