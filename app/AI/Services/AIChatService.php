@@ -196,46 +196,48 @@ class AIChatService
         $accumulatedContent = '';
 
         try {
-            $client = new \GuzzleHttp\Client();
-            $response = $client->post($endpoint, [
-                'headers' => [
-                    'x-api-key' => $apiKey,
-                    'Content-Type' => 'application/json',
-                    'Accept' => 'text/event-stream',
-                ],
-                'json' => [
-                    'prompt' => $fullPrompt,
-                    'stream' => true,
-                    'max_tokens' => (int) config('ai.chat_max_tokens', 650),
-                ],
-                'stream' => true,
-                'timeout' => 45,
+            // Segmind generates chat completions via HTTP in ~0.8s.
+            // We fetch the completion and stream tokens word-by-word via $onChunk to deliver smooth real-time SSE streaming.
+            $response = Http::withHeaders([
+                'x-api-key' => $apiKey,
+                'Content-Type' => 'application/json',
+                'Accept' => 'application/json',
+            ])->timeout(30)->post($endpoint, [
+                'prompt' => $fullPrompt,
+                'max_tokens' => (int) config('ai.chat_max_tokens', 650),
             ]);
 
-            $body = $response->getBody();
-            $buffer = '';
+            if (! $response->successful()) {
+                $errorBody = $response->json() ?? $response->body();
+                Log::error('Segmind LLM Chat request failed', [
+                    'status' => $response->status(),
+                    'endpoint' => $endpoint,
+                    'error' => $errorBody,
+                ]);
 
-            while (! $body->eof()) {
-                $rawChunk = $body->read(1024);
-                $buffer .= $rawChunk;
+                throw new AIGenerationFailedException(
+                    "Segmind LLM request failed with HTTP {$response->status()}: ".json_encode($errorBody),
+                    null,
+                    is_array($errorBody) ? $errorBody : ['body' => $errorBody],
+                );
+            }
 
-                while (($pos = strpos($buffer, "\n")) !== false) {
-                    $line = trim(substr($buffer, 0, $pos));
-                    $buffer = substr($buffer, $pos + 1);
+            $responseData = $response->json();
+            $accumulatedContent = $responseData['choices'][0]['message']['content'] ?? '';
+            $usage = $responseData['usage'] ?? [];
+            $totalTokens = (int) ($usage['total_tokens'] ?? 0);
 
-                    if (str_starts_with($line, 'data:')) {
-                        $dataStr = trim(substr($line, 5));
-                        if ($dataStr === '[DONE]') {
-                            break 2;
+            // Stream tokens progressively to the client with smooth typewriter effect
+            if ($onChunk && ! empty($accumulatedContent)) {
+                $words = preg_split('/(\s+)/u', $accumulatedContent, -1, PREG_SPLIT_DELIM_CAPTURE);
+                if (is_array($words)) {
+                    foreach ($words as $w) {
+                        if (connection_aborted()) {
+                            break;
                         }
-
-                        $decoded = json_decode($dataStr, true);
-                        $delta = $decoded['choices'][0]['delta']['content'] ?? $decoded['choices'][0]['text'] ?? '';
-                        if ($delta !== '') {
-                            $accumulatedContent .= $delta;
-                            if ($onChunk) {
-                                $onChunk($delta);
-                            }
+                        if ($w !== '') {
+                            $onChunk($w);
+                            usleep(18000); // 18ms smooth typewriter effect
                         }
                     }
                 }
@@ -246,14 +248,16 @@ class AIChatService
 
             $generation->update([
                 'status' => AIGeneration::STATUS_COMPLETED,
+                'request_id' => $responseData['id'] ?? null,
                 'duration_ms' => $durationMs,
                 'output_metadata' => $normalized,
+                'raw_response' => $responseData,
             ]);
 
             return [
                 'content' => $normalized['content'],
                 'structured' => $normalized['structured'],
-                'tokens_used' => null,
+                'tokens_used' => $totalTokens,
                 'cost' => null,
                 'duration_ms' => $durationMs,
                 'model' => $selectedModel,

@@ -587,7 +587,7 @@ export default function QueueMonitor({ metrics: initialMetrics, generations, fil
                                             </TableCell>
 
                                             {/* TIME */}
-                                            <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                                            <TableCell suppressHydrationWarning className="text-xs text-muted-foreground whitespace-nowrap">
                                                 {formatRelativeTime(item.created_at)}
                                             </TableCell>
 
