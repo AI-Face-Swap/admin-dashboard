@@ -60,7 +60,7 @@ class AIGenerationStatusController extends Controller
     /**
      * Download an output file of an AI generation.
      */
-    public function download(AIGeneration $generation, Request $request): StreamedResponse|RedirectResponse
+    public function download(AIGeneration $generation, Request $request): \Symfony\Component\HttpFoundation\Response
     {
         $user = $request->user();
 
@@ -106,7 +106,7 @@ class AIGenerationStatusController extends Controller
      * Customers can delete their own generations.
      * Admins can delete any generation.
      */
-    public function destroy(AIGeneration $generation, Request $request): JsonResponse|RedirectResponse
+    public function destroy(AIGeneration $generation, Request $request): JsonResponse
     {
         $user = $request->user();
 
@@ -136,10 +136,6 @@ class AIGenerationStatusController extends Controller
 
         $generation->delete();
 
-        if ($request->wantsJson() && ! $request->hasHeader('X-Inertia')) {
-            return response()->json(['message' => 'Generation deleted successfully.']);
-        }
-
-        return back()->with('success', 'Generation deleted successfully.');
+        return response()->json(['message' => 'Generation deleted successfully.']);
     }
 }

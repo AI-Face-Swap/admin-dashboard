@@ -61,10 +61,22 @@ class AppServiceProvider extends ServiceProvider
         // Allow public access to API docs
         Gate::define('viewApiDocs', fn ($user = null) => true);
 
-        // Strictly restrict documentation to API routes from routes/api.php
+        // Strictly restrict documentation to client API routes from routes/api.php
         Scramble::routes(function (Route $route) {
-            return Str::startsWith($route->uri(), 'api/')
-                && in_array('api', $route->gatherMiddleware());
+            if (! Str::startsWith($route->uri(), 'api/') || ! in_array('api', $route->gatherMiddleware())) {
+                return false;
+            }
+
+            // Exclude local dev test routes, browser redirects, and S2S webhooks
+            if (Str::startsWith($route->uri(), 'api/v1/test/') ||
+                Str::startsWith($route->uri(), 'api/v1/htut/') ||
+                $route->uri() === 'api/v1/auth/htut/redirect' ||
+                ($route->uri() === 'api/v1/auth/htut/callback' && in_array('GET', $route->methods()))
+            ) {
+                return false;
+            }
+
+            return true;
         });
     }
 }

@@ -1,0 +1,3856 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+        "title": "HTUT AI \u2014 API Docs",
+        "version": "1.0.0",
+        "description": "# HTUT AI \u2014 REST API\n\nAI-powered image generation, face swap, image editing, video face swap, and customer portal API.\n\n## Authentication\n\nAll protected endpoints require a **Bearer token** issued via HTUT Central Auth SSO.\n\nInclude the token in the `Authorization` header:\n```\nAuthorization: Bearer YOUR_TOKEN_HERE\n```\n\n## SSO & Customer Auth Flow\n\n1. Redirect user to `GET /api/v1/auth/htut/redirect`\n2. User authenticates on HTUT Central Auth (SSO)\n3. Callback to `GET /api/v1/auth/htut/callback` returns the customer record and access token\n4. Retrieve customer profile & coin balance via `GET /api/v1/auth/me`\n5. Terminate session via `POST /api/v1/auth/logout`\n\n## Coin System & Packages\n\n- Customers use coins for AI operations (Face Swap, Image Generation, Video Face Swap, etc.)\n- Coin balance and costs can be retrieved via `GET /api/v1/coin-costs` and `GET /api/v1/auth/me`\n- Available coin top-up packages can be fetched via `GET /api/v1/packages` and purchased via `POST /api/v1/packages/checkout`\n- Insufficient coins return `402 Payment Required` status code\n\n## Base URLs\n\n| Environment | URL |\n|---|---|\n| Local | `http://localhost:8001/api` |\n| Production | `https://ai.htut.com/api` |"
+    },
+    "servers": [
+        {
+            "url": "https://ai.htut.com/api",
+            "description": "Production"
+        },
+        {
+            "url": "http://localhost:8001/api",
+            "description": "Local"
+        }
+    ],
+    "security": [
+        {
+            "http": []
+        }
+    ],
+    "paths": {
+        "/v1/chat/conversations": {
+            "get": {
+                "operationId": "aIChat.index",
+                "summary": "List all chat conversations for the authenticated customer",
+                "tags": [
+                    "AIChat"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "conversations": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "string"
+                                                    },
+                                                    "title_en": {
+                                                        "type": "string"
+                                                    },
+                                                    "title_my": {
+                                                        "type": "string"
+                                                    },
+                                                    "titleEn": {
+                                                        "type": "string"
+                                                    },
+                                                    "titleMy": {
+                                                        "type": "string"
+                                                    },
+                                                    "category": {
+                                                        "type": "string"
+                                                    },
+                                                    "dateEn": {
+                                                        "type": "string"
+                                                    },
+                                                    "dateMy": {
+                                                        "type": "string"
+                                                    },
+                                                    "updated_at": {
+                                                        "type": "string"
+                                                    },
+                                                    "messages": {
+                                                        "type": "array",
+                                                        "items": {
+                                                            "type": "object",
+                                                            "properties": {
+                                                                "id": {
+                                                                    "type": "string"
+                                                                },
+                                                                "role": {
+                                                                    "type": "string"
+                                                                },
+                                                                "content": {
+                                                                    "type": "string"
+                                                                },
+                                                                "category": {
+                                                                    "type": "string"
+                                                                },
+                                                                "timestamp": {
+                                                                    "type": "string"
+                                                                },
+                                                                "structured": {
+                                                                    "type": [
+                                                                        "array",
+                                                                        "null"
+                                                                    ],
+                                                                    "items": {}
+                                                                },
+                                                                "tokens_used": {
+                                                                    "type": [
+                                                                        "integer",
+                                                                        "null"
+                                                                    ]
+                                                                },
+                                                                "created_at": {
+                                                                    "type": "string"
+                                                                }
+                                                            },
+                                                            "required": [
+                                                                "id",
+                                                                "role",
+                                                                "content",
+                                                                "category",
+                                                                "timestamp",
+                                                                "structured",
+                                                                "tokens_used",
+                                                                "created_at"
+                                                            ]
+                                                        }
+                                                    }
+                                                },
+                                                "required": [
+                                                    "id",
+                                                    "title_en",
+                                                    "title_my",
+                                                    "titleEn",
+                                                    "titleMy",
+                                                    "category",
+                                                    "dateEn",
+                                                    "dateMy",
+                                                    "updated_at",
+                                                    "messages"
+                                                ]
+                                            }
+                                        },
+                                        "categories": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "key": {
+                                                        "type": "string"
+                                                    },
+                                                    "label_en": {
+                                                        "type": "string"
+                                                    },
+                                                    "label_my": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "required": [
+                                                    "key",
+                                                    "label_en",
+                                                    "label_my"
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "conversations",
+                                        "categories"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/v1/chat/conversations/{conversation}": {
+            "get": {
+                "operationId": "aIChat.show",
+                "summary": "Get a specific conversation with all messages",
+                "tags": [
+                    "AIChat"
+                ],
+                "parameters": [
+                    {
+                        "name": "conversation",
+                        "in": "path",
+                        "required": true,
+                        "description": "The conversation ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "conversation": {
+                                            "type": "object",
+                                            "properties": {
+                                                "id": {
+                                                    "type": "string"
+                                                },
+                                                "title_en": {
+                                                    "type": "string"
+                                                },
+                                                "title_my": {
+                                                    "type": "string"
+                                                },
+                                                "titleEn": {
+                                                    "type": "string"
+                                                },
+                                                "titleMy": {
+                                                    "type": "string"
+                                                },
+                                                "category": {
+                                                    "type": "string"
+                                                },
+                                                "dateEn": {
+                                                    "type": "string"
+                                                },
+                                                "dateMy": {
+                                                    "type": "string"
+                                                },
+                                                "updated_at": {
+                                                    "type": "string"
+                                                },
+                                                "messages": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "id": {
+                                                                "type": "string"
+                                                            },
+                                                            "role": {
+                                                                "type": "string"
+                                                            },
+                                                            "content": {
+                                                                "type": "string"
+                                                            },
+                                                            "category": {
+                                                                "type": "string"
+                                                            },
+                                                            "timestamp": {
+                                                                "type": "string"
+                                                            },
+                                                            "structured": {
+                                                                "type": [
+                                                                    "array",
+                                                                    "null"
+                                                                ],
+                                                                "items": {}
+                                                            },
+                                                            "tokens_used": {
+                                                                "type": [
+                                                                    "integer",
+                                                                    "null"
+                                                                ]
+                                                            },
+                                                            "created_at": {
+                                                                "type": "string"
+                                                            }
+                                                        },
+                                                        "required": [
+                                                            "id",
+                                                            "role",
+                                                            "content",
+                                                            "category",
+                                                            "timestamp",
+                                                            "structured",
+                                                            "tokens_used",
+                                                            "created_at"
+                                                        ]
+                                                    }
+                                                }
+                                            },
+                                            "required": [
+                                                "id",
+                                                "title_en",
+                                                "title_my",
+                                                "titleEn",
+                                                "titleMy",
+                                                "category",
+                                                "dateEn",
+                                                "dateMy",
+                                                "updated_at",
+                                                "messages"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "conversation"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Unauthorized conversation access."
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "aIChat.destroy",
+                "summary": "Delete a conversation",
+                "tags": [
+                    "AIChat"
+                ],
+                "parameters": [
+                    {
+                        "name": "conversation",
+                        "in": "path",
+                        "required": true,
+                        "description": "The conversation ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Conversation deleted successfully."
+                                        }
+                                    },
+                                    "required": [
+                                        "success",
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Unauthorized conversation delete."
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/v1/chat/send": {
+            "post": {
+                "operationId": "aIChat.send",
+                "summary": "Send a question to HTUT AI, invoke Segmind with the selected skill, and deduct points",
+                "tags": [
+                    "AIChat"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SendChatMessageRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "conversation_id": {
+                                            "type": "integer"
+                                        },
+                                        "conversation_title_en": {
+                                            "type": "string"
+                                        },
+                                        "conversation_title_my": {
+                                            "type": "string"
+                                        },
+                                        "user_message": {
+                                            "type": "object",
+                                            "properties": {
+                                                "id": {
+                                                    "type": "string"
+                                                },
+                                                "role": {
+                                                    "type": "string"
+                                                },
+                                                "content": {
+                                                    "type": "string"
+                                                },
+                                                "category": {
+                                                    "type": "string"
+                                                },
+                                                "timestamp": {
+                                                    "type": "string"
+                                                },
+                                                "structured": {
+                                                    "type": [
+                                                        "array",
+                                                        "null"
+                                                    ],
+                                                    "items": {}
+                                                },
+                                                "tokens_used": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "created_at": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "id",
+                                                "role",
+                                                "content",
+                                                "category",
+                                                "timestamp",
+                                                "structured",
+                                                "tokens_used",
+                                                "created_at"
+                                            ]
+                                        },
+                                        "assistant_message": {
+                                            "type": "object",
+                                            "properties": {
+                                                "id": {
+                                                    "type": "string"
+                                                },
+                                                "role": {
+                                                    "type": "string"
+                                                },
+                                                "content": {
+                                                    "type": "string"
+                                                },
+                                                "category": {
+                                                    "type": "string"
+                                                },
+                                                "timestamp": {
+                                                    "type": "string"
+                                                },
+                                                "structured": {
+                                                    "type": [
+                                                        "array",
+                                                        "null"
+                                                    ],
+                                                    "items": {}
+                                                },
+                                                "tokens_used": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "created_at": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "id",
+                                                "role",
+                                                "content",
+                                                "category",
+                                                "timestamp",
+                                                "structured",
+                                                "tokens_used",
+                                                "created_at"
+                                            ]
+                                        },
+                                        "points_deducted": {
+                                            "type": "integer"
+                                        },
+                                        "points_remaining": {
+                                            "type": "string"
+                                        },
+                                        "spend_result": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "conversation_id",
+                                        "conversation_title_en",
+                                        "conversation_title_my",
+                                        "user_message",
+                                        "assistant_message",
+                                        "points_deducted",
+                                        "points_remaining",
+                                        "spend_result"
+                                    ]
+                                }
+                            },
+                            "text/event-stream": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "Transfer-Encoding": {
+                                "schema": {
+                                    "type": "string",
+                                    "enum": [
+                                        "chunked"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "402": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Insufficient points. Please top up your points to continue chatting with HTUT AI."
+                                        },
+                                        "required_points": {
+                                            "type": "integer"
+                                        },
+                                        "current_points": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "required_points",
+                                        "current_points"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Your account is suspended."
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/v1/ai/face-swap": {
+            "post": {
+                "operationId": "aIFaceSwap.store",
+                "description": "Upload a face image (or provide a URL) and a target image (or template slug).\nThe AI will swap the face onto the target.\n\n**Cost:** Depends on the template (free templates cost 0 points).\n\n**How it works:**\n1. Provide `face_image` (file) OR `face_image_url` (string)\n2. Provide `template_slug` (string) OR `target_image_url` (string)\n3. Get back a completed generation with the swapped image",
+                "summary": "Swap a face onto a target image",
+                "tags": [
+                    "AIFaceSwap"
+                ],
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/FaceSwapRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "integer",
+                                    "const": 200
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/v1/ai/generations/{generation}": {
+            "get": {
+                "operationId": "aIGenerationStatus.show",
+                "description": "Poll this endpoint to check if a queued generation (e.g. video face-swap)\nhas completed. For synchronous operations (face-swap, image generation),\nthe result is already in the initial response.\n\n**Status values:** `queued` \u2192 `processing` \u2192 `completed` | `failed`",
+                "summary": "Get the current status of a generation",
+                "tags": [
+                    "AIGenerationStatus"
+                ],
+                "parameters": [
+                    {
+                        "name": "generation",
+                        "in": "path",
+                        "required": true,
+                        "description": "The generation ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "integer",
+                                    "const": 200
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "aIGenerationStatus.destroy",
+                "description": "Customers can delete their own generations.\nAdmins can delete any generation.",
+                "summary": "Delete an AI generation and its stored output file",
+                "tags": [
+                    "AIGenerationStatus"
+                ],
+                "parameters": [
+                    {
+                        "name": "generation",
+                        "in": "path",
+                        "required": true,
+                        "description": "The generation ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Generation deleted successfully."
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "examples": [
+                                                "Unauthorized to delete this generation."
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/v1/ai/generations/{generation}/download": {
+            "get": {
+                "operationId": "aIGenerationStatus.download",
+                "summary": "Download an output file of an AI generation",
+                "tags": [
+                    "AIGenerationStatus"
+                ],
+                "parameters": [
+                    {
+                        "name": "generation",
+                        "in": "path",
+                        "required": true,
+                        "description": "The generation ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "examples": [
+                                                "Unauthorized to download this generation."
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/v1/ai/image-edit": {
+            "post": {
+                "operationId": "aIImageEdit.store",
+                "summary": "Edit an image using AI models",
+                "tags": [
+                    "AIImageEdit"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ImageEditRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "integer",
+                                    "const": 200
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/v1/ai/images": {
+            "post": {
+                "operationId": "aIImageGeneration.store",
+                "description": "**Cost:** 5 points per generation (configurable in admin settings).\n\n**Available models:**\n- `seedream-v5-lite-text-to-image` \u2014 Fast, affordable (default)\n- `nano-banana-2-lite` \u2014 Google's fastest (~4 sec)\n- `qwen-image-3` \u2014 Best for legible in-image text",
+                "summary": "Generate an image from a text prompt",
+                "tags": [
+                    "AIImageGeneration"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ImageGenerationRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "integer",
+                                    "const": 200
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/v1/ai/image-to-video": {
+            "post": {
+                "operationId": "aIImageToVideo.store",
+                "tags": [
+                    "AIImageToVideo"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ImageToVideoRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/v1/ai-models": {
+            "get": {
+                "operationId": "aIModelApi.index",
+                "description": "Example: GET /api/v1/ai-models?type=text-to-image",
+                "summary": "Get active AI models, optionally filtered by generation type slug",
+                "tags": [
+                    "AIModelApi"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer"
+                                                    },
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "model_name": {
+                                                        "type": "string"
+                                                    },
+                                                    "type": {
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "provider_name": {
+                                                        "type": "string"
+                                                    },
+                                                    "point_cost": {
+                                                        "type": "string"
+                                                    },
+                                                    "resolution_costs": {
+                                                        "type": [
+                                                            "array",
+                                                            "null"
+                                                        ],
+                                                        "items": {}
+                                                    },
+                                                    "duration_costs": {
+                                                        "type": [
+                                                            "array",
+                                                            "null"
+                                                        ],
+                                                        "items": {}
+                                                    },
+                                                    "is_default": {
+                                                        "type": "boolean"
+                                                    },
+                                                    "description": {
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "sort_order": {
+                                                        "type": "integer"
+                                                    }
+                                                },
+                                                "required": [
+                                                    "id",
+                                                    "name",
+                                                    "model_name",
+                                                    "type",
+                                                    "provider_name",
+                                                    "point_cost",
+                                                    "resolution_costs",
+                                                    "duration_costs",
+                                                    "is_default",
+                                                    "description",
+                                                    "sort_order"
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": []
+            }
+        },
+        "/v1/ai/video-face-swap": {
+            "post": {
+                "operationId": "aIVideoFaceSwap.store",
+                "description": "Swaps a face in a video. This is an **async operation** \u2014 the request\nreturns immediately with a generation ID. Poll `/ai/generations/{id}`\nto check status.\n\n**Cost:** Depends on the template (video templates typically cost more).\n\n**Processing time:** 30 seconds to 5+ minutes depending on video length.",
+                "summary": "Submit a video face-swap generation (queued)",
+                "tags": [
+                    "AIVideoFaceSwap"
+                ],
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/VideoFaceSwapRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "integer",
+                                    "const": 202
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/v1/auth/logout": {
+            "post": {
+                "operationId": "customerAuth.logout",
+                "description": "Revokes the current Bearer token. The token will no longer work.",
+                "summary": "Log out the current customer",
+                "tags": [
+                    "CustomerAuth"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "integer",
+                                    "const": 200
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/v1/auth/me": {
+            "get": {
+                "operationId": "customerAuth.me",
+                "description": "Returns customer info including points, type, and generation count.",
+                "summary": "Get the authenticated customer's profile",
+                "tags": [
+                    "CustomerAuth"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "integer",
+                                    "const": 200
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/v1/customer/avatar": {
+            "post": {
+                "operationId": "customerAuth.updateAvatar",
+                "summary": "Upload and update customer's avatar directly to DigitalOcean Spaces",
+                "tags": [
+                    "CustomerAuth"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "avatar": {
+                                        "type": "string",
+                                        "format": "binary",
+                                        "contentMediaType": "application/octet-stream",
+                                        "description": "Maximum file size: 5120 kilobytes."
+                                    }
+                                },
+                                "required": [
+                                    "avatar"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "integer",
+                                    "const": 200
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/v1/customer/generations": {
+            "get": {
+                "operationId": "customerGeneration.index",
+                "description": "Returns paginated generations with optional status/type filters.\nAlso includes summary stats (total, completed, processing, failed).",
+                "summary": "List the authenticated customer's generations",
+                "tags": [
+                    "CustomerGeneration"
+                ],
+                "parameters": [
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "enum": [
+                                "queued",
+                                "processing",
+                                "completed",
+                                "failed",
+                                null
+                            ]
+                        }
+                    },
+                    {
+                        "name": "type",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "enum": [
+                                "image-generation",
+                                "face-swap",
+                                "video-face-swap",
+                                null
+                            ]
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "integer",
+                                "null"
+                            ],
+                            "minimum": 1,
+                            "maximum": 50
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "generations": {
+                                            "type": "object",
+                                            "properties": {
+                                                "data": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "id": {
+                                                                "type": "integer"
+                                                            },
+                                                            "operation": {
+                                                                "type": "string"
+                                                            },
+                                                            "status": {
+                                                                "type": "string"
+                                                            },
+                                                            "request_id": {
+                                                                "type": [
+                                                                    "string",
+                                                                    "null"
+                                                                ]
+                                                            },
+                                                            "cost": {
+                                                                "type": [
+                                                                    "string",
+                                                                    "null"
+                                                                ]
+                                                            },
+                                                            "currency": {
+                                                                "type": [
+                                                                    "string",
+                                                                    "null"
+                                                                ]
+                                                            },
+                                                            "duration_ms": {
+                                                                "type": [
+                                                                    "integer",
+                                                                    "null"
+                                                                ]
+                                                            },
+                                                            "output": {
+                                                                "type": "array",
+                                                                "items": {}
+                                                            },
+                                                            "error": {
+                                                                "type": [
+                                                                    "string",
+                                                                    "null"
+                                                                ]
+                                                            },
+                                                            "provider": {
+                                                                "$ref": "#/components/schemas/AIProvider"
+                                                            },
+                                                            "template": {
+                                                                "anyOf": [
+                                                                    {
+                                                                        "$ref": "#/components/schemas/Template"
+                                                                    },
+                                                                    {
+                                                                        "type": "null"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            "created_at": {
+                                                                "type": [
+                                                                    "string",
+                                                                    "null"
+                                                                ],
+                                                                "format": "date-time"
+                                                            },
+                                                            "updated_at": {
+                                                                "type": [
+                                                                    "string",
+                                                                    "null"
+                                                                ],
+                                                                "format": "date-time"
+                                                            }
+                                                        },
+                                                        "required": [
+                                                            "id",
+                                                            "operation",
+                                                            "status",
+                                                            "request_id",
+                                                            "cost",
+                                                            "currency",
+                                                            "duration_ms",
+                                                            "output",
+                                                            "error",
+                                                            "provider",
+                                                            "template",
+                                                            "created_at",
+                                                            "updated_at"
+                                                        ]
+                                                    }
+                                                },
+                                                "meta": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "current_page": {
+                                                            "type": "integer"
+                                                        },
+                                                        "last_page": {
+                                                            "type": "integer"
+                                                        },
+                                                        "per_page": {
+                                                            "type": "integer"
+                                                        },
+                                                        "total": {
+                                                            "type": "integer"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "current_page",
+                                                        "last_page",
+                                                        "per_page",
+                                                        "total"
+                                                    ]
+                                                },
+                                                "links": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "first": {
+                                                            "type": "string"
+                                                        },
+                                                        "last": {
+                                                            "type": "string"
+                                                        },
+                                                        "prev": {
+                                                            "type": [
+                                                                "string",
+                                                                "null"
+                                                            ]
+                                                        },
+                                                        "next": {
+                                                            "type": [
+                                                                "string",
+                                                                "null"
+                                                            ]
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "first",
+                                                        "last",
+                                                        "prev",
+                                                        "next"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "data",
+                                                "meta",
+                                                "links"
+                                            ]
+                                        },
+                                        "stats": {
+                                            "type": "object",
+                                            "properties": {
+                                                "total": {
+                                                    "type": "integer",
+                                                    "minimum": 0
+                                                },
+                                                "completed": {
+                                                    "type": "integer",
+                                                    "minimum": 0
+                                                },
+                                                "processing": {
+                                                    "type": "integer",
+                                                    "minimum": 0
+                                                },
+                                                "failed": {
+                                                    "type": "integer",
+                                                    "minimum": 0
+                                                }
+                                            },
+                                            "required": [
+                                                "total",
+                                                "completed",
+                                                "processing",
+                                                "failed"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "generations",
+                                        "stats"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/v1/home-heroes": {
+            "get": {
+                "operationId": "homePage.heroes",
+                "tags": [
+                    "HomePage"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/HomeHero"
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": []
+            }
+        },
+        "/v1/home-showcases": {
+            "get": {
+                "operationId": "homePage.showcases",
+                "tags": [
+                    "HomePage"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/HomeShowcase"
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": []
+            }
+        },
+        "/v1/home-features": {
+            "get": {
+                "operationId": "homePage.features",
+                "tags": [
+                    "HomePage"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": []
+            }
+        },
+        "/v1/partners": {
+            "get": {
+                "operationId": "homePage.partners",
+                "tags": [
+                    "HomePage"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Partner"
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": []
+            }
+        },
+        "/v1/settings/footer": {
+            "get": {
+                "operationId": "homePage.footerSettings",
+                "tags": [
+                    "HomePage"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "about_text": {},
+                                                "contact_email": {},
+                                                "social_links": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "facebook": {},
+                                                        "twitter": {},
+                                                        "discord": {},
+                                                        "youtube": {}
+                                                    },
+                                                    "required": [
+                                                        "facebook",
+                                                        "twitter",
+                                                        "discord",
+                                                        "youtube"
+                                                    ]
+                                                },
+                                                "quick_links": {
+                                                    "type": "array",
+                                                    "prefixItems": [
+                                                        {
+                                                            "type": "object",
+                                                            "properties": {
+                                                                "label": {
+                                                                    "type": "string",
+                                                                    "const": "Terms of Service"
+                                                                },
+                                                                "url": {}
+                                                            },
+                                                            "required": [
+                                                                "label",
+                                                                "url"
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "object",
+                                                            "properties": {
+                                                                "label": {
+                                                                    "type": "string",
+                                                                    "const": "Privacy Policy"
+                                                                },
+                                                                "url": {}
+                                                            },
+                                                            "required": [
+                                                                "label",
+                                                                "url"
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "object",
+                                                            "properties": {
+                                                                "label": {
+                                                                    "type": "string",
+                                                                    "const": "FAQ"
+                                                                },
+                                                                "url": {}
+                                                            },
+                                                            "required": [
+                                                                "label",
+                                                                "url"
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "minItems": 3,
+                                                    "maxItems": 3,
+                                                    "additionalItems": false
+                                                },
+                                                "copyright_text": {}
+                                            },
+                                            "required": [
+                                                "about_text",
+                                                "contact_email",
+                                                "social_links",
+                                                "quick_links",
+                                                "copyright_text"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": []
+            }
+        },
+        "/v1/auth/htut/callback": {
+            "post": {
+                "operationId": "v1.auth.htut.mobile-callback",
+                "summary": "Direct S2S Authorization Code Exchange & Local Account Sync for Mobile App.\nExchanges code with Central Auth S2S without exposing client secrets on the device",
+                "tags": [
+                    "HtutCentralAuth"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "code": {
+                                        "type": "string"
+                                    },
+                                    "redirect_uri": {
+                                        "type": "string"
+                                    },
+                                    "code_verifier": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ]
+                                    }
+                                },
+                                "required": [
+                                    "code",
+                                    "redirect_uri"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "500": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "success",
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "anyOf": [
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "success": {
+                                                    "type": "boolean"
+                                                },
+                                                "token": {
+                                                    "type": "string"
+                                                },
+                                                "token_type": {
+                                                    "type": "string",
+                                                    "const": "Bearer"
+                                                },
+                                                "customer": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "id": {
+                                                            "type": "integer"
+                                                        },
+                                                        "uuid": {
+                                                            "type": [
+                                                                "string",
+                                                                "null"
+                                                            ]
+                                                        },
+                                                        "name": {
+                                                            "type": "string"
+                                                        },
+                                                        "email": {
+                                                            "type": "string"
+                                                        },
+                                                        "phone": {
+                                                            "type": [
+                                                                "string",
+                                                                "null"
+                                                            ]
+                                                        },
+                                                        "avatar": {
+                                                            "type": [
+                                                                "string",
+                                                                "null"
+                                                            ]
+                                                        },
+                                                        "customer_type": {
+                                                            "type": "string"
+                                                        },
+                                                        "points": {
+                                                            "type": "integer"
+                                                        },
+                                                        "expired_at": {
+                                                            "type": [
+                                                                "string",
+                                                                "null"
+                                                            ]
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "id",
+                                                        "uuid",
+                                                        "name",
+                                                        "email",
+                                                        "phone",
+                                                        "avatar",
+                                                        "customer_type",
+                                                        "points",
+                                                        "expired_at"
+                                                    ]
+                                                },
+                                                "entitlements": {
+                                                    "anyOf": [
+                                                        {
+                                                            "type": "string"
+                                                        },
+                                                        {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "type": "string"
+                                                            },
+                                                            "minItems": 0,
+                                                            "maxItems": 0,
+                                                            "additionalItems": false
+                                                        }
+                                                    ]
+                                                },
+                                                "project_access": {
+                                                    "anyOf": [
+                                                        {
+                                                            "type": "string"
+                                                        },
+                                                        {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "type": "string"
+                                                            },
+                                                            "minItems": 0,
+                                                            "maxItems": 0,
+                                                            "additionalItems": false
+                                                        }
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "success",
+                                                "token",
+                                                "token_type",
+                                                "customer",
+                                                "entitlements",
+                                                "project_access"
+                                            ]
+                                        },
+                                        {
+                                            "type": "string"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                },
+                "security": []
+            }
+        },
+        "/v1/packages": {
+            "get": {
+                "operationId": "paymentPackage.index",
+                "summary": "Get dynamic subscription packages from HTUT Central Auth SSO",
+                "tags": [
+                    "PaymentPackage"
+                ],
+                "parameters": [
+                    {
+                        "name": "refresh",
+                        "in": "query",
+                        "schema": {
+                            "type": "boolean",
+                            "default": false
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "const": "success"
+                                        },
+                                        "total": {
+                                            "type": "integer"
+                                        },
+                                        "packages": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "additionalProperties": {}
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "status",
+                                        "total",
+                                        "packages"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": []
+            }
+        },
+        "/v1/packages/checkout": {
+            "post": {
+                "operationId": "paymentPackage.checkout",
+                "summary": "Initiate checkout for a selected subscription package via WalMae gateway",
+                "tags": [
+                    "PaymentPackage"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "package_slug": {
+                                        "type": "string"
+                                    },
+                                    "payment_method": {
+                                        "type": "string",
+                                        "enum": [
+                                            "kbzpay",
+                                            "mmqr"
+                                        ]
+                                    }
+                                },
+                                "required": [
+                                    "package_slug",
+                                    "payment_method"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "502": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "const": "error"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "status",
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "anyOf": [
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "status": {
+                                                    "type": "string",
+                                                    "const": "success"
+                                                },
+                                                "message": {
+                                                    "type": "string",
+                                                    "const": "MMQR checkout session created successfully."
+                                                },
+                                                "order_reference": {
+                                                    "type": "string"
+                                                },
+                                                "qr_code": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "mmqr_logo": {
+                                                    "anyOf": [
+                                                        {
+                                                            "type": "string"
+                                                        },
+                                                        {
+                                                            "type": "string",
+                                                            "enum": [
+                                                                "https://cp.walmae.net/mmqrLogo.jpg"
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                "receiver_name": {
+                                                    "anyOf": [
+                                                        {
+                                                            "type": "string"
+                                                        },
+                                                        {
+                                                            "type": "string",
+                                                            "enum": [
+                                                                "WalMae Traders"
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                "amount_display": {
+                                                    "type": "string"
+                                                },
+                                                "package": {
+                                                    "type": [
+                                                        "object",
+                                                        "null"
+                                                    ],
+                                                    "additionalProperties": {}
+                                                },
+                                                "payment_method": {
+                                                    "type": "string",
+                                                    "const": "mmqr"
+                                                }
+                                            },
+                                            "required": [
+                                                "status",
+                                                "message",
+                                                "order_reference",
+                                                "qr_code",
+                                                "mmqr_logo",
+                                                "receiver_name",
+                                                "amount_display",
+                                                "package",
+                                                "payment_method"
+                                            ]
+                                        },
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "status": {
+                                                    "type": "string",
+                                                    "const": "success"
+                                                },
+                                                "message": {
+                                                    "type": "string",
+                                                    "const": "KBZPay checkout session created successfully."
+                                                },
+                                                "checkout_url": {
+                                                    "type": "string"
+                                                },
+                                                "order_reference": {
+                                                    "type": "string"
+                                                },
+                                                "package": {
+                                                    "type": [
+                                                        "object",
+                                                        "null"
+                                                    ],
+                                                    "additionalProperties": {}
+                                                },
+                                                "payment_method": {
+                                                    "type": "string",
+                                                    "const": "kbzpay"
+                                                }
+                                            },
+                                            "required": [
+                                                "status",
+                                                "message",
+                                                "checkout_url",
+                                                "order_reference",
+                                                "package",
+                                                "payment_method"
+                                            ]
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "const": "error"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "status",
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/v1/point-costs": {
+            "get": {
+                "operationId": "pointCost.index",
+                "description": "This endpoint is used by the frontend to display accurate point costs.",
+                "summary": "Get all point costs from database",
+                "tags": [
+                    "PointCost"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "integer",
+                                    "const": 200
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": []
+            }
+        },
+        "/v1/sliders": {
+            "get": {
+                "operationId": "slider.index",
+                "description": "Public endpoint \u2014 no authentication required.\nReturns active sliders sorted by sorting DESC, created_at DESC.",
+                "summary": "Get active sliders for the mobile app",
+                "tags": [
+                    "Slider"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "id": {
+                                                "type": "integer"
+                                            },
+                                            "title": {
+                                                "type": "string"
+                                            },
+                                            "description": {
+                                                "type": [
+                                                    "string",
+                                                    "null"
+                                                ]
+                                            },
+                                            "cta_text": {
+                                                "type": [
+                                                    "string",
+                                                    "null"
+                                                ]
+                                            },
+                                            "cta_url": {
+                                                "type": [
+                                                    "string",
+                                                    "null"
+                                                ]
+                                            },
+                                            "file_url": {
+                                                "type": "string"
+                                            },
+                                            "type": {
+                                                "type": "string"
+                                            },
+                                            "badge": {
+                                                "type": [
+                                                    "string",
+                                                    "null"
+                                                ]
+                                            },
+                                            "sorting": {
+                                                "type": "integer"
+                                            }
+                                        },
+                                        "required": [
+                                            "id",
+                                            "title",
+                                            "description",
+                                            "cta_text",
+                                            "cta_url",
+                                            "file_url",
+                                            "type",
+                                            "badge",
+                                            "sorting"
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": []
+            }
+        },
+        "/auth/{provider}/login": {
+            "post": {
+                "operationId": "auth.socialAuth.login_0",
+                "description": "Receives a verified token from the client SDK (e.g. id_token from Google\nSign-In SDK, identity_token from Apple Sign-In, access_token from Facebook SDK),\nverifies it server-side, synchronizes with HTUT Central Auth S2S, creates or updates\nthe local Customer, and returns a Sanctum Bearer token for all AI chat and generation endpoints.",
+                "summary": "Mobile SDK Social Login",
+                "tags": [
+                    "SocialAuth"
+                ],
+                "parameters": [
+                    {
+                        "name": "provider",
+                        "in": "path",
+                        "required": true,
+                        "description": "The OAuth provider. One of: google, facebook, apple, tiktok, linkedin.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SocialLoginRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "500": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "success",
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Invalid or expired token. Please try signing in again."
+                                        }
+                                    },
+                                    "required": [
+                                        "success",
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                },
+                "security": []
+            }
+        },
+        "/v1/auth/{provider}/login": {
+            "post": {
+                "operationId": "auth.socialAuth.login_1",
+                "description": "Receives a verified token from the client SDK (e.g. id_token from Google\nSign-In SDK, identity_token from Apple Sign-In, access_token from Facebook SDK),\nverifies it server-side, synchronizes with HTUT Central Auth S2S, creates or updates\nthe local Customer, and returns a Sanctum Bearer token for all AI chat and generation endpoints.",
+                "summary": "Mobile SDK Social Login",
+                "tags": [
+                    "SocialAuth"
+                ],
+                "parameters": [
+                    {
+                        "name": "provider",
+                        "in": "path",
+                        "required": true,
+                        "description": "The OAuth provider. One of: google, facebook, apple, tiktok, linkedin.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SocialLoginRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "500": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "success",
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Invalid or expired token. Please try signing in again."
+                                        }
+                                    },
+                                    "required": [
+                                        "success",
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                },
+                "security": []
+            }
+        },
+        "/v1/templates": {
+            "get": {
+                "operationId": "template.index",
+                "description": "Public endpoint \u2014 no authentication required.\nSupports: search, category slug, type (image/video), pagination.",
+                "summary": "List active templates with optional filters",
+                "tags": [
+                    "Template"
+                ],
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "maxLength": 255
+                        }
+                    },
+                    {
+                        "name": "category",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "maxLength": 255
+                        }
+                    },
+                    {
+                        "name": "type",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "enum": [
+                                "image",
+                                "video",
+                                null
+                            ]
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "integer",
+                                "null"
+                            ],
+                            "minimum": 1,
+                            "maximum": 50
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "current_page": {
+                                            "type": "integer",
+                                            "minimum": 1
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Template"
+                                            }
+                                        },
+                                        "first_page_url": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        },
+                                        "from": {
+                                            "type": [
+                                                "integer",
+                                                "null"
+                                            ],
+                                            "minimum": 1
+                                        },
+                                        "last_page_url": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        },
+                                        "last_page": {
+                                            "type": "integer",
+                                            "minimum": 1
+                                        },
+                                        "links": {
+                                            "type": "array",
+                                            "description": "Generated paginator links.",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "url": {
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "label": {
+                                                        "type": "string"
+                                                    },
+                                                    "active": {
+                                                        "type": "boolean"
+                                                    }
+                                                },
+                                                "required": [
+                                                    "url",
+                                                    "label",
+                                                    "active"
+                                                ]
+                                            }
+                                        },
+                                        "next_page_url": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        },
+                                        "path": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ],
+                                            "description": "Base path for paginator generated URLs."
+                                        },
+                                        "per_page": {
+                                            "type": "integer",
+                                            "description": "Number of items shown per page.",
+                                            "minimum": 0
+                                        },
+                                        "prev_page_url": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        },
+                                        "to": {
+                                            "type": [
+                                                "integer",
+                                                "null"
+                                            ],
+                                            "description": "Number of the last item in the slice.",
+                                            "minimum": 1
+                                        },
+                                        "total": {
+                                            "type": "integer",
+                                            "description": "Total number of items being paginated.",
+                                            "minimum": 0
+                                        }
+                                    },
+                                    "required": [
+                                        "current_page",
+                                        "data",
+                                        "first_page_url",
+                                        "from",
+                                        "last_page_url",
+                                        "last_page",
+                                        "links",
+                                        "next_page_url",
+                                        "path",
+                                        "per_page",
+                                        "prev_page_url",
+                                        "to",
+                                        "total"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                },
+                "security": []
+            }
+        },
+        "/v1/templates/{slug}": {
+            "get": {
+                "operationId": "template.show",
+                "summary": "Get a single active template by slug",
+                "tags": [
+                    "Template"
+                ],
+                "parameters": [
+                    {
+                        "name": "slug",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Template"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": []
+            }
+        },
+        "/v1/template-categories": {
+            "get": {
+                "operationId": "templateCategory.index",
+                "description": "Public endpoint \u2014 no authentication required.",
+                "summary": "List active template categories",
+                "tags": [
+                    "TemplateCategory"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/TemplateCategory"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": []
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "http": {
+                "type": "http",
+                "scheme": "bearer"
+            }
+        },
+        "schemas": {
+            "AIProvider": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "slug": {
+                        "type": "string"
+                    },
+                    "is_active": {
+                        "type": "boolean"
+                    },
+                    "config": {
+                        "type": [
+                            "array",
+                            "null"
+                        ],
+                        "items": {}
+                    },
+                    "created_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time"
+                    }
+                },
+                "required": [
+                    "id",
+                    "name",
+                    "slug",
+                    "is_active",
+                    "config",
+                    "created_at",
+                    "updated_at"
+                ],
+                "title": "AIProvider"
+            },
+            "FaceSwapRequest": {
+                "type": "object",
+                "properties": {
+                    "face_image": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "binary",
+                        "contentMediaType": "application/octet-stream",
+                        "description": "Maximum file size: 10240 kilobytes."
+                    },
+                    "face_image_url": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uri",
+                        "description": "10 MB",
+                        "maxLength": 2048
+                    },
+                    "template_slug": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 255
+                    },
+                    "target_image_url": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uri",
+                        "maxLength": 2048
+                    },
+                    "client_idempotency_token": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 255
+                    }
+                },
+                "title": "FaceSwapRequest"
+            },
+            "HomeHero": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "title": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "video": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "images": {
+                        "type": [
+                            "array",
+                            "null"
+                        ],
+                        "items": {}
+                    },
+                    "sort_order": {
+                        "type": "integer"
+                    },
+                    "is_active": {
+                        "type": "boolean"
+                    },
+                    "created_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time"
+                    }
+                },
+                "required": [
+                    "id",
+                    "title",
+                    "description",
+                    "video",
+                    "images",
+                    "sort_order",
+                    "is_active",
+                    "created_at",
+                    "updated_at"
+                ],
+                "title": "HomeHero"
+            },
+            "HomeShowcase": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "section_name": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "title": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "video_url": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "image_fallback_url": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "alignment": {
+                        "type": "string"
+                    },
+                    "order": {
+                        "type": "integer"
+                    },
+                    "is_active": {
+                        "type": "boolean"
+                    },
+                    "created_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time"
+                    }
+                },
+                "required": [
+                    "id",
+                    "section_name",
+                    "title",
+                    "description",
+                    "video_url",
+                    "image_fallback_url",
+                    "alignment",
+                    "order",
+                    "is_active",
+                    "created_at",
+                    "updated_at"
+                ],
+                "title": "HomeShowcase"
+            },
+            "ImageEditRequest": {
+                "type": "object",
+                "properties": {
+                    "model": {
+                        "type": "string",
+                        "enum": [
+                            "multi-image-kontext-max",
+                            "flux-kontext-dev",
+                            "seedream-v5-lite-image-to-image",
+                            "gpt-image-1.5-edit",
+                            "kling-3-image2image",
+                            "nano-banana-pro",
+                            "ideogram-4.5-edit",
+                            "bria-extract-object"
+                        ]
+                    },
+                    "prompt": {
+                        "type": "string",
+                        "maxLength": 5000
+                    },
+                    "seed": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "minimum": 0
+                    },
+                    "aspect_ratio": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "Common or model-specific fields",
+                        "maxLength": 30
+                    },
+                    "output_format": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "enum": [
+                            "jpg",
+                            "png",
+                            "webp",
+                            null
+                        ]
+                    },
+                    "input_image": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "binary",
+                        "contentMediaType": "application/octet-stream",
+                        "description": "Direct or multi-image inputs"
+                    },
+                    "input_image_url": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uri",
+                        "maxLength": 2048
+                    },
+                    "image_url": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uri",
+                        "maxLength": 2048
+                    },
+                    "input_image_1": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "binary",
+                        "contentMediaType": "application/octet-stream",
+                        "description": "Maximum file size: 10240 kilobytes."
+                    },
+                    "input_image_1_url": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uri",
+                        "maxLength": 2048
+                    },
+                    "input_image_2": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "binary",
+                        "contentMediaType": "application/octet-stream",
+                        "description": "Maximum file size: 10240 kilobytes."
+                    },
+                    "input_image_2_url": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uri",
+                        "maxLength": 2048
+                    },
+                    "mask": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "binary",
+                        "contentMediaType": "application/octet-stream",
+                        "description": "Maximum file size: 10240 kilobytes."
+                    },
+                    "mask_url": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uri",
+                        "maxLength": 2048
+                    },
+                    "image_input": {
+                        "type": [
+                            "array",
+                            "null"
+                        ],
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "image_urls": {
+                        "type": [
+                            "array",
+                            "null"
+                        ],
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "safety_tolerance": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "description": "Multi-image fields",
+                        "minimum": 1,
+                        "maximum": 6
+                    },
+                    "guidance": {
+                        "type": [
+                            "number",
+                            "null"
+                        ],
+                        "description": "Flux fields",
+                        "minimum": 1,
+                        "maximum": 20
+                    },
+                    "num_inference_steps": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "minimum": 1,
+                        "maximum": 50
+                    },
+                    "output_quality": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "minimum": 1,
+                        "maximum": 100
+                    },
+                    "disable_safety_checker": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "enum": [
+                            "true",
+                            "false",
+                            "0",
+                            "1",
+                            null
+                        ]
+                    },
+                    "size": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "Seedream fields",
+                        "maxLength": 20
+                    },
+                    "max_images": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "minimum": 1,
+                        "maximum": 4
+                    },
+                    "optimize_prompt": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 20
+                    },
+                    "watermark": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "enum": [
+                            "true",
+                            "false",
+                            "0",
+                            "1",
+                            null
+                        ]
+                    },
+                    "quality": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "GPT Image fields",
+                        "maxLength": 20
+                    },
+                    "background": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 20
+                    },
+                    "output_compression": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "minimum": 1,
+                        "maximum": 100
+                    },
+                    "moderation": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 20
+                    },
+                    "resolution": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "Kling fields",
+                        "maxLength": 20
+                    },
+                    "system_prompt": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "Nano Banana fields",
+                        "maxLength": 2000
+                    },
+                    "output_resolution": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 20
+                    },
+                    "response_modalities": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 30
+                    },
+                    "client_idempotency_token": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 255
+                    }
+                },
+                "required": [
+                    "model",
+                    "prompt"
+                ],
+                "title": "ImageEditRequest"
+            },
+            "ImageGenerationRequest": {
+                "type": "object",
+                "properties": {
+                    "prompt": {
+                        "type": "string",
+                        "maxLength": 2000
+                    },
+                    "negative_prompt": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 1000
+                    },
+                    "model": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 255
+                    },
+                    "width": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "enum": [
+                            "512",
+                            "768",
+                            "1024",
+                            "1536",
+                            "2048",
+                            null
+                        ]
+                    },
+                    "height": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "enum": [
+                            "512",
+                            "768",
+                            "1024",
+                            "1536",
+                            "2048",
+                            null
+                        ]
+                    },
+                    "seed": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "minimum": 0
+                    },
+                    "image_format": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "enum": [
+                            "png",
+                            "jpg",
+                            "webp",
+                            null
+                        ]
+                    },
+                    "quality": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "enum": [
+                            "80",
+                            "85",
+                            "90",
+                            "95",
+                            null
+                        ]
+                    },
+                    "client_idempotency_token": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 255
+                    }
+                },
+                "required": [
+                    "prompt"
+                ],
+                "title": "ImageGenerationRequest"
+            },
+            "ImageToVideoRequest": {
+                "type": "object",
+                "properties": {
+                    "prompt": {
+                        "type": "string",
+                        "maxLength": 2000
+                    },
+                    "image": {
+                        "type": "string",
+                        "format": "binary",
+                        "contentMediaType": "application/octet-stream",
+                        "description": "Maximum file size: 10240 kilobytes."
+                    },
+                    "image_url": {
+                        "type": "string",
+                        "format": "uri"
+                    },
+                    "negative_prompt": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 1000
+                    },
+                    "model": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 255
+                    },
+                    "aspect_ratio": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "enum": [
+                            "1:1",
+                            "9:16",
+                            "16:9",
+                            "4:3",
+                            "3:4",
+                            null
+                        ]
+                    },
+                    "resolution": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "enum": [
+                            "480p",
+                            "720p",
+                            "1080p",
+                            null
+                        ]
+                    },
+                    "duration": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 50
+                    },
+                    "prompt_extend": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "enum": [
+                            "true",
+                            "false",
+                            "0",
+                            "1",
+                            null
+                        ]
+                    },
+                    "seed": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "minimum": 0
+                    },
+                    "watermark": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "enum": [
+                            "true",
+                            "false",
+                            "0",
+                            "1",
+                            null
+                        ]
+                    },
+                    "client_idempotency_token": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 255
+                    }
+                },
+                "required": [
+                    "prompt"
+                ],
+                "title": "ImageToVideoRequest"
+            },
+            "Partner": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "logo_url": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "website_url": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "order": {
+                        "type": "integer"
+                    },
+                    "is_active": {
+                        "type": "boolean"
+                    },
+                    "created_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time"
+                    }
+                },
+                "required": [
+                    "id",
+                    "name",
+                    "logo_url",
+                    "website_url",
+                    "order",
+                    "is_active",
+                    "created_at",
+                    "updated_at"
+                ],
+                "title": "Partner"
+            },
+            "SendChatMessageRequest": {
+                "type": "object",
+                "properties": {
+                    "prompt": {
+                        "type": "string",
+                        "maxLength": 5000
+                    },
+                    "category": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "enum": [
+                            "general",
+                            "health",
+                            "education",
+                            null
+                        ]
+                    },
+                    "conversation_id": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
+                    "language": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "enum": [
+                            "my",
+                            "en",
+                            null
+                        ]
+                    },
+                    "model": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 100
+                    }
+                },
+                "required": [
+                    "prompt"
+                ],
+                "title": "SendChatMessageRequest"
+            },
+            "SocialLoginRequest": {
+                "type": "object",
+                "properties": {
+                    "id_token": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "access_token": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "token": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                },
+                "title": "SocialLoginRequest"
+            },
+            "Template": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "sort_order": {
+                        "type": "integer"
+                    },
+                    "category_id": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
+                    "generation_type_id": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
+                    "slug": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "type": {
+                        "type": "string"
+                    },
+                    "file_path": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "thumbnail_path": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "model": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "ai_model_id": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
+                    "prompt": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "negative_prompt": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "aspect_ratio": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "resolution": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "seed": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "cost": {
+                        "type": "integer"
+                    },
+                    "discount_cost": {
+                        "type": "integer"
+                    },
+                    "is_active": {
+                        "type": "boolean"
+                    },
+                    "created_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time"
+                    },
+                    "file_url": {
+                        "type": "string"
+                    },
+                    "thumbnail_url": {
+                        "type": "string"
+                    },
+                    "effective_cost": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "id",
+                    "sort_order",
+                    "category_id",
+                    "generation_type_id",
+                    "slug",
+                    "name",
+                    "description",
+                    "type",
+                    "file_path",
+                    "thumbnail_path",
+                    "model",
+                    "ai_model_id",
+                    "prompt",
+                    "negative_prompt",
+                    "aspect_ratio",
+                    "resolution",
+                    "seed",
+                    "cost",
+                    "discount_cost",
+                    "is_active",
+                    "created_at",
+                    "updated_at",
+                    "file_url",
+                    "thumbnail_url",
+                    "effective_cost"
+                ],
+                "title": "Template"
+            },
+            "TemplateCategory": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "slug": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "is_active": {
+                        "type": "boolean"
+                    },
+                    "created_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time"
+                    }
+                },
+                "required": [
+                    "id",
+                    "name",
+                    "slug",
+                    "description",
+                    "is_active",
+                    "created_at",
+                    "updated_at"
+                ],
+                "title": "TemplateCategory"
+            },
+            "VideoFaceSwapRequest": {
+                "type": "object",
+                "properties": {
+                    "face_image": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "binary",
+                        "contentMediaType": "application/octet-stream",
+                        "description": "Maximum file size: 10240 kilobytes."
+                    },
+                    "face_image_url": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uri",
+                        "maxLength": 2048
+                    },
+                    "template_slug": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 255
+                    },
+                    "target_video_url": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uri",
+                        "maxLength": 2048
+                    },
+                    "client_idempotency_token": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 255
+                    },
+                    "model_name": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 255
+                    },
+                    "face_detector_score": {
+                        "type": [
+                            "number",
+                            "null"
+                        ],
+                        "minimum": 0,
+                        "maximum": 1
+                    },
+                    "target_face_index": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "minimum": 0
+                    }
+                },
+                "title": "VideoFaceSwapRequest"
+            }
+        },
+        "responses": {
+            "ValidationException": {
+                "description": "Validation error",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string",
+                                    "description": "Errors overview."
+                                },
+                                "errors": {
+                                    "type": "object",
+                                    "description": "A detailed description of each field that failed validation.",
+                                    "additionalProperties": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            },
+                            "required": [
+                                "message",
+                                "errors"
+                            ]
+                        }
+                    }
+                }
+            },
+            "AuthenticationException": {
+                "description": "Unauthenticated",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string",
+                                    "description": "Error overview."
+                                }
+                            },
+                            "required": [
+                                "message"
+                            ]
+                        }
+                    }
+                }
+            },
+            "ModelNotFoundException": {
+                "description": "Not found",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string",
+                                    "description": "Error overview."
+                                }
+                            },
+                            "required": [
+                                "message"
+                            ]
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
