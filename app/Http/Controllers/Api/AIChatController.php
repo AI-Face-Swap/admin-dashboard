@@ -13,6 +13,7 @@ use App\Models\Setting;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class AIChatController extends Controller
@@ -91,6 +92,27 @@ class AIChatController extends Controller
         $model = $request->input('model');
         $conversationId = $request->input('conversation_id');
 
+        // Handle uploaded image or direct image URL
+        $imageUrl = null;
+        if ($request->hasFile('image')) {
+            $disk = config('ai.providers.segmind.storage_disk', 'spaces');
+            if (! in_array($disk, array_keys(config('filesystems.disks', [])))) {
+                $disk = 'public';
+            }
+            /** @var \Illuminate\Http\UploadedFile $imageFile */
+            $imageFile = $request->file('image');
+            $filename = Str::uuid().'.'.$imageFile->getClientOriginalExtension();
+            $path = $imageFile->storeAs('chat/images', $filename, $disk);
+            $imageUrl = Storage::disk($disk)->url($path);
+        } elseif ($request->filled('image_url')) {
+            $imageUrl = $request->input('image_url');
+        }
+
+        // Auto-select multimodal vision model if image is provided and no specific model requested
+        if ($imageUrl && (! $model || $model === AIChatService::DEFAULT_MODEL)) {
+            $model = AIChatService::MODEL_QWEN3_VL_FLASH;
+        }
+
         // Authenticated Customer mode with DB persistence and Point deduction
         if ($conversationId) {
             $conversation = ChatConversation::where('id', $conversationId)
@@ -111,6 +133,7 @@ class AIChatController extends Controller
             'conversation_id' => $conversation->id,
             'role' => 'user',
             'content' => $prompt,
+            'image_url' => $imageUrl,
             'category' => $category,
         ]);
 
@@ -142,6 +165,7 @@ class AIChatController extends Controller
                 $language,
                 $customer,
                 $model,
+                $imageUrl,
                 $conversation,
                 $userMessage,
                 $pointCost
@@ -172,7 +196,8 @@ class AIChatController extends Controller
                                 'content' => $chunk,
                             ])."\n\n";
                             flush();
-                        }
+                        },
+                        imageUrl: $imageUrl,
                     );
 
                     $assistantMessage = ChatMessage::create([
@@ -231,6 +256,7 @@ class AIChatController extends Controller
             language: $language,
             requester: $customer,
             model: $model,
+            imageUrl: $imageUrl,
         );
 
         // Save Assistant Message
@@ -328,6 +354,7 @@ class AIChatController extends Controller
             'id' => (string) $message->id,
             'role' => $message->role,
             'content' => $message->content,
+            'image_url' => $message->image_url,
             'category' => $message->category,
             'timestamp' => $created->format('g:i A'),
             'structured' => $message->structured,

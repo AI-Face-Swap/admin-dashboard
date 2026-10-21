@@ -13,6 +13,7 @@ use Illuminate\Support\Carbon;
  * @property int $conversation_id
  * @property string $role
  * @property string $content
+ * @property string|null $image_url
  * @property string $category
  * @property array<string, mixed>|null $structured
  * @property int|null $tokens_used
@@ -25,6 +26,7 @@ use Illuminate\Support\Carbon;
     'conversation_id',
     'role',
     'content',
+    'image_url',
     'category',
     'structured',
     'tokens_used',

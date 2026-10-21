@@ -16,6 +16,8 @@ use Throwable;
 class AIChatService
 {
     public const DEFAULT_MODEL = 'qwen-flash';
+    public const MODEL_QWEN_FLASH = 'qwen-flash';
+    public const MODEL_QWEN3_VL_FLASH = 'qwen3-vl-flash';
 
     public const DEFAULT_BASE_URL = 'https://api.segmind.com/v1';
 
@@ -34,11 +36,18 @@ class AIChatService
         string $language = 'my',
         User|Customer|null $requester = null,
         ?string $model = null,
+        ?string $imageUrl = null,
     ): array {
+        $sanitizedMessage = mb_substr(trim($message), 0, 5000);
         $skill = ChatSkillFactory::make($category);
-        $fullPrompt = $skill->buildPrompt($message, $history, $language);
+        $fullPrompt = $skill->buildPrompt($sanitizedMessage, $history, $language);
 
-        $selectedModel = $model ?: config('ai.chat_model', self::DEFAULT_MODEL);
+        if ($imageUrl && (! $model || $model === self::DEFAULT_MODEL)) {
+            $selectedModel = self::MODEL_QWEN3_VL_FLASH;
+        } else {
+            $selectedModel = $model ?: config('ai.chat_model', self::DEFAULT_MODEL);
+        }
+
         $apiKey = (string) config('ai.providers.segmind.api_key');
         $endpoint = rtrim(config('ai.providers.segmind.base_url_v1', self::DEFAULT_BASE_URL), '/').'/'.$selectedModel;
 
@@ -56,21 +65,28 @@ class AIChatService
                 'model' => $selectedModel,
                 'category' => $skill->category(),
                 'language' => $language,
-                'prompt' => $message,
+                'prompt' => $sanitizedMessage,
+                'image_url' => $imageUrl,
             ],
         ]);
 
         $startedAt = hrtime(true);
 
         try {
-            $response = Http::withHeaders([
-                'x-api-key' => $apiKey,
-                'Content-Type' => 'application/json',
-            ])->timeout(30)->post($endpoint, [
+            $payload = [
                 'prompt' => $fullPrompt,
                 'response_format' => ['type' => 'json_object'],
                 'max_tokens' => (int) config('ai.chat_max_tokens', 650),
-            ]);
+            ];
+
+            if ($imageUrl) {
+                $payload['image'] = $imageUrl;
+            }
+
+            $response = Http::withHeaders([
+                'x-api-key' => $apiKey,
+                'Content-Type' => 'application/json',
+            ])->timeout(30)->post($endpoint, $payload);
 
             $durationMs = (int) round((hrtime(true) - $startedAt) / 1e6);
 
@@ -151,9 +167,12 @@ class AIChatService
         User|Customer|null $requester = null,
         ?string $model = null,
         ?callable $onChunk = null,
+        ?string $imageUrl = null,
     ): array {
+        $sanitizedMessage = mb_substr(trim($message), 0, 5000);
+
         if (app()->environment('testing')) {
-            $result = $this->chat($message, $category, $history, $language, $requester, $model);
+            $result = $this->chat($sanitizedMessage, $category, $history, $language, $requester, $model, $imageUrl);
             if ($onChunk) {
                 $words = preg_split('/(\s+)/u', $result['content'], -1, PREG_SPLIT_DELIM_CAPTURE);
                 if (is_array($words)) {
@@ -169,8 +188,14 @@ class AIChatService
         }
 
         $skill = ChatSkillFactory::make($category);
-        $fullPrompt = $skill->buildPrompt($message, $history, $language);
-        $selectedModel = $model ?: config('ai.chat_model', self::DEFAULT_MODEL);
+        $fullPrompt = $skill->buildPrompt($sanitizedMessage, $history, $language);
+
+        if ($imageUrl && (! $model || $model === self::DEFAULT_MODEL)) {
+            $selectedModel = self::MODEL_QWEN3_VL_FLASH;
+        } else {
+            $selectedModel = $model ?: config('ai.chat_model', self::DEFAULT_MODEL);
+        }
+
         $apiKey = (string) config('ai.providers.segmind.api_key');
         $endpoint = rtrim(config('ai.providers.segmind.base_url_v1', self::DEFAULT_BASE_URL), '/').'/'.$selectedModel;
         $pointCost = (int) Setting::get('ai', 'point_cost_chat', config('ai.point_costs.chat', 5));
@@ -187,7 +212,8 @@ class AIChatService
                 'model' => $selectedModel,
                 'category' => $skill->category(),
                 'language' => $language,
-                'prompt' => $message,
+                'prompt' => $sanitizedMessage,
+                'image_url' => $imageUrl,
                 'stream' => true,
             ],
         ]);
@@ -196,16 +222,22 @@ class AIChatService
         $accumulatedContent = '';
 
         try {
+            $payload = [
+                'prompt' => $fullPrompt,
+                'max_tokens' => (int) config('ai.chat_max_tokens', 650),
+            ];
+
+            if ($imageUrl) {
+                $payload['image'] = $imageUrl;
+            }
+
             // Segmind generates chat completions via HTTP in ~0.8s.
             // We fetch the completion and stream tokens word-by-word via $onChunk to deliver smooth real-time SSE streaming.
             $response = Http::withHeaders([
                 'x-api-key' => $apiKey,
                 'Content-Type' => 'application/json',
                 'Accept' => 'application/json',
-            ])->timeout(30)->post($endpoint, [
-                'prompt' => $fullPrompt,
-                'max_tokens' => (int) config('ai.chat_max_tokens', 650),
-            ]);
+            ])->timeout(30)->post($endpoint, $payload);
 
             if (! $response->successful()) {
                 $errorBody = $response->json() ?? $response->body();
@@ -287,7 +319,7 @@ class AIChatService
             }
 
             $generation->delete();
-            $fallbackResult = $this->chat($message, $category, $history, $language, $requester, $model);
+            $fallbackResult = $this->chat($sanitizedMessage, $category, $history, $language, $requester, $model, $imageUrl);
             if ($onChunk) {
                 $onChunk($fallbackResult['content']);
             }

@@ -350,5 +350,80 @@ class AIChatApiTest extends TestCase
         $this->assertStringContainsString('data: {"type":"done"', $content);
         $this->assertStringContainsString('data: [DONE]', $content);
     }
+
+    public function test_prompt_over_5000_characters_is_rejected(): void
+    {
+        $customer = Customer::factory()->create();
+        Sanctum::actingAs($customer);
+
+        $response = $this->postJson('/api/v1/chat/send', [
+            'prompt' => str_repeat('a', 5001),
+            'category' => 'general',
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['prompt']);
+    }
+
+    public function test_chat_with_image_uses_qwen3_vl_flash(): void
+    {
+        $customer = Customer::factory()->create([
+            'central_auth_uuid' => 'test-uuid-vision-customer',
+        ]);
+        \Illuminate\Support\Facades\Cache::put('customer_points_test-uuid-vision-customer', 100, 30);
+
+        Sanctum::actingAs($customer);
+
+        Http::fake([
+            '*/v1/qwen3-vl-flash' => Http::response([
+                'id' => 'chatcmpl-vision-test',
+                'choices' => [
+                    [
+                        'message' => [
+                            'content' => json_encode([
+                                'content' => 'This is a receipt image analysis.',
+                                'structured' => [
+                                    'sections' => [
+                                        ['title' => 'Invoice Items', 'description' => 'Product list extracted.'],
+                                    ],
+                                    'checklist' => [],
+                                ],
+                            ]),
+                        ],
+                    ],
+                ],
+                'usage' => ['total_tokens' => 250, 'prompt_tokens' => 200, 'completion_tokens' => 50],
+            ], 200),
+            '*/api/v1/s2s/points/deduct' => Http::response([
+                'success' => true,
+                'points' => 95,
+                'deducted' => 5,
+            ], 200),
+            '*/api/v1/s2s/points/*' => Http::response([
+                'success' => true,
+                'points' => 100,
+            ], 200),
+        ]);
+
+        $response = $this->postJson('/api/v1/chat/send', [
+            'prompt' => 'Analyze this invoice',
+            'image_url' => 'https://example.com/invoice.jpg',
+            'category' => 'general',
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('user_message.image_url', 'https://example.com/invoice.jpg');
+        $response->assertJsonPath('assistant_message.content', 'This is a receipt image analysis.');
+
+        Http::assertSent(function (\Illuminate\Http\Client\Request $request) {
+            return str_contains($request->url(), 'qwen3-vl-flash')
+                && $request['image'] === 'https://example.com/invoice.jpg';
+        });
+
+        $this->assertDatabaseHas('chat_messages', [
+            'role' => 'user',
+            'image_url' => 'https://example.com/invoice.jpg',
+        ]);
+    }
 }
 

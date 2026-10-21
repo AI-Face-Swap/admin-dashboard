@@ -1,6 +1,5 @@
-{
-    "openapi": "3.1.0",
-    "info": {
+OpenAPI document exported to api.json.
+
         "title": "HTUT AI \u2014 API Docs",
         "version": "1.0.0",
         "description": "# HTUT AI \u2014 REST API\n\nAI-powered image generation, face swap, image editing, video face swap, and customer portal API.\n\n## Authentication\n\nAll protected endpoints require a **Bearer token** issued via HTUT Central Auth SSO.\n\nInclude the token in the `Authorization` header:\n```\nAuthorization: Bearer YOUR_TOKEN_HERE\n```\n\n## SSO & Customer Auth Flow\n\n1. Redirect user to `GET /api/v1/auth/htut/redirect`\n2. User authenticates on HTUT Central Auth (SSO)\n3. Callback to `GET /api/v1/auth/htut/callback` returns the customer record and access token\n4. Retrieve customer profile & coin balance via `GET /api/v1/auth/me`\n5. Terminate session via `POST /api/v1/auth/logout`\n\n## Coin System & Packages\n\n- Customers use coins for AI operations (Face Swap, Image Generation, Video Face Swap, etc.)\n- Coin balance and costs can be retrieved via `GET /api/v1/coin-costs` and `GET /api/v1/auth/me`\n- Available coin top-up packages can be fetched via `GET /api/v1/packages` and purchased via `POST /api/v1/packages/checkout`\n- Insufficient coins return `402 Payment Required` status code\n\n## Base URLs\n\n| Environment | URL |\n|---|---|\n| Local | `http://localhost:8001/api` |\n| Production | `https://ai.htut.com/api` |"
@@ -82,6 +81,12 @@
                                                                 "content": {
                                                                     "type": "string"
                                                                 },
+                                                                "image_url": {
+                                                                    "type": [
+                                                                        "string",
+                                                                        "null"
+                                                                    ]
+                                                                },
                                                                 "category": {
                                                                     "type": "string"
                                                                 },
@@ -109,6 +114,7 @@
                                                                 "id",
                                                                 "role",
                                                                 "content",
+                                                                "image_url",
                                                                 "category",
                                                                 "timestamp",
                                                                 "structured",
@@ -239,6 +245,12 @@
                                                             "content": {
                                                                 "type": "string"
                                                             },
+                                                            "image_url": {
+                                                                "type": [
+                                                                    "string",
+                                                                    "null"
+                                                                ]
+                                                            },
                                                             "category": {
                                                                 "type": "string"
                                                             },
@@ -266,6 +278,7 @@
                                                             "id",
                                                             "role",
                                                             "content",
+                                                            "image_url",
                                                             "category",
                                                             "timestamp",
                                                             "structured",
@@ -402,7 +415,7 @@
                 "requestBody": {
                     "required": true,
                     "content": {
-                        "application/json": {
+                        "multipart/form-data": {
                             "schema": {
                                 "$ref": "#/components/schemas/SendChatMessageRequest"
                             }
@@ -438,6 +451,12 @@
                                                 "content": {
                                                     "type": "string"
                                                 },
+                                                "image_url": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
                                                 "category": {
                                                     "type": "string"
                                                 },
@@ -465,6 +484,7 @@
                                                 "id",
                                                 "role",
                                                 "content",
+                                                "image_url",
                                                 "category",
                                                 "timestamp",
                                                 "structured",
@@ -484,6 +504,12 @@
                                                 "content": {
                                                     "type": "string"
                                                 },
+                                                "image_url": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
                                                 "category": {
                                                     "type": "string"
                                                 },
@@ -511,6 +537,7 @@
                                                 "id",
                                                 "role",
                                                 "content",
+                                                "image_url",
                                                 "category",
                                                 "timestamp",
                                                 "structured",
@@ -3483,7 +3510,28 @@
                             "string",
                             "null"
                         ],
-                        "maxLength": 100
+                        "enum": [
+                            "qwen-flash",
+                            "qwen3-vl-flash",
+                            null
+                        ]
+                    },
+                    "image": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "binary",
+                        "contentMediaType": "application/octet-stream",
+                        "description": "Maximum file size: 10240 kilobytes."
+                    },
+                    "image_url": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uri",
+                        "maxLength": 1000
                     }
                 },
                 "required": [

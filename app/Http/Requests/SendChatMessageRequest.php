@@ -27,7 +27,9 @@ class SendChatMessageRequest extends FormRequest
             'category' => ['nullable', 'string', 'in:general,health,education'],
             'conversation_id' => ['nullable', 'integer', 'exists:chat_conversations,id'],
             'language' => ['nullable', 'string', 'in:my,en'],
-            'model' => ['nullable', 'string', 'max:100'],
+            'model' => ['nullable', 'string', 'in:qwen-flash,qwen3-vl-flash'],
+            'image' => ['nullable', 'file', 'image', 'mimes:jpeg,png,jpg,webp', 'max:10240'],
+            'image_url' => ['nullable', 'url', 'max:1000'],
         ];
     }
 
@@ -42,6 +44,9 @@ class SendChatMessageRequest extends FormRequest
             'prompt' => 'chat message',
             'category' => 'chat category',
             'conversation_id' => 'conversation ID',
+            'image' => 'uploaded image file',
+            'image_url' => 'image URL',
+            'model' => 'AI model',
         ];
     }
 }
