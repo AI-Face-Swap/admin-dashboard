@@ -54,7 +54,7 @@ Laravel backend + admin dashboard for AI media generation (image generation, fac
 | — | Google customer login (web redirect + mobile ID-token flow) | ✅ |
 | — | Apple customer login (web redirect/form-post + mobile identity-token flow) | ✅ |
 | — | Image Editing API (6 Segmind models: multi-image-kontext-max, flux-kontext-dev, seedream-v5-lite, gpt-image-1.5-edit, kling-3-image2image, nano-banana-pro) + Admin AI tab + Save to Templates | ✅ |
-| — | AI Chat API & Agent Skills (`POST /api/v1/chat/send`, 3 skills: General, Health, Education via Segmind `qwen-flash`, structured sections & checklists, 5 points deduction) | ✅ |
+| — | AI Chat API & Agent Skills (`POST /api/v1/chat/send`, General/Health/Education skills via Segmind `qwen-flash` & multimodal `qwen3-vl-flash` with image/document upload, SSE streaming, 5,000 char prompt limit guard, 5 points deduction) | ✅ |
 
 ## Pending phases
 
