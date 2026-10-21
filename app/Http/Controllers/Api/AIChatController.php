@@ -129,7 +129,9 @@ class AIChatController extends Controller
             ->values()
             ->toArray();
 
-        $shouldStream = $request->boolean('stream') || $request->header('Accept') === 'text/event-stream';
+        $shouldStream = $request->boolean('stream')
+            || $request->accepts('text/event-stream')
+            || str_contains((string) $request->header('Accept', ''), 'text/event-stream');
 
         if ($shouldStream) {
             return response()->stream(function () use (
