@@ -347,22 +347,27 @@ it('logs in mobile customer via POST /v1/auth/google/login with id_token and syn
 
     $response->assertStatus(201);
     $response->assertJson([
-        'success' => true,
-        'token_type' => 'Bearer',
         'data' => [
+            'message' => 'Account created successfully',
             'is_new_account' => true,
             'central_auth_uuid' => 'c89139ab-google-4444-8888-123456789abc',
             'tier' => 'premium',
-        ],
-        'customer' => [
-            'name' => 'Mobile Google User',
-            'email' => 'google_mobile@example.com',
-            'customer_type' => 'premium',
+            'points' => 150,
+            'login_account_info' => [
+                'email' => 'google_mobile@example.com',
+                'login_method' => 'google',
+                'is_premium' => true,
+                'is_expired' => false,
+                'central_auth_uuid' => 'c89139ab-google-4444-8888-123456789abc',
+            ],
         ],
     ]);
 
-    expect($response->json('token'))->not->toBeEmpty();
-    expect($response->json('data.id'))->toBe($response->json('token'));
+    expect($response->json('data.id'))->not->toBeEmpty();
+    expect($response->json('token'))->toBeNull();
+    expect($response->json('customer'))->toBeNull();
+    expect($response->json('entitlements'))->toBeNull();
+    expect($response->json('project_access'))->toBeNull();
 
     $customer = Customer::where('central_auth_uuid', 'c89139ab-google-4444-8888-123456789abc')->first();
     expect($customer)->not->toBeNull();
@@ -377,7 +382,6 @@ it('rejects mobile social login with unsupported provider', function () {
 
     $response->assertStatus(422);
     $response->assertJson([
-        'success' => false,
         'message' => "Unsupported provider 'twitter'.",
     ]);
 });
@@ -387,7 +391,6 @@ it('rejects mobile social login when token is missing', function () {
 
     $response->assertStatus(422);
     $response->assertJson([
-        'success' => false,
         'message' => 'Missing token. Send the token as { id_token } or { access_token } in the request body.',
     ]);
 });

@@ -46,7 +46,6 @@ class SocialAuthController extends Controller
 
         if (! in_array($provider, self::SUPPORTED_PROVIDERS, true)) {
             return response()->json([
-                'success' => false,
                 'message' => "Unsupported provider '{$provider}'.",
             ], 422);
         }
@@ -55,7 +54,6 @@ class SocialAuthController extends Controller
 
         if (! $token) {
             return response()->json([
-                'success' => false,
                 'message' => 'Missing token. Send the token as { id_token } or { access_token } in the request body.',
             ], 422);
         }
@@ -64,7 +62,6 @@ class SocialAuthController extends Controller
 
         if (! $socialUser) {
             return response()->json([
-                'success' => false,
                 'message' => 'Invalid or expired token. Please try signing in again.',
             ], 401);
         }
@@ -374,6 +371,10 @@ class SocialAuthController extends Controller
         // Find or create local Customer synchronized with Central Auth
         $customer = HtutCentralAuthController::findOrCreateCustomer($customerData, $entitlements, $ssoExpiredAt, $isSsoExpired);
 
+        if (isset($customerData['points']) && ! empty($customer->central_auth_uuid)) {
+            Cache::put("customer_points_{$customer->central_auth_uuid}", (int) $customerData['points'], 30);
+        }
+
         // Update auth_provider & auth_provider_id
         if (empty($customer->auth_provider) || $customer->auth_provider === 'htut_central_auth') {
             $customer->update([
@@ -399,38 +400,25 @@ class SocialAuthController extends Controller
         array $claims = []
     ): JsonResponse {
         $token = $customer->createToken('htut-ai-mobile')->plainTextToken;
-        $entitlements = $claims['entitlements'] ?? [];
-        $projectAccess = $claims['project_access'] ?? [];
         $hasPassword = (bool) ($claims['customer']['has_password'] ?? ! empty($customer->password));
+        $packageSlug = $claims['entitlements']['subscription']['package_slug'] ?? null;
+        $profileComplete = ! empty($customer->name) && ! empty($customer->email);
+        $points = isset($claims['customer']['points'])
+            ? (int) $claims['customer']['points']
+            : (isset($claims['entitlements']['points']) ? (int) $claims['entitlements']['points'] : $customer->points);
 
         return response()->json([
-            'success' => true,
-            'token' => $token,
-            'token_type' => 'Bearer',
             'data' => [
                 'id' => $token,
-                'token' => $token,
                 'message' => $isNew ? 'Account created successfully' : 'Login successful',
                 'is_new_account' => $isNew,
                 'has_password' => $hasPassword,
-                'profile_complete' => ! empty($customer->name) && ! empty($customer->email),
+                'profile_complete' => $profileComplete,
                 'central_auth_uuid' => $customer->central_auth_uuid,
                 'tier' => $customer->customer_type,
-                'points' => $customer->points,
+                'points' => $points,
+                'login_account_info' => $customer->getLoginAccountInfo($provider, $hasPassword, $packageSlug),
             ],
-            'customer' => [
-                'id' => $customer->id,
-                'uuid' => $customer->central_auth_uuid,
-                'name' => $customer->name,
-                'email' => $customer->email,
-                'phone' => $customer->phone,
-                'avatar' => $customer->avatar,
-                'customer_type' => $customer->customer_type,
-                'points' => $customer->points,
-                'expired_at' => $customer->expired_at?->toIso8601String(),
-            ],
-            'entitlements' => $entitlements,
-            'project_access' => $projectAccess,
         ], $isNew ? 201 : 200);
     }
 }

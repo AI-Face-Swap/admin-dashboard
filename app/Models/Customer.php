@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Laravel\Sanctum\HasApiTokens;
 
 /**
@@ -145,7 +146,7 @@ class Customer extends Authenticatable implements MustVerifyEmail
     {
         $uuid = $this->central_auth_uuid ?: 'test-uuid-'.($this->id ?: uniqid());
         $this->central_auth_uuid = $uuid;
-        \Illuminate\Support\Facades\Cache::put("customer_points_{$uuid}", (int) $value, 300);
+        Cache::put("customer_points_{$uuid}", (int) $value, 300);
     }
 
     /**
@@ -265,6 +266,54 @@ class Customer extends Authenticatable implements MustVerifyEmail
     public function addCoins(int $amount): array
     {
         return $this->addPoints($amount);
+    }
+
+    /**
+     * Get authenticated login account details, subscription, and credentials info.
+     */
+    public function getLoginAccountInfo(
+        ?string $loginMethodOverride = null,
+        ?bool $hasPasswordOverride = null,
+        ?string $packageSlug = null
+    ): array {
+        $hasPassword = $hasPasswordOverride ?? ! empty($this->password);
+        $isPremium = $this->isPremium();
+        $isExpired = $isPremium && $this->expired_at && $this->expired_at->isPast();
+
+        $phone = $this->phone;
+        $phoneDisplay = null;
+        if ($phone) {
+            if (str_starts_with($phone, '959')) {
+                $phoneDisplay = '09'.substr($phone, 3);
+            } elseif (str_starts_with($phone, '+959')) {
+                $phoneDisplay = '09'.substr($phone, 4);
+            } elseif (str_starts_with($phone, '9') && strlen($phone) >= 8 && strlen($phone) <= 10) {
+                $phoneDisplay = '0'.$phone;
+            } else {
+                $phoneDisplay = $phone;
+            }
+        }
+
+        $loginMethod = $loginMethodOverride
+            ?? ($this->auth_provider ?? ($this->email ? 'email' : ($phone ? 'phone' : 'direct')));
+
+        $packageName = $packageSlug ?? ($this->isPremium() ? 'htut-ai-pro-monthly' : 'free');
+        $typeName = $this->customer_type ?: ($this->isPremium() ? 'premium' : 'free');
+
+        return [
+            'email' => $this->email,
+            'phone' => $phone,
+            'phone_display' => $phoneDisplay,
+            'login_method' => $loginMethod,
+            'package' => $packageName,
+            'type' => $typeName,
+            'is_premium' => (bool) $isPremium,
+            'is_expired' => (bool) $isExpired,
+            'has_password' => (bool) $hasPassword,
+            'expired_date' => $this->expired_at?->format('Y-m-d'),
+            'expired_at' => $this->expired_at?->toIso8601String(),
+            'central_auth_uuid' => $this->central_auth_uuid,
+        ];
     }
 
     /**
