@@ -59,7 +59,9 @@ Route::prefix('v1')->group(function () {
     Route::get('point-costs', [PointCostController::class, 'index']);
     Route::get('ai-models', [AIModelApiController::class, 'index']);
 
-    // Home Page Dynamic Content
+    // Home Page Dynamic Content & Ecosystem Project Landings
+    Route::get('project-landings', [HomePageController::class, 'projectLandings']);
+    Route::get('project-landings/{identifier}', [HomePageController::class, 'projectLandingDetail']);
     Route::get('home-heroes', [HomePageController::class, 'heroes']);
     Route::get('home-showcases', [HomePageController::class, 'showcases']);
     Route::get('home-features', [HomePageController::class, 'features']);

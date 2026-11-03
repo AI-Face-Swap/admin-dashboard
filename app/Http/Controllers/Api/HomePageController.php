@@ -8,9 +8,51 @@ use App\Models\HomeHero;
 use App\Models\HomeShowcase;
 use App\Models\Partner;
 use App\Models\Setting;
+use App\Services\CentralAuthProjectLandingService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class HomePageController extends Controller
 {
+    /**
+     * Get HTUT Ecosystem Project Landings from Central Auth SSO.
+     */
+    public function projectLandings(Request $request): JsonResponse
+    {
+        $forceRefresh = $request->boolean('refresh');
+        $includeSelf = $request->has('include_self') ? $request->boolean('include_self') : true;
+
+        $landings = CentralAuthProjectLandingService::getProjectLandings($forceRefresh, $includeSelf);
+
+        return response()->json([
+            'status' => 'success',
+            'total' => count($landings),
+            'project_landings' => $landings,
+            'data' => $landings,
+        ]);
+    }
+
+    /**
+     * Get Single HTUT Ecosystem Project Landing Detail by Project Slug or Landing ID.
+     */
+    public function projectLandingDetail(string $identifier): JsonResponse
+    {
+        $landing = CentralAuthProjectLandingService::getProjectLandingDetail($identifier);
+
+        if (! $landing) {
+            return response()->json([
+                'status' => 'error',
+                'message' => "Project landing '{$identifier}' not found.",
+            ], 404);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'project_landing' => $landing,
+            'data' => $landing,
+        ]);
+    }
+
     public function heroes()
     {
         $heroes = HomeHero::query()

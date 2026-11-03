@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Customer;
 use App\Services\CentralAuthPackageService;
+use App\Services\CentralAuthProjectLandingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -254,8 +255,9 @@ class HtutCentralAuthController extends Controller
             ], 401);
         }
 
-        // Force refresh packages from Central Auth
+        // Force refresh packages & project landings from Central Auth
         $packages = CentralAuthPackageService::getPackages(forceRefresh: true);
+        CentralAuthProjectLandingService::getProjectLandings(forceRefresh: true);
 
         return response()->json([
             'success' => true,
