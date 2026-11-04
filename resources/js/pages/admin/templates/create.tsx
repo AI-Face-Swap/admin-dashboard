@@ -79,7 +79,7 @@ export default function Create({
     const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(
         null,
     );
-    const [cost, setCost] = useState('0');
+    const [cost, setCost] = useState('');
     const [discountCost, setDiscountCost] = useState('0');
     const [model, setModel] = useState('');
     const [aiModelId, setAiModelId] = useState<string>('');
@@ -88,8 +88,15 @@ export default function Create({
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [processing, setProcessing] = useState(false);
 
-    // Live calculation for pricing
-    const numCost = Math.max(0, parseInt(cost, 10) || 0);
+    // Live calculation for pricing (inherits AI Model cost when cost override is left empty)
+    const selectedAiModel = aiModels.find((m) => String(m.id) === aiModelId);
+    const modelBaseCost = selectedAiModel
+        ? (selectedAiModel.point_cost ?? selectedAiModel.coin_cost ?? 0)
+        : 0;
+    const hasManualCost = cost.trim() !== '' && (parseInt(cost, 10) || 0) > 0;
+    const numCost = hasManualCost
+        ? Math.max(0, parseInt(cost, 10) || 0)
+        : modelBaseCost;
     const numDiscount = Math.max(0, parseInt(discountCost, 10) || 0);
     const effectiveCost = Math.max(0, numCost - numDiscount);
     const discountPercent =
@@ -126,7 +133,6 @@ export default function Create({
         const selected = aiModels.find((m) => String(m.id) === id);
         if (selected) {
             setModel(selected.model_name);
-            setCost(String(selected.point_cost ?? selected.coin_cost ?? 0));
             if (selected.generation_type_id && !generationTypeId) {
                 setGenerationTypeId(String(selected.generation_type_id));
             }
@@ -145,7 +151,7 @@ export default function Create({
                 category_id: categoryId || undefined,
                 generation_type_id: generationTypeId || undefined,
                 type,
-                cost: numCost,
+                cost: hasManualCost ? parseInt(cost, 10) : null,
                 discount_cost: numDiscount,
                 file,
                 thumbnail,
@@ -403,15 +409,27 @@ export default function Create({
                             <CardContent className="space-y-4">
                                 <div className="grid gap-4 sm:grid-cols-2">
                                     <div className="grid gap-2">
-                                        <Label
-                                            htmlFor="cost"
-                                            className="font-medium"
-                                        >
-                                            Base Cost (points){' '}
-                                            <span className="text-destructive">
-                                                *
-                                            </span>
-                                        </Label>
+                                        <div className="flex items-center justify-between">
+                                            <Label
+                                                htmlFor="cost"
+                                                className="font-medium"
+                                            >
+                                                Base Cost Override (Optional)
+                                            </Label>
+                                            {hasManualCost ? (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setCost('')}
+                                                    className="text-xs font-medium text-amber-400 hover:underline"
+                                                >
+                                                    Reset to AI Model ({modelBaseCost} pts)
+                                                </button>
+                                            ) : (
+                                                <span className="text-xs text-emerald-400">
+                                                    Auto: AI Model ({modelBaseCost} pts)
+                                                </span>
+                                            )}
+                                        </div>
                                         <div className="relative">
                                             <Input
                                                 id="cost"
@@ -422,10 +440,13 @@ export default function Create({
                                                     setCost(e.target.value)
                                                 }
                                                 className="pl-8"
-                                                required
+                                                placeholder={`Auto from AI Model (${modelBaseCost} pts)`}
                                             />
                                             <Coins className="absolute top-1/2 left-2.5 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                                         </div>
+                                        <p className="text-[11px] text-muted-foreground">
+                                            အလွတ်ထားပါက ရွေးချယ်ထားသော AI Model ၏ Point အတိုင်း အလိုအလျောက် ယူသုံးပါမည်။
+                                        </p>
                                         <InputError message={errors.cost} />
                                     </div>
 

@@ -53,7 +53,7 @@ class Template extends Model
      *
      * @var list<string>
      */
-    protected $appends = ['file_url', 'thumbnail_url', 'effective_cost'];
+    protected $appends = ['file_url', 'thumbnail_url', 'manual_cost', 'effective_cost'];
 
     /**
      * The category this template belongs to.
@@ -116,11 +116,66 @@ class Template extends Model
     }
 
     /**
+     * Get the manual cost override if explicitly set on the template, or null when inheriting from AI model.
+     */
+    public function getManualCostAttribute(): ?int
+    {
+        $raw = $this->attributes['cost'] ?? null;
+
+        if ($raw === null) {
+            return null;
+        }
+
+        return (int) $raw;
+    }
+
+    /**
+     * Resolve the base cost: manual override if set (> 0), otherwise dynamically from the linked AI model.
+     */
+    public function getCostAttribute(?int $value): int
+    {
+        if ($value !== null && $value > 0) {
+            return (int) $value;
+        }
+
+        return $this->resolveModelCost();
+    }
+
+    /**
+     * Resolve point cost from the assigned AIModel (or fallback by model_name / template type).
+     */
+    public function resolveModelCost(): int
+    {
+        if ($this->relationLoaded('aiModel') && $this->aiModel) {
+            return (int) $this->aiModel->coin_cost;
+        }
+
+        if ($this->ai_model_id) {
+            $cost = AIModel::whereKey($this->ai_model_id)->value('coin_cost');
+            if ($cost !== null) {
+                return (int) $cost;
+            }
+        }
+
+        if (! empty($this->model)) {
+            $cost = AIModel::where('model_name', $this->model)->value('coin_cost');
+            if ($cost !== null) {
+                return (int) $cost;
+            }
+        }
+
+        $defaultModelName = $this->type === self::TYPE_VIDEO ? 'video-face-swap' : 'face-swap';
+        $fallbackCost = AIModel::where('model_name', $defaultModelName)->value('coin_cost');
+
+        return $fallbackCost !== null ? (int) $fallbackCost : 0;
+    }
+
+    /**
      * Get the final coin cost for the customer after discount.
      */
     public function getEffectiveCostAttribute(): int
     {
-        $baseCost = $this->cost > 0 ? $this->cost : ($this->aiModel?->coin_cost ?? 0);
+        $baseCost = $this->cost;
 
         return max(0, $baseCost - ($this->discount_cost ?? 0));
     }

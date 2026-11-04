@@ -26,7 +26,7 @@ class TemplateController extends Controller
 
         $templates = Template::query()
             ->where('is_active', true)
-            ->with(['category:id,name,slug', 'tags:id,name,slug'])
+            ->with(['category:id,name,slug', 'tags:id,name,slug', 'aiModel:id,name,provider_name,model_name,coin_cost'])
             ->when($validated['search'] ?? null, fn ($query, $search) => $query
                 ->where(fn ($q) => $q
                     ->where('name', 'like', "%{$search}%")
@@ -51,7 +51,7 @@ class TemplateController extends Controller
     {
         $template = Template::where('slug', $slug)
             ->where('is_active', true)
-            ->with(['category:id,name,slug', 'tags:id,name,slug'])
+            ->with(['category:id,name,slug', 'tags:id,name,slug', 'aiModel:id,name,provider_name,model_name,coin_cost'])
             ->firstOrFail();
 
         return response()->json($template);

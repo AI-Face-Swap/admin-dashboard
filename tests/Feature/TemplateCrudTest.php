@@ -354,3 +354,59 @@ test('an admin can create and update a template with cost and discount_cost', fu
         ->and($template->discount_cost)->toBe(10)
         ->and($template->effective_cost)->toBe(20);
 });
+
+test('a template without manual cost inherits selected AI model point cost and updates dynamically when model cost changes', function () {
+    $this->actingAs($this->admin);
+
+    $faceSwapModel = \App\Models\AIModel::create([
+        'name' => 'Face Swap V5',
+        'provider_name' => 'segmind',
+        'model_name' => 'face-swap',
+        'coin_cost' => 5,
+        'is_active' => true,
+        'is_default' => true,
+    ]);
+
+    // 1. Create a template WITHOUT specifying cost (inherits AI model cost)
+    $this->post(route('admin.templates.store'), [
+        'name' => 'Dynamic Cost Template',
+        'type' => Template::TYPE_IMAGE,
+        'ai_model_id' => $faceSwapModel->id,
+        'cost' => null,
+        'file' => UploadedFile::fake()->image('dynamic.jpg', 600, 800),
+    ])->assertRedirect(route('admin.templates.index'));
+
+    // 2. Create a template WITH a manual cost override (10 pts)
+    $this->post(route('admin.templates.store'), [
+        'name' => 'Manual Override Template',
+        'type' => Template::TYPE_IMAGE,
+        'ai_model_id' => $faceSwapModel->id,
+        'cost' => 10,
+        'file' => UploadedFile::fake()->image('manual.jpg', 600, 800),
+    ])->assertRedirect(route('admin.templates.index'));
+
+    $dynamicTemplate = Template::where('name', 'Dynamic Cost Template')->first();
+    $manualTemplate = Template::where('name', 'Manual Override Template')->first();
+
+    expect($dynamicTemplate->getRawOriginal('cost'))->toBeNull()
+        ->and($dynamicTemplate->manual_cost)->toBeNull()
+        ->and($dynamicTemplate->cost)->toBe(5)
+        ->and($dynamicTemplate->effective_cost)->toBe(5);
+
+    expect($manualTemplate->getRawOriginal('cost'))->toBe(10)
+        ->and($manualTemplate->manual_cost)->toBe(10)
+        ->and($manualTemplate->cost)->toBe(10)
+        ->and($manualTemplate->effective_cost)->toBe(10);
+
+    // 3. Change Face Swap AI Model cost from 5 to 50 points
+    $faceSwapModel->update(['coin_cost' => 50]);
+
+    $dynamicTemplate->refresh();
+    $manualTemplate->refresh();
+
+    // Dynamic template reflects 50 pts automatically; manual template stays at 10 pts
+    expect($dynamicTemplate->cost)->toBe(50)
+        ->and($dynamicTemplate->effective_cost)->toBe(50)
+        ->and($manualTemplate->cost)->toBe(10)
+        ->and($manualTemplate->effective_cost)->toBe(10);
+});

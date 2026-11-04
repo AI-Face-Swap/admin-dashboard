@@ -30,7 +30,7 @@ class TemplateController extends Controller
     public function index(Request $request): Response
     {
         $templates = Template::query()
-            ->with(['category:id,name,slug', 'tags:id,name,slug'])
+            ->with(['category:id,name,slug', 'tags:id,name,slug', 'aiModel:id,name,provider_name,model_name,coin_cost'])
             ->when($request->category, fn ($query, $category) => $query->where('category_id', $category))
             ->when($request->search, fn ($query, $search) => $query
                 ->where(fn ($q) => $q
@@ -79,7 +79,7 @@ class TemplateController extends Controller
             'type' => ['required', Rule::in([Template::TYPE_IMAGE, Template::TYPE_VIDEO])],
             'file' => ['required', 'file', 'max:51200'], // 50 MB
             'thumbnail' => ['nullable', 'image', 'max:5120'],
-            'cost' => ['sometimes', 'integer', 'min:0'],
+            'cost' => ['nullable', 'integer', 'min:0'],
             'discount_cost' => ['sometimes', 'nullable', 'integer', 'min:0'],
             'model' => ['nullable', 'string', 'max:255'],
             'is_active' => ['sometimes', 'boolean'],
@@ -104,6 +104,10 @@ class TemplateController extends Controller
         $filePath = $request->file('file')->store('templates', $this->disk);
         $thumbnailPath = $request->file('thumbnail')?->store('templates/thumbnails', $this->disk);
 
+        $manualCost = isset($validated['cost']) && $validated['cost'] !== null && (int) $validated['cost'] > 0
+            ? (int) $validated['cost']
+            : null;
+
         $template = Template::create([
             'name' => $validated['name'],
             'slug' => $validated['slug'] ?? Str::slug($validated['name']),
@@ -112,7 +116,7 @@ class TemplateController extends Controller
             'generation_type_id' => $validated['generation_type_id'] ?? null,
             'ai_model_id' => $validated['ai_model_id'] ?? null,
             'type' => $validated['type'],
-            'cost' => $validated['cost'] ?? 0,
+            'cost' => $manualCost,
             'discount_cost' => $validated['discount_cost'] ?? 0,
             'file_path' => $filePath,
             'thumbnail_path' => $thumbnailPath,
@@ -160,7 +164,7 @@ class TemplateController extends Controller
             'type' => ['required', Rule::in([Template::TYPE_IMAGE, Template::TYPE_VIDEO])],
             'file' => ['nullable', 'file', 'max:51200'],
             'thumbnail' => ['nullable', 'image', 'max:5120'],
-            'cost' => ['sometimes', 'integer', 'min:0'],
+            'cost' => ['nullable', 'integer', 'min:0'],
             'discount_cost' => ['sometimes', 'nullable', 'integer', 'min:0'],
             'model' => ['nullable', 'string', 'max:255'],
             'is_active' => ['sometimes', 'boolean'],
@@ -182,6 +186,10 @@ class TemplateController extends Controller
             $modelName = $aiModel ? $aiModel->model_name : $modelName;
         }
 
+        $manualCost = $request->exists('cost')
+            ? (($validated['cost'] !== null && (int) $validated['cost'] > 0) ? (int) $validated['cost'] : null)
+            : $template->getRawOriginal('cost');
+
         $data = [
             'name' => $validated['name'],
             // Slugs stay stable once created — only change when explicitly provided.
@@ -191,7 +199,7 @@ class TemplateController extends Controller
             'generation_type_id' => $validated['generation_type_id'] ?? null,
             'ai_model_id' => $validated['ai_model_id'] ?? null,
             'type' => $validated['type'],
-            'cost' => $validated['cost'] ?? $template->cost,
+            'cost' => $manualCost,
             'discount_cost' => $validated['discount_cost'] ?? $template->discount_cost ?? 0,
             'model' => $modelName,
             'is_active' => $validated['is_active'] ?? true,
@@ -305,9 +313,7 @@ class TemplateController extends Controller
                 ?? AIModel::where('generation_type_id', $generationType->id)->first();
         }
 
-        $cost = $aiModel?->point_cost ?? ($isVideo ? 20 : 5);
-
-        // Create the template
+        // Leave cost null so the template dynamically inherits its AI model's point cost unless manually overridden
         $template = Template::create([
             'generation_type_id' => $generationType?->id,
             'ai_model_id' => $aiModel?->id,
@@ -316,7 +322,7 @@ class TemplateController extends Controller
             'slug' => strtolower($typeName).'-'.$generation->id, // HasAutoSlug will suffix if needed
             'description' => "Generated from {$operationLabel}",
             'type' => $type,
-            'cost' => $cost,
+            'cost' => null,
             'discount_cost' => 0,
             'file_path' => $newPath,
             'thumbnail_path' => $isVideo ? null : $newPath,

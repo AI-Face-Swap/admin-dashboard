@@ -27,6 +27,7 @@ type Template = {
     file_url: string;
     thumbnail_url: string | null;
     cost: number;
+    manual_cost?: number | null;
     discount_cost?: number;
     effective_cost?: number;
     is_active: boolean;
@@ -195,7 +196,10 @@ export default function Index({ templates, categories, filters }: Props) {
                                         </Badge>
                                     ) : (
                                         <Badge variant="outline">
-                                            🪙 {template.cost}
+                                            🪙 {template.cost}{' '}
+                                            <span className="ml-1 text-[10px] text-muted-foreground">
+                                                ({template.manual_cost !== null && template.manual_cost !== undefined ? 'Manual' : 'Model'})
+                                            </span>
                                         </Badge>
                                     )}
                                     {template.category && (
