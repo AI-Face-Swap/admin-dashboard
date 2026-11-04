@@ -23,15 +23,41 @@ class CustomerGenerationController extends Controller
 
         $validated = $request->validate([
             'status' => ['nullable', 'string', 'in:queued,processing,completed,failed'],
-            'type' => ['nullable', 'string', 'in:image-generation,face-swap,video-face-swap'],
+            'type' => ['nullable', 'string', 'in:image-generation,image-editing,face-swap,video-face-swap,image-to-video'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:50'],
         ]);
 
-        $query = AIGeneration::where('customer_id', $customer->id)
+        $baseQuery = AIGeneration::where('customer_id', $customer->id)
+            ->where('operation', '!=', AIGeneration::OPERATION_CHAT);
+
+        $query = (clone $baseQuery)
             ->with(['provider:id,name,slug', 'template:id,name,slug,type,thumbnail_path,cost'])
-            ->when($validated['status'] ?? null, fn ($q, $status) => $q->where('status', $status))
-            ->when($validated['type'] ?? null, fn ($q, $type) => $q->where('operation', $type))
-            ->latest();
+            ->when($validated['status'] ?? null, function ($q, $status) {
+                if ($status === 'processing') {
+                    return $q->whereIn('status', ['queued', 'processing']);
+                }
+
+                return $q->where('status', $status);
+            })
+            ->when($validated['type'] ?? null, function ($q, $type) {
+                if ($type === AIGeneration::OPERATION_IMAGE) {
+                    return $q->whereIn('operation', [
+                        AIGeneration::OPERATION_IMAGE,
+                        AIGeneration::OPERATION_IMAGE_EDIT,
+                    ]);
+                }
+
+                if ($type === AIGeneration::OPERATION_VIDEO_FACE_SWAP) {
+                    return $q->whereIn('operation', [
+                        AIGeneration::OPERATION_VIDEO_FACE_SWAP,
+                        AIGeneration::OPERATION_IMAGE_TO_VIDEO,
+                    ]);
+                }
+
+                return $q->where('operation', $type);
+            })
+            ->orderBy('created_at', 'desc')
+            ->orderBy('id', 'desc');
 
         $paginator = $query->paginate($validated['per_page'] ?? 12)->withQueryString();
 
@@ -52,12 +78,12 @@ class CustomerGenerationController extends Controller
             'updated_at' => $gen->updated_at,
         ]);
 
-        // Summary stats
+        // Summary stats (excluding chat)
         $stats = [
-            'total' => AIGeneration::where('customer_id', $customer->id)->count(),
-            'completed' => AIGeneration::where('customer_id', $customer->id)->where('status', 'completed')->count(),
-            'processing' => AIGeneration::where('customer_id', $customer->id)->whereIn('status', ['queued', 'processing'])->count(),
-            'failed' => AIGeneration::where('customer_id', $customer->id)->where('status', 'failed')->count(),
+            'total' => (clone $baseQuery)->count(),
+            'completed' => (clone $baseQuery)->where('status', 'completed')->count(),
+            'processing' => (clone $baseQuery)->whereIn('status', ['queued', 'processing'])->count(),
+            'failed' => (clone $baseQuery)->where('status', 'failed')->count(),
         ];
 
         return response()->json([
