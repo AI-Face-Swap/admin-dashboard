@@ -45,27 +45,8 @@ return new class extends Migration
                 ]);
         }
 
-        // Convert templates whose cost was auto-populated from their AI model (or 0) to NULL
-        // while keeping templates that have a custom manual override cost.
-        $templates = DB::table('templates')
-            ->leftJoin('ai_models', 'templates.ai_model_id', '=', 'ai_models.id')
-            ->select('templates.id', 'templates.type', 'templates.cost', 'ai_models.coin_cost as model_cost')
-            ->get();
-
-        foreach ($templates as $template) {
-            $rawCost = $template->cost;
-            $modelCost = $template->model_cost;
-            $legacyDefault = $template->type === 'video' ? 20 : 5;
-
-            if (
-                $rawCost === null
-                || (int) $rawCost === 0
-                || (int) $rawCost === $legacyDefault
-                || ($modelCost !== null && (int) $rawCost === (int) $modelCost)
-            ) {
-                DB::table('templates')->where('id', $template->id)->update(['cost' => null]);
-            }
-        }
+        // Reset all existing templates' cost to NULL so they inherit from their assigned AI model
+        DB::table('templates')->update(['cost' => null]);
     }
 
     /**
