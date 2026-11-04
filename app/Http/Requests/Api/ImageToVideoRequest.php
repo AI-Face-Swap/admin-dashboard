@@ -19,7 +19,7 @@ class ImageToVideoRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'prompt' => ['required', 'string', 'max:2000'],
+            'prompt' => ['required', 'string', 'max:5000'],
             'image' => ['required_without:image_url', 'file', 'image', 'max:10240'],
             'image_url' => ['required_without:image', 'url'],
             'image_mode' => ['nullable', 'string', 'in:reference,reference_images,first_frame_url'],
@@ -29,7 +29,7 @@ class ImageToVideoRequest extends FormRequest
             'reference_video_url' => ['nullable', 'url'],
             'reference_audio' => ['nullable', 'file', 'mimetypes:audio/mpeg,audio/mp3,audio/wav,audio/x-wav,audio/ogg', 'max:20480'],
             'reference_audio_url' => ['nullable', 'url'],
-            'negative_prompt' => ['nullable', 'string', 'max:1000'],
+            'negative_prompt' => ['nullable', 'string', 'max:2000'],
             'model' => ['nullable', 'string', 'max:255'],
             'aspect_ratio' => ['nullable', 'string', 'in:1:1,9:16,16:9,4:3,3:4,adaptive'],
             'resolution' => ['nullable', 'string', 'in:480p,720p,1080p'],

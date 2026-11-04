@@ -106,7 +106,7 @@ class AIGenerationStatusController extends Controller
      * Customers can delete their own generations.
      * Admins can delete any generation.
      */
-    public function destroy(AIGeneration $generation, Request $request): JsonResponse
+    public function destroy(AIGeneration $generation, Request $request): JsonResponse|RedirectResponse
     {
         $user = $request->user();
 
@@ -135,6 +135,10 @@ class AIGenerationStatusController extends Controller
         }
 
         $generation->delete();
+
+        if ($request->header('X-Inertia')) {
+            return back()->with('success', 'Generation deleted successfully.');
+        }
 
         return response()->json(['message' => 'Generation deleted successfully.']);
     }

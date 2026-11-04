@@ -5,16 +5,17 @@ import { slideUp, tweenConfig } from '@/lib/animations';
 
 type CardProps = ComponentProps<typeof Card>;
 
-export function AnimatedCard(props: CardProps) {
+export function AnimatedCard({ className, ...props }: CardProps) {
     return (
         <motion.div
+            className={className}
             variants={slideUp}
             initial="initial"
             animate="animate"
             exit="exit"
             transition={tweenConfig}
         >
-            <Card {...props} />
+            <Card className={className} {...props} />
         </motion.div>
     );
 }

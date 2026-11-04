@@ -304,4 +304,46 @@ class ImageToVideoApiTest extends TestCase
         $this->assertArrayNotHasKey('reference_images', $genFrames->input_metadata);
         $this->assertSame(12, $genFrames->input_metadata['duration']);
     }
+
+    public function test_admin_user_can_generate_image_to_video_without_points_via_admin_and_api_routes(): void
+    {
+        \Illuminate\Support\Facades\Queue::fake();
+
+        $admin = \App\Models\User::factory()->create([
+            'email_verified_at' => now(),
+        ]);
+        $admin->roles()->attach(\App\Models\Role::where('slug', 'super-admin')->firstOrFail());
+
+        // 1. Via /admin/ai/image-to-video web route (session auth)
+        $resAdmin = $this->actingAs($admin, 'web')->postJson('/admin/ai/image-to-video', [
+            'prompt' => 'Admin testing martial arts scene',
+            'image_url' => 'https://example.com/admin-ref.jpg',
+            'model' => 'seedance-2.0',
+            'image_mode' => 'reference',
+            'resolution' => '1080p',
+            'duration' => '6s',
+        ]);
+
+        $resAdmin->assertStatus(202)
+            ->assertJsonPath('status', 'queued');
+
+        $genId = $resAdmin->json('generation.id');
+        $this->assertNotNull($genId);
+
+        // Admin can also poll status via /admin/ai/generations/{id}
+        $this->actingAs($admin, 'web')
+            ->getJson("/admin/ai/generations/{$genId}")
+            ->assertStatus(200)
+            ->assertJsonPath('id', $genId);
+
+        // 2. Via /api/v1/ai/image-to-video from any host/port with Referer
+        $this->actingAs($admin, 'web')
+            ->withHeaders(['Referer' => 'http://127.0.0.1:8001/admin/ai'])
+            ->postJson('/api/v1/ai/image-to-video', [
+                'prompt' => 'Admin testing via API route',
+                'image_url' => 'https://example.com/admin-ref.jpg',
+                'model' => 'seedance-2.0-fast',
+            ])
+            ->assertStatus(202);
+    }
 }
