@@ -235,7 +235,7 @@ class SegmindProvider implements AIProviderInterface
 
         $startedAt = hrtime(true);
 
-        $submit = $this->submit($endpoint, $request->payload);
+        $submit = $this->submit($endpoint, $this->sanitizeImageToVideoPayload($endpoint, $request->payload));
 
         $requestId = $submit['request_id'] ?? null;
         $statusUrl = $submit['status_url'] ?? null;
@@ -275,6 +275,51 @@ class SegmindProvider implements AIProviderInterface
             currency: $cost !== null ? 'USD' : null,
             rawResponse: $result,
         );
+    }
+
+    /**
+     * Strip internal tracking metadata and unsupported fields per Segmind I2V model schema.
+     *
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    private function sanitizeImageToVideoPayload(string $endpoint, array $payload): array
+    {
+        unset($payload['model'], $payload['image_mode']);
+
+        return match ($endpoint) {
+            'seedance-2.0', 'seedance-2.0-fast', 'seedance-2.5' => array_intersect_key($payload, array_flip([
+                'prompt',
+                'first_frame_url',
+                'last_frame_url',
+                'reference_images',
+                'reference_videos',
+                'reference_audios',
+                'resolution',
+                'aspect_ratio',
+                'duration',
+                'generate_audio',
+                'bitrate_mode',
+                'auto_resize',
+                'seed',
+            ])),
+            'kling-o1-reference-image-to-video' => array_intersect_key($payload, array_flip([
+                'image_urls', 'prompt', 'aspect_ratio', 'duration',
+            ])),
+            'minimax-h3-max-reference-to-video' => array_intersect_key($payload, array_flip([
+                'prompt', 'reference_images', 'duration', 'resolution', 'ratio',
+            ])),
+            'wan-2.2-i2v-flash' => array_intersect_key($payload, array_flip([
+                'image', 'prompt', 'negative_prompt', 'resolution', 'aspect_ratio', 'seed',
+            ])),
+            'wan3.0-video-prime' => array_intersect_key($payload, array_flip([
+                'image', 'prompt', 'resolution', 'duration', 'aspect_ratio', 'prompt_extend', 'watermark',
+            ])),
+            'ltx-2.5-pro' => array_intersect_key($payload, array_flip([
+                'image', 'prompt', 'aspect_ratio', 'duration',
+            ])),
+            default => $payload,
+        };
     }
 
     /**

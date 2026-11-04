@@ -1506,18 +1506,89 @@ function ImageGeneration() {
     );
 }
 
+const SEED_PRESET_DESCRIPTIONS: Record<string, string> = {
+    '-1': 'ထုတ်လုပ်တိုင်း မတူညီသော လှုပ်ရှားမှုနှင့် ကင်မရာရှုထောင့်အသစ်များ ထွက်လာပါမည် (အသစ်စမ်းသပ်ရန် အကောင်းဆုံး)။',
+    '42': 'Prompt တူပါက လှုပ်ရှားမှုနှင့် အလင်းအမှောင် တူညီသော ရလဒ်ကို အတည်တကျ ပြန်ထုတ်ပေးပါမည် (Prompt ပြင်ပြီး နှိုင်းယှဉ်စမ်းသပ်ရန် အကောင်းဆုံး)။',
+    '777': 'တူညီသော Prompt ကိုပင် ရုပ်ရှင်ဆန်သော ကင်မရာရှုထောင့်နှင့် လှုပ်ရှားမှု ပုံစံတစ်မျိုးဖြင့် အတည်တကျ ထုတ်ပေးပါမည်။',
+    '2026': 'တူညီသော Prompt ကိုပင် အက်ရှင်နှင့် လှုပ်ရှားမှု ပိုမိုသွက်လက်သော ပုံစံတစ်မျိုးဖြင့် အတည်တကျ ထုတ်ပေးပါမည်။',
+    custom: 'ယခင်ထုတ်လုပ်ခဲ့သော ဗီဒီယိုတစ်ခု၏ Seed ဂဏန်းကို ပြန်ရိုက်ထည့်ပြီး ပုံစံတူ ပြန်ထုတ်ယူနိုင်ပါသည်။',
+};
+
+const DURATION_DESCRIPTIONS: Record<string, string> = {
+    '4s': '၄ စက္ကန့် — အမြန်ဆုံးထွက်ပြီး အတိုချုပ် လှုပ်ရှားမှု (Short Clip) အတွက် သင့်တော်ပါသည်။',
+    '5s': '၅ စက္ကန့် — ပုံမှန် စံနှုန်းဖြစ်ပြီး လှုပ်ရှားမှု တိကျပြတ်သားပါသည် (အကြံပြုချက်)။',
+    '6s': '၆ စက္ကန့် — တိုက်ခိုက်ခန်း (Action) နှင့် Camera Pan ရိုက်ချက်များအတွက် အသင့်တော်ဆုံး ဖြစ်ပါသည်။',
+    '8s': '၈ စက္ကန့် — ဇာတ်ဝင်ခန်း အလတ်စား (Shot ၂ ခု ခွဲရိုက်ရန် သင့်တော်သည်)။',
+    '10s': '၁၀ စက္ကန့် — ဇာတ်လမ်းရှည် (Shot 1, Shot 2, Shot 3 ခွဲပြီး ရိုက်ကူးရန် အကောင်းဆုံး)။',
+    '12s': '၁၂ စက္ကန့် — Seedance 2.0 / MiniMax အတွက် ဇာတ်ဝင်ခန်းအရှည်။',
+    '15s': '၁၅ စက္ကန့် — အရှည်ဆုံး Cinematic ဇာတ်ဝင်ခန်း (ထုတ်လုပ်ချိန် ပိုကြာနိုင်ပါသည်)။',
+};
+
+const MODEL_GUIDE: Record<string, string> = {
+    'seedance-2.0-fast':
+        'ByteDance Seedance 2.0 Fast — မြန်ဆန်ပြီး Reference Image/Video/Audio နှင့် First/Last Frame အားလုံး သုံးနိုင်သည် (အကြံပြုချက်)။',
+    'seedance-2.0':
+        'ByteDance Seedance 2.0 Standard — အရည်အသွေးအမြင့်ဆုံး Multimodal ဗီဒီယို မော်ဒယ် (Reference Image/Video/Audio + First/Last Frame)။',
+    'seedance-2.5':
+        'ByteDance Seedance 2.5 — ဇာတ်ကောင်မျက်နှာနှင့် လှုပ်ရှားမှု တိကျမှန်ကန်သော မော်ဒယ် (Reference Image/Video/Audio + First/Last Frame)။',
+    'kling-o1-reference-image-to-video':
+        'Kling O1 Reference — ပုံပါ ဇာတ်ကောင်ကို နမူနာယူပြီး ရုပ်ရှင်ဆန်သော ဗီဒီယိုဖန်တီးပေးသည့် မော်ဒယ်။',
+    'minimax-h3-max-reference-to-video':
+        'MiniMax Hailuo H3 Max — လူပုံစံနှင့် ကုန်ပစ္စည်း (Product) ပုံစံ မပျက်ယွင်းစေဘဲ ဗီဒီယိုဖန်တီးပေးသည့် မော်ဒယ်။',
+    'wan-2.2-i2v-flash':
+        'Wan 2.2 Flash — ပုံကို အစပုံ (Starting Frame) အဖြစ်သုံးပြီး အမြန်နှုန်းဖြင့် ဗီဒီယိုထုတ်ပေးသည့် မော်ဒယ် (480p / 720p)။',
+    'wan3.0-video-prime':
+        'Wan 3.0 Video Prime — 1080P အရည်အသွေးဖြင့် အစပုံမှ ဆက်လက်လှုပ်ရှားစေသည့် မော်ဒယ်။',
+    'ltx-2.5-pro':
+        'LTX 2.5 Pro — ကင်မရာရွေ့လျားမှု (Camera Motion) ဦးစားပေး အစပုံအခြေခံ မော်ဒယ်။',
+};
+
 function ImageToVideo() {
     const [prompt, setPrompt] = useState('');
     const [negativePrompt, setNegativePrompt] = useState('');
     const [imageMode, setImageMode] = useState<'upload' | 'url'>('upload');
+    const [imageInputType, setImageInputType] = useState<
+        'reference' | 'first_frame_url'
+    >('reference');
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [imageUrl, setImageUrl] = useState('');
-    const [model, setModel] = useState('kling-o1-reference-image-to-video');
+
+    // Optional Last Frame (for first_frame_url mode on Seedance)
+    const [lastFrameSource, setLastFrameSource] = useState<'upload' | 'url'>(
+        'upload',
+    );
+    const [lastFrameFile, setLastFrameFile] = useState<File | null>(null);
+    const [lastFramePreview, setLastFramePreview] = useState<string | null>(
+        null,
+    );
+    const [lastFrameUrl, setLastFrameUrl] = useState('');
+
+    // Optional Reference Video & Audio (for reference mode on Seedance)
+    const [refVideoSource, setRefVideoSource] = useState<'upload' | 'url'>(
+        'url',
+    );
+    const [refVideoFile, setRefVideoFile] = useState<File | null>(null);
+    const [refVideoUrl, setRefVideoUrl] = useState('');
+    const [refAudioSource, setRefAudioSource] = useState<'upload' | 'url'>(
+        'url',
+    );
+    const [refAudioFile, setRefAudioFile] = useState<File | null>(null);
+    const [refAudioUrl, setRefAudioUrl] = useState('');
+
+    const [model, setModel] = useState('seedance-2.0-fast');
     const [aspectRatio, setAspectRatio] = useState('16:9');
     const [resolution, setResolution] = useState('720p');
+    const [duration, setDuration] = useState('5s');
     const [promptExtend, setPromptExtend] = useState(true);
-    const [seed, setSeed] = useState('');
+    const [generateAudio, setGenerateAudio] = useState(true);
+    const [bitrateMode, setBitrateMode] = useState<'standard' | 'high'>(
+        'standard',
+    );
+    const [autoResize, setAutoResize] = useState(true);
+    const [seedPreset, setSeedPreset] = useState<string>('-1');
+    const [customSeed, setCustomSeed] = useState('');
+
     const [processing, setProcessing] = useState(false);
     const [polling, setPolling] = useState(false);
     const [result, setResult] = useState<GenerationResult | null>(null);
@@ -1525,10 +1596,24 @@ function ImageToVideo() {
     const [generationId, setGenerationId] = useState<number | null>(null);
     const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const lastFrameInputRef = useRef<HTMLInputElement>(null);
+    const refVideoInputRef = useRef<HTMLInputElement>(null);
+    const refAudioInputRef = useRef<HTMLInputElement>(null);
+
+    const isSeedanceModel = [
+        'seedance-2.0',
+        'seedance-2.0-fast',
+        'seedance-2.5',
+    ].includes(model);
 
     const onImageFileChange = (file: File | null) => {
         setImageFile(file);
         setImagePreview(file ? URL.createObjectURL(file) : null);
+    };
+
+    const onLastFrameFileChange = (file: File | null) => {
+        setLastFrameFile(file);
+        setLastFramePreview(file ? URL.createObjectURL(file) : null);
     };
 
     const pollStatus = useCallback(async (id: number) => {
@@ -1613,13 +1698,13 @@ function ImageToVideo() {
         }
 
         if (imageMode === 'upload' && !imageFile) {
-            setError('Upload an image first.');
+            setError('ကျေးဇူးပြု၍ ပုံတစ်ပုံ အရင်တင်ပေးပါ (Upload an image first).');
 
             return;
         }
 
         if (imageMode === 'url' && !imageUrl.trim()) {
-            setError('Enter an image URL.');
+            setError('ကျေးဇူးပြု၍ ပုံ URL ထည့်ပေးပါ (Enter an image URL).');
 
             return;
         }
@@ -1632,11 +1717,34 @@ function ImageToVideo() {
 
         const form = new FormData();
         form.append('prompt', prompt.trim());
+        form.append('image_mode', imageInputType);
 
         if (imageMode === 'upload' && imageFile) {
             form.append('image', imageFile);
         } else {
             form.append('image_url', imageUrl.trim());
+        }
+
+        if (isSeedanceModel && imageInputType === 'first_frame_url') {
+            if (lastFrameSource === 'upload' && lastFrameFile) {
+                form.append('last_frame_image', lastFrameFile);
+            } else if (lastFrameSource === 'url' && lastFrameUrl.trim()) {
+                form.append('last_frame_url', lastFrameUrl.trim());
+            }
+        }
+
+        if (isSeedanceModel && imageInputType === 'reference') {
+            if (refVideoSource === 'upload' && refVideoFile) {
+                form.append('reference_video', refVideoFile);
+            } else if (refVideoSource === 'url' && refVideoUrl.trim()) {
+                form.append('reference_video_url', refVideoUrl.trim());
+            }
+
+            if (refAudioSource === 'upload' && refAudioFile) {
+                form.append('reference_audio', refAudioFile);
+            } else if (refAudioSource === 'url' && refAudioUrl.trim()) {
+                form.append('reference_audio_url', refAudioUrl.trim());
+            }
         }
 
         if (negativePrompt.trim()) {
@@ -1646,10 +1754,16 @@ function ImageToVideo() {
         form.append('resolution', resolution);
         form.append('model', model);
         form.append('aspect_ratio', aspectRatio);
+        form.append('duration', duration);
         form.append('prompt_extend', String(promptExtend));
+        form.append('generate_audio', String(generateAudio));
+        form.append('bitrate_mode', bitrateMode);
+        form.append('auto_resize', String(autoResize));
 
-        if (seed) {
-            form.append('seed', seed);
+        const resolvedSeed =
+            seedPreset === 'custom' ? customSeed.trim() : seedPreset;
+        if (resolvedSeed !== '') {
+            form.append('seed', resolvedSeed);
         }
 
         try {
@@ -1684,20 +1798,90 @@ function ImageToVideo() {
     return (
         <div className="grid gap-6 xl:grid-cols-3">
             <AnimatedCard className="xl:col-span-2">
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-5">
+                    {/* 1. Model Selection with Myanmar Guide */}
                     <div className="space-y-2">
-                        <Label>Prompt *</Label>
-                        <textarea
-                            value={prompt}
-                            onChange={(e) => setPrompt(e.target.value)}
-                            placeholder="Slow cinematic pan around the subject, soft lighting, dramatic atmosphere"
-                            className="flex min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
-                        />
+                        <Label className="text-sm font-semibold">
+                            ၁။ AI Video Model ရွေးချယ်ရန် (Model)
+                        </Label>
+                        <Select value={model} onValueChange={setModel}>
+                            <SelectTrigger>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="seedance-2.0-fast">
+                                    Seedance 2.0 Fast (အမြန်ဆုံး Multimodal — အကြံပြုချက်)
+                                </SelectItem>
+                                <SelectItem value="seedance-2.0">
+                                    Seedance 2.0 Standard (အရည်အသွေးအမြင့်ဆုံး Multimodal)
+                                </SelectItem>
+                                <SelectItem value="seedance-2.5">
+                                    Seedance 2.5 (Expressive Motion & Reference)
+                                </SelectItem>
+                                <SelectItem value="kling-o1-reference-image-to-video">
+                                    Kling Reference I2V (Cinematic Reference)
+                                </SelectItem>
+                                <SelectItem value="minimax-h3-max-reference-to-video">
+                                    MiniMax H3 Max I2V (Character & Product Reference)
+                                </SelectItem>
+                                <SelectItem value="wan-2.2-i2v-flash">
+                                    Wan 2.2 I2V Flash (Fast Starting Frame)
+                                </SelectItem>
+                                <SelectItem value="wan3.0-video-prime">
+                                    Wan 3.0 Video Prime (1080P Starting Frame)
+                                </SelectItem>
+                                <SelectItem value="ltx-2.5-pro">
+                                    LTX 2.5 Pro (Camera Trajectory Starting Frame)
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+                        {MODEL_GUIDE[model] && (
+                            <p className="rounded-md bg-muted/60 px-3 py-2 text-xs text-muted-foreground">
+                                💡 {MODEL_GUIDE[model]}
+                            </p>
+                        )}
                     </div>
 
-                    <div className="space-y-3">
+                    {/* 2. Image Mode Selector (Default = Reference) */}
+                    <div className="space-y-2">
+                        <Label className="text-sm font-semibold">
+                            ၂။ ဓာတ်ပုံ အသုံးပြုမည့် ပုံစံ (Image Mode — Default: Reference)
+                        </Label>
+                        <Select
+                            value={imageInputType}
+                            onValueChange={(v) =>
+                                setImageInputType(
+                                    v as 'reference' | 'first_frame_url',
+                                )
+                            }
+                        >
+                            <SelectTrigger>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="reference">
+                                    Reference Image (ပုံပါ လူ/အရာဝတ္ထုကို နမူနာယူပြီး ဖန်တီးမည် — Default)
+                                </SelectItem>
+                                <SelectItem value="first_frame_url">
+                                    First Frame (first_frame_url — ဗီဒီယို၏ အစပုံအဖြစ် သုံးမည်)
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <p className="text-xs text-muted-foreground">
+                            {imageInputType === 'reference'
+                                ? '✅ Reference Mode: ပုံထဲက လူရဲ့ မျက်နှာ၊ အဝတ်အစားနဲ့ ပုံစံကို မပြောင်းလဲဘဲ Prompt ထဲကအတိုင်း လှုပ်ရှားမှုအသစ် ဖန်တီးပေးပါမည်။'
+                                : '🎬 First Frame Mode: တင်လိုက်သောပုံကို ဗီဒီယို၏ ပထမဆုံး စက္ကန့် (Starting Frame) အဖြစ် ထားပြီး ဆက်လက်လှုပ်ရှားစေပါမည်။'}
+                        </p>
+                    </div>
+
+                    {/* 3. Primary Input Image */}
+                    <div className="space-y-3 rounded-lg border p-3.5">
                         <div className="flex items-center justify-between">
-                            <Label>Input Image *</Label>
+                            <Label className="font-semibold">
+                                {imageInputType === 'reference'
+                                    ? '၃။ နမူနာယူမည့် အဓိကပုံ (Reference Image) *'
+                                    : '၃။ ဗီဒီယို စတင်မည့် ပထမဆုံးပုံ (First Frame Image) *'}
+                            </Label>
                             <div className="flex gap-1">
                                 <Button
                                     type="button"
@@ -1709,7 +1893,7 @@ function ImageToVideo() {
                                     size="sm"
                                     onClick={() => setImageMode('upload')}
                                 >
-                                    Upload
+                                    ဖိုင်တင်မည် (Upload)
                                 </Button>
                                 <Button
                                     type="button"
@@ -1721,7 +1905,7 @@ function ImageToVideo() {
                                     size="sm"
                                     onClick={() => setImageMode('url')}
                                 >
-                                    URL
+                                    လင့်ခ်ထည့်မည် (URL)
                                 </Button>
                             </div>
                         </div>
@@ -1740,7 +1924,7 @@ function ImageToVideo() {
                                     }
                                 />
                                 <div
-                                    className="flex h-40 cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed text-sm text-muted-foreground"
+                                    className="flex h-40 cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed text-sm text-muted-foreground hover:bg-muted/30"
                                     onClick={() =>
                                         fileInputRef.current?.click()
                                     }
@@ -1752,7 +1936,7 @@ function ImageToVideo() {
                                             className="size-full object-contain"
                                         />
                                     ) : (
-                                        'Click to upload the input image'
+                                        'ပုံရွေးချယ်ရန် ဤနေရာကို နှိပ်ပါ (JPG, PNG, WebP)'
                                     )}
                                 </div>
                             </>
@@ -1765,46 +1949,283 @@ function ImageToVideo() {
                         )}
                     </div>
 
+                    {/* 3B. Optional Last Frame Image (Only in first_frame_url mode for Seedance models) */}
+                    {isSeedanceModel && imageInputType === 'first_frame_url' && (
+                        <div className="space-y-3 rounded-lg border border-dashed p-3.5">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <Label className="font-semibold">
+                                        ဗီဒီယို အဆုံးသတ်ပုံ (Last Frame Image — Optional)
+                                    </Label>
+                                    <p className="text-xs text-muted-foreground">
+                                        ထည့်သွင်းထားပါက အစပုံ (First Frame) မှ ယခု အဆုံးပုံ (Last Frame) သို့ ချောမွေ့စွာ ကူးပြောင်းသွားသော ဗီဒီယိုကို ဖန်တီးပေးပါမည်။
+                                    </p>
+                                </div>
+                                <div className="flex gap-1">
+                                    <Button
+                                        type="button"
+                                        variant={
+                                            lastFrameSource === 'upload'
+                                                ? 'default'
+                                                : 'outline'
+                                        }
+                                        size="sm"
+                                        onClick={() =>
+                                            setLastFrameSource('upload')
+                                        }
+                                    >
+                                        Upload
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant={
+                                            lastFrameSource === 'url'
+                                                ? 'default'
+                                                : 'outline'
+                                        }
+                                        size="sm"
+                                        onClick={() =>
+                                            setLastFrameSource('url')
+                                        }
+                                    >
+                                        URL
+                                    </Button>
+                                </div>
+                            </div>
+
+                            {lastFrameSource === 'upload' ? (
+                                <>
+                                    <input
+                                        ref={lastFrameInputRef}
+                                        type="file"
+                                        accept="image/*"
+                                        className="hidden"
+                                        onChange={(e) =>
+                                            onLastFrameFileChange(
+                                                e.target.files?.[0] ?? null,
+                                            )
+                                        }
+                                    />
+                                    <div
+                                        className="flex h-32 cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed text-sm text-muted-foreground hover:bg-muted/30"
+                                        onClick={() =>
+                                            lastFrameInputRef.current?.click()
+                                        }
+                                    >
+                                        {lastFramePreview ? (
+                                            <img
+                                                src={lastFramePreview}
+                                                alt="Last Frame Preview"
+                                                className="size-full object-contain"
+                                            />
+                                        ) : (
+                                            'အဆုံးသတ်ပုံ (Last Frame) တင်လိုပါက ဤနေရာကို နှိပ်ပါ (မထည့်လည်း ရပါသည်)'
+                                        )}
+                                    </div>
+                                </>
+                            ) : (
+                                <Input
+                                    value={lastFrameUrl}
+                                    onChange={(e) =>
+                                        setLastFrameUrl(e.target.value)
+                                    }
+                                    placeholder="https://example.com/last-frame.jpg (Optional)"
+                                />
+                            )}
+                        </div>
+                    )}
+
+                    {/* 3C. Optional Reference Video & Audio (Only in reference mode for Seedance models) */}
+                    {isSeedanceModel && imageInputType === 'reference' && (
+                        <div className="grid gap-4 rounded-lg border border-dashed p-3.5 md:grid-cols-2">
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <Label className="text-xs font-semibold">
+                                        လှုပ်ရှားမှု နမူနာ ဗီဒီယို (Reference Video — Optional)
+                                    </Label>
+                                    <div className="flex gap-1">
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            className="h-6 px-2 text-xs"
+                                            variant={
+                                                refVideoSource === 'url'
+                                                    ? 'default'
+                                                    : 'outline'
+                                            }
+                                            onClick={() =>
+                                                setRefVideoSource('url')
+                                            }
+                                        >
+                                            URL
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            className="h-6 px-2 text-xs"
+                                            variant={
+                                                refVideoSource === 'upload'
+                                                    ? 'default'
+                                                    : 'outline'
+                                            }
+                                            onClick={() =>
+                                                setRefVideoSource('upload')
+                                            }
+                                        >
+                                            Upload
+                                        </Button>
+                                    </div>
+                                </div>
+                                <p className="text-[11px] text-muted-foreground">
+                                    အခြားဗီဒီယို၏ လှုပ်ရှားမှု/ကင်မရာရိုက်ချက်ကို နမူနာယူလိုပါက ထည့်နိုင်သည် (`@Video 1`)။
+                                </p>
+                                {refVideoSource === 'url' ? (
+                                    <Input
+                                        value={refVideoUrl}
+                                        onChange={(e) =>
+                                            setRefVideoUrl(e.target.value)
+                                        }
+                                        placeholder="https://example.com/motion-ref.mp4"
+                                    />
+                                ) : (
+                                    <>
+                                        <input
+                                            ref={refVideoInputRef}
+                                            type="file"
+                                            accept="video/mp4,video/quicktime,video/webm"
+                                            className="hidden"
+                                            onChange={(e) =>
+                                                setRefVideoFile(
+                                                    e.target.files?.[0] ?? null,
+                                                )
+                                            }
+                                        />
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            className="w-full text-xs"
+                                            onClick={() =>
+                                                refVideoInputRef.current?.click()
+                                            }
+                                        >
+                                            {refVideoFile
+                                                ? `ရွေးထားသည်: ${refVideoFile.name}`
+                                                : 'ဗီဒီယိုဖိုင် ရွေးချယ်ရန် (MP4/MOV)'}
+                                        </Button>
+                                    </>
+                                )}
+                            </div>
+
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <Label className="text-xs font-semibold">
+                                        အသံစည်းချက် နမူနာ (Reference Audio — Optional)
+                                    </Label>
+                                    <div className="flex gap-1">
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            className="h-6 px-2 text-xs"
+                                            variant={
+                                                refAudioSource === 'url'
+                                                    ? 'default'
+                                                    : 'outline'
+                                            }
+                                            onClick={() =>
+                                                setRefAudioSource('url')
+                                            }
+                                        >
+                                            URL
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            className="h-6 px-2 text-xs"
+                                            variant={
+                                                refAudioSource === 'upload'
+                                                    ? 'default'
+                                                    : 'outline'
+                                            }
+                                            onClick={() =>
+                                                setRefAudioSource('upload')
+                                            }
+                                        >
+                                            Upload
+                                        </Button>
+                                    </div>
+                                </div>
+                                <p className="text-[11px] text-muted-foreground">
+                                    အသံဖိုင်/စကားပြောသံ စည်းချက်အတိုင်း ဗီဒီယိုထုတ်လိုပါက ထည့်နိုင်သည် (`@Audio 1`)။
+                                </p>
+                                {refAudioSource === 'url' ? (
+                                    <Input
+                                        value={refAudioUrl}
+                                        onChange={(e) =>
+                                            setRefAudioUrl(e.target.value)
+                                        }
+                                        placeholder="https://example.com/audio-ref.mp3"
+                                    />
+                                ) : (
+                                    <>
+                                        <input
+                                            ref={refAudioInputRef}
+                                            type="file"
+                                            accept="audio/mpeg,audio/mp3,audio/wav"
+                                            className="hidden"
+                                            onChange={(e) =>
+                                                setRefAudioFile(
+                                                    e.target.files?.[0] ?? null,
+                                                )
+                                            }
+                                        />
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            className="w-full text-xs"
+                                            onClick={() =>
+                                                refAudioInputRef.current?.click()
+                                            }
+                                        >
+                                            {refAudioFile
+                                                ? `ရွေးထားသည်: ${refAudioFile.name}`
+                                                : 'အသံဖိုင် ရွေးချယ်ရန် (MP3/WAV)'}
+                                        </Button>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* 4. Prompt & Negative Prompt */}
                     <div className="space-y-2">
-                        <Label>Negative Prompt (optional)</Label>
-                        <Input
-                            value={negativePrompt}
-                            onChange={(e) => setNegativePrompt(e.target.value)}
-                            placeholder="blurry, low quality, text overlays"
+                        <Label className="text-sm font-semibold">
+                            ၄။ ဖန်တီးလိုသည့် ဇာတ်ဝင်ခန်း ညွှန်ကြားချက် (Prompt) *
+                        </Label>
+                        <textarea
+                            value={prompt}
+                            onChange={(e) => setPrompt(e.target.value)}
+                            placeholder="ဥပမာ - ပုံထဲက ဇာတ်ကောင်က ရှေးဟောင်းဘုရားကျောင်းဝင်းထဲမှာ ကွန်ဖူးကစားနေပုံ၊ ရုပ်ရှင်အလင်းအမှောင်..."
+                            className="flex min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
                         />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label className="text-sm font-semibold">
+                            မပါဝင်စေလိုသော အချက်များ (Negative Prompt — Optional)
+                        </Label>
+                        <Input
+                            value={negativePrompt}
+                            onChange={(e) => setNegativePrompt(e.target.value)}
+                            placeholder="blurry, low quality, face change, text overlays (ဝေဝါးခြင်း၊ မျက်နှာပြောင်းလဲခြင်း မပါစေရန်)"
+                        />
+                    </div>
+
+                    {/* 5. Aspect Ratio, Resolution, Duration */}
+                    <div className="grid gap-4 md:grid-cols-3">
                         <div className="space-y-2">
-                            <Label>Model</Label>
-                            <Select value={model} onValueChange={setModel}>
-                                <SelectTrigger>
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="wan-2.2-i2v-flash">
-                                        Wan 2.2 I2V Flash
-                                    </SelectItem>
-                                    <SelectItem value="kling-o1-reference-image-to-video">
-                                        Kling Reference I2V
-                                    </SelectItem>
-                                    <SelectItem value="seedance-2.5">
-                                        Seedance 2.5
-                                    </SelectItem>
-                                    <SelectItem value="wan3.0-video-prime">
-                                        Wan 3.0 Video Prime
-                                    </SelectItem>
-                                    <SelectItem value="ltx-2.5-pro">
-                                        LTX 2.5 Pro
-                                    </SelectItem>
-                                    <SelectItem value="minimax-h3-max-reference-to-video">
-                                        MiniMax H3 Max I2V
-                                    </SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Aspect Ratio</Label>
+                            <Label className="text-sm font-semibold">
+                                ဗီဒီယို အချိုးအစား (Aspect Ratio)
+                            </Label>
                             <Select
                                 value={aspectRatio}
                                 onValueChange={setAspectRatio}
@@ -1814,24 +2235,31 @@ function ImageToVideo() {
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="16:9">
-                                        16:9 (Landscape)
+                                        16:9 — အလျားလိုက် (YouTube / TV)
                                     </SelectItem>
                                     <SelectItem value="9:16">
-                                        9:16 (Portrait)
+                                        9:16 — ဒေါင်လိုက် (TikTok / Reels)
                                     </SelectItem>
                                     <SelectItem value="1:1">
-                                        1:1 (Square)
+                                        1:1 — ပတ်လည် စတုရန်း (Facebook Post)
                                     </SelectItem>
-                                    <SelectItem value="4:3">4:3</SelectItem>
-                                    <SelectItem value="3:4">3:4</SelectItem>
+                                    <SelectItem value="4:3">
+                                        4:3 — ရိုးရာ အလျားလိုက်
+                                    </SelectItem>
+                                    <SelectItem value="3:4">
+                                        3:4 — ရိုးရာ ဒေါင်လိုက်
+                                    </SelectItem>
+                                    <SelectItem value="adaptive">
+                                        Adaptive — မူရင်းပုံအချိုးအတိုင်း အလိုအလျောက်ထားမည်
+                                    </SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
-                    </div>
 
-                    <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <Label>Resolution</Label>
+                            <Label className="text-sm font-semibold">
+                                ကြည်လင်ပြတ်သားမှု (Resolution)
+                            </Label>
                             <Select
                                 value={resolution}
                                 onValueChange={setResolution}
@@ -1840,34 +2268,213 @@ function ImageToVideo() {
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="480p">480p</SelectItem>
-                                    <SelectItem value="720p">720p</SelectItem>
-                                    <SelectItem value="1080p">1080p</SelectItem>
+                                    <SelectItem value="480p">
+                                        480p — အမြန်စမ်းသပ်ရန် (Fast Draft)
+                                    </SelectItem>
+                                    <SelectItem value="720p">
+                                        720p — HD ပုံမှန်အကြည် (Balanced)
+                                    </SelectItem>
+                                    <SelectItem value="1080p">
+                                        1080p — Full HD အကြည်လင်ဆုံး
+                                    </SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
+
                         <div className="space-y-2">
-                            <Label>Seed (optional)</Label>
-                            <Input
-                                value={seed}
-                                onChange={(e) => setSeed(e.target.value)}
-                                placeholder="Random"
-                                type="number"
-                            />
+                            <Label className="text-sm font-semibold">
+                                ဗီဒီယို ကြာချိန် (Duration)
+                            </Label>
+                            <Select
+                                value={duration}
+                                onValueChange={setDuration}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="4s">
+                                        4 စက္ကန့် (အမြန်ဆုံး Short Clip)
+                                    </SelectItem>
+                                    <SelectItem value="5s">
+                                        5 စက္ကန့် (ပုံမှန် စံနှုန်း — Default)
+                                    </SelectItem>
+                                    <SelectItem value="6s">
+                                        6 စက္ကန့် (Action / Camera Pan အတွက်)
+                                    </SelectItem>
+                                    <SelectItem value="8s">
+                                        8 စက္ကန့် (ဇာတ်ဝင်ခန်း အလတ်စား)
+                                    </SelectItem>
+                                    <SelectItem value="10s">
+                                        10 စက္ကန့် (Multi-shot ဇာတ်လမ်းရှည်)
+                                    </SelectItem>
+                                    <SelectItem value="12s">
+                                        12 စက္ကန့် (Seedance 2.0 / MiniMax)
+                                    </SelectItem>
+                                    <SelectItem value="15s">
+                                        15 စက္ကန့် (အရှည်ဆုံး Cinematic Scene)
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+                            {DURATION_DESCRIPTIONS[duration] && (
+                                <p className="text-[11px] text-muted-foreground">
+                                    ⏱️ {DURATION_DESCRIPTIONS[duration]}
+                                </p>
+                            )}
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                        <input
-                            type="checkbox"
-                            id="promptExtend"
-                            checked={promptExtend}
-                            onChange={(e) => setPromptExtend(e.target.checked)}
-                            className="h-4 w-4"
-                        />
-                        <Label htmlFor="promptExtend">
-                            Prompt Extend (auto-enhance)
+                    {/* 6. Human-Friendly Seed Selector with Burmese Explanation */}
+                    <div className="space-y-2 rounded-lg border bg-muted/20 p-3.5">
+                        <Label className="text-sm font-semibold">
+                            ရလဒ် ပုံစံထိန်းချုပ်မှု (Seed — ဗီဒီယိုထွက်ပုံ ကျပန်း သို့မဟုတ် ပုံသေသတ်မှတ်ခြင်း)
                         </Label>
+                        <div className="grid gap-3 md:grid-cols-2">
+                            <Select
+                                value={seedPreset}
+                                onValueChange={setSeedPreset}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="-1">
+                                        🎲 ကျပန်းပုံစံအသစ် (-1 / Random — Default)
+                                    </SelectItem>
+                                    <SelectItem value="42">
+                                        ⚖️ တည်ငြိမ်သော စံနှုန်း (Seed #42 — နှိုင်းယှဉ်စမ်းသပ်ရန်)
+                                    </SelectItem>
+                                    <SelectItem value="777">
+                                        🎥 ရုပ်ရှင်ဆန်သော ရှုထောင့် (Seed #777 — Cinematic)
+                                    </SelectItem>
+                                    <SelectItem value="2026">
+                                        ⚡ သွက်လက်သော အက်ရှင်ပုံစံ (Seed #2026 — Dynamic)
+                                    </SelectItem>
+                                    <SelectItem value="custom">
+                                        🔢 စိတ်ကြိုက် Seed ဂဏန်း ရိုက်ထည့်မည် (Custom)
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+
+                            {seedPreset === 'custom' && (
+                                <Input
+                                    value={customSeed}
+                                    onChange={(e) =>
+                                        setCustomSeed(e.target.value)
+                                    }
+                                    placeholder="ဥပမာ - 123456 (0 မှ 4294967295 အတွင်း)"
+                                    type="number"
+                                />
+                            )}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                            ℹ️ {SEED_PRESET_DESCRIPTIONS[seedPreset]}
+                        </p>
+                    </div>
+
+                    {/* 7. Seedance Advanced Controls (Audio, Bitrate, Auto-Resize, Prompt Extend) */}
+                    <div className="grid gap-4 rounded-lg border p-3.5 md:grid-cols-2">
+                        {isSeedanceModel && (
+                            <>
+                                <div className="space-y-1.5">
+                                    <Label className="text-xs font-semibold">
+                                        AI အသံ တစ်ပါတည်း ဖန်တီးမှု (Generate Audio)
+                                    </Label>
+                                    <Select
+                                        value={generateAudio ? 'true' : 'false'}
+                                        onValueChange={(v) =>
+                                            setGenerateAudio(v === 'true')
+                                        }
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="true">
+                                                🔊 အသံပါ ထည့်သွင်းမည် (BGM / SFX / စကားပြောသံ — Default)
+                                            </SelectItem>
+                                            <SelectItem value="false">
+                                                🔇 အသံမပါသော ဗီဒီယိုသီးသန့် (Silent Video)
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <Label className="text-xs font-semibold">
+                                        ဗီဒီယို Bitrate အရည်အသွေး (Bitrate Mode)
+                                    </Label>
+                                    <Select
+                                        value={bitrateMode}
+                                        onValueChange={(v) =>
+                                            setBitrateMode(
+                                                v as 'standard' | 'high',
+                                            )
+                                        }
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="standard">
+                                                Standard — ပုံမှန် အရည်အသွေး (ဖိုင်ဆိုဒ်သင့်တင့်ပြီး မြန်ဆန်သည်)
+                                            </SelectItem>
+                                            <SelectItem value="high">
+                                                High Bitrate — ၅ ဆ ပိုမိုကြည်လင်ပြတ်သားသော ရုပ်ရှင်အဆင့်
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </>
+                        )}
+
+                        <div className="flex items-start gap-2.5 pt-1">
+                            <input
+                                type="checkbox"
+                                id="promptExtend"
+                                checked={promptExtend}
+                                onChange={(e) =>
+                                    setPromptExtend(e.target.checked)
+                                }
+                                className="mt-1 h-4 w-4"
+                            />
+                            <div>
+                                <Label
+                                    htmlFor="promptExtend"
+                                    className="text-xs font-semibold"
+                                >
+                                    Prompt အလိုအလျောက် အသေးစိတ်ဖြည့်စွက်မည် (Prompt Extend)
+                                </Label>
+                                <p className="text-[11px] text-muted-foreground">
+                                    သင်ရေးလိုက်သော စာသားတိုနေပါက AI မှ အလင်းအမှောင်နှင့် ကင်မရာရိုက်ချက် အသေးစိတ်ကို ကူညီဖြည့်စွက်ပေးပါမည်။
+                                </p>
+                            </div>
+                        </div>
+
+                        {isSeedanceModel && (
+                            <div className="flex items-start gap-2.5 pt-1">
+                                <input
+                                    type="checkbox"
+                                    id="autoResize"
+                                    checked={autoResize}
+                                    onChange={(e) =>
+                                        setAutoResize(e.target.checked)
+                                    }
+                                    className="mt-1 h-4 w-4"
+                                />
+                                <div>
+                                    <Label
+                                        htmlFor="autoResize"
+                                        className="text-xs font-semibold"
+                                    >
+                                        ပုံအရွယ်အစား အလိုအလျောက် ချိန်ညှိမည် (Auto Resize)
+                                    </Label>
+                                    <p className="text-[11px] text-muted-foreground">
+                                        တင်လိုက်သောပုံ အရွယ်အစား မကိုက်ညီပါက Error မတက်စေဘဲ AI မှ အလိုအလျောက် ချိန်ညှိပေးပါမည်။
+                                    </p>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {error && (
@@ -1882,8 +2489,8 @@ function ImageToVideo() {
                         className="w-full"
                     >
                         {processing
-                            ? 'Generating...'
-                            : 'Generate Video from Image'}
+                            ? 'ဗီဒီယို ထုတ်လုပ်နေပါသည် (Generating...)...'
+                            : 'ဗီဒီယို စတင်ထုတ်လုပ်မည် (Generate Video)'}
                     </AnimatedButton>
                 </CardContent>
             </AnimatedCard>
