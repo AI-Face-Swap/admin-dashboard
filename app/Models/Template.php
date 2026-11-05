@@ -20,10 +20,17 @@ use Illuminate\Support\Facades\Storage;
  * @property string $type
  * @property string|null $file_path
  * @property string|null $thumbnail_path
+ * @property string|null $reference_video_path
+ * @property array<int, string>|null $reference_images
+ * @property string|null $reference_audio_path
  * @property string|null $model
  * @property int $cost
  * @property int $discount_cost
  * @property-read int $effective_cost
+ * @property-read string|null $file_url
+ * @property-read string|null $thumbnail_url
+ * @property-read string|null $reference_video_url
+ * @property-read string|null $reference_audio_url
  * @property bool $is_active
  * @property int $sort_order
  * @property string|null $prompt
@@ -31,10 +38,35 @@ use Illuminate\Support\Facades\Storage;
  * @property string|null $aspect_ratio
  * @property string|null $resolution
  * @property string|null $seed
+ * @property array<string, mixed>|null $parameters
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['category_id', 'generation_type_id', 'ai_model_id', 'slug', 'name', 'description', 'type', 'file_path', 'thumbnail_path', 'model', 'cost', 'discount_cost', 'is_active', 'sort_order', 'prompt', 'negative_prompt', 'aspect_ratio', 'resolution', 'seed'])]
+#[Fillable([
+    'category_id',
+    'generation_type_id',
+    'ai_model_id',
+    'slug',
+    'name',
+    'description',
+    'type',
+    'file_path',
+    'thumbnail_path',
+    'reference_video_path',
+    'reference_images',
+    'reference_audio_path',
+    'model',
+    'cost',
+    'discount_cost',
+    'is_active',
+    'sort_order',
+    'prompt',
+    'negative_prompt',
+    'aspect_ratio',
+    'resolution',
+    'seed',
+    'parameters',
+])]
 class Template extends Model
 {
     use HasAutoSlug;
@@ -53,7 +85,14 @@ class Template extends Model
      *
      * @var list<string>
      */
-    protected $appends = ['file_url', 'thumbnail_url', 'manual_cost', 'effective_cost'];
+    protected $appends = [
+        'file_url',
+        'thumbnail_url',
+        'reference_video_url',
+        'reference_audio_url',
+        'manual_cost',
+        'effective_cost',
+    ];
 
     /**
      * The category this template belongs to.
@@ -100,9 +139,7 @@ class Template extends Model
      */
     public function getFileUrlAttribute(): ?string
     {
-        return $this->file_path
-            ? Storage::disk(self::DISK)->url($this->file_path)
-            : null;
+        return $this->resolveMediaUrl($this->file_path);
     }
 
     /**
@@ -110,9 +147,39 @@ class Template extends Model
      */
     public function getThumbnailUrlAttribute(): ?string
     {
-        return $this->thumbnail_path
-            ? Storage::disk(self::DISK)->url($this->thumbnail_path)
-            : null;
+        return $this->resolveMediaUrl($this->thumbnail_path);
+    }
+
+    /**
+     * The full public URL of the reference video, if one exists.
+     */
+    public function getReferenceVideoUrlAttribute(): ?string
+    {
+        return $this->resolveMediaUrl($this->reference_video_path);
+    }
+
+    /**
+     * The full public URL of the reference audio, if one exists.
+     */
+    public function getReferenceAudioUrlAttribute(): ?string
+    {
+        return $this->resolveMediaUrl($this->reference_audio_path);
+    }
+
+    /**
+     * Resolve a storage path or full URL into a public URL.
+     */
+    protected function resolveMediaUrl(?string $path): ?string
+    {
+        if (! $path) {
+            return null;
+        }
+
+        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
+            return $path;
+        }
+
+        return Storage::disk(self::DISK)->url($path);
     }
 
     /**
@@ -191,6 +258,8 @@ class Template extends Model
             'cost' => 'integer',
             'discount_cost' => 'integer',
             'is_active' => 'boolean',
+            'reference_images' => 'array',
+            'parameters' => 'array',
         ];
     }
 }

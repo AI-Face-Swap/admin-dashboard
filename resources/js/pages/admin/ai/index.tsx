@@ -1,18 +1,17 @@
 import { Head } from '@inertiajs/react';
-import { Film, Sparkles, UserCheck, Video, Wand2 } from 'lucide-react';
+import { Film, Layers, Sparkles, Wand2 } from 'lucide-react';
 import { useState } from 'react';
 import { GenerationDetailModal } from '@/components/admin/ai/GenerationDetailModal';
 import { ImageEditingTab } from '@/components/admin/ai/ImageEditingTab';
-import { ImageFaceSwapTab } from '@/components/admin/ai/ImageFaceSwapTab';
 import { ImageGenerationTab } from '@/components/admin/ai/ImageGenerationTab';
 import { ImageToVideoTab } from '@/components/admin/ai/ImageToVideoTab';
 import { RecentGenerationsCard } from '@/components/admin/ai/RecentGenerationsCard';
+import { TemplateGenerationTab } from '@/components/admin/ai/TemplateGenerationTab';
 import type {
     Generation,
     TabType,
     Template,
 } from '@/components/admin/ai/types';
-import { VideoFaceSwapTab } from '@/components/admin/ai/VideoFaceSwapTab';
 import Heading from '@/components/heading';
 import admin from '@/routes/admin';
 
@@ -30,8 +29,7 @@ export default function Index({
             if (
                 tab &&
                 [
-                    'image',
-                    'video',
+                    'template',
                     'generate',
                     'image-to-video',
                     'image-edit',
@@ -40,7 +38,7 @@ export default function Index({
                 return tab;
             }
         }
-        return 'image';
+        return 'template';
     });
 
     const handleTabChange = (tab: TabType) => {
@@ -57,14 +55,9 @@ export default function Index({
 
     const tabs: { id: TabType; label: string; icon: React.ReactNode }[] = [
         {
-            id: 'image',
-            label: 'Image Face Swap',
-            icon: <UserCheck className="h-4 w-4" />,
-        },
-        {
-            id: 'video',
-            label: 'Video Face Swap',
-            icon: <Video className="h-4 w-4" />,
+            id: 'template',
+            label: 'Template Generator',
+            icon: <Layers className="h-4 w-4" />,
         },
         {
             id: 'generate',
@@ -92,7 +85,7 @@ export default function Index({
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                     <Heading
                         title="AI Generation Studio"
-                        description="Test and create templates across Face Swap, Image Generation, Image-to-Video, and Image Editing."
+                        description="Test and create templates across Unified Template Generation, Image Generation, Image-to-Video, and Image Editing."
                     />
 
                     <div className="inline-flex flex-wrap items-center gap-1.5 rounded-xl border bg-muted/40 p-1.5">
@@ -117,12 +110,8 @@ export default function Index({
                     </div>
                 </div>
 
-                {activeTab === 'image' && (
-                    <ImageFaceSwapTab templates={templates} />
-                )}
-
-                {activeTab === 'video' && (
-                    <VideoFaceSwapTab templates={templates} />
+                {activeTab === 'template' && (
+                    <TemplateGenerationTab templates={templates} />
                 )}
 
                 {activeTab === 'generate' && <ImageGenerationTab />}

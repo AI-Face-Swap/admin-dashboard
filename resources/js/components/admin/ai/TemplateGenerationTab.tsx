@@ -1,8 +1,9 @@
 import { router } from '@inertiajs/react';
-import { Image as ImageIcon } from 'lucide-react';
+import { Image as ImageIcon, Layers } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AnimatedButton } from '@/components/animated/AnimatedButton';
 import { AnimatedCard } from '@/components/animated/AnimatedCard';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -17,32 +18,31 @@ import {
 import { ResultPopupModal } from './ResultPopupModal';
 import { csrfToken, type GenerationResult, type Template } from './types';
 
-export function VideoFaceSwapTab({ templates }: { templates: Template[] }) {
-    const videoTemplates = templates.filter((t) => t.type === 'video');
-
-    const [faceMode, setFaceMode] = useState<'upload' | 'url'>('upload');
-    const [faceFile, setFaceFile] = useState<File | null>(null);
-    const [facePreview, setFacePreview] = useState<string | null>(null);
-    const [faceUrl, setFaceUrl] = useState('');
-
-    const [targetMode, setTargetMode] = useState<'template' | 'url'>(
-        'template',
-    );
+export function TemplateGenerationTab({
+    templates,
+}: {
+    templates: Template[];
+}) {
+    const [imageMode, setImageMode] = useState<'upload' | 'url'>('upload');
+    const [imageFile, setImageFile] = useState<File | null>(null);
+    const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const [imageUrl, setImageUrl] = useState('');
     const [templateSlug, setTemplateSlug] = useState<string>('');
-    const [targetVideoUrl, setTargetVideoUrl] = useState('');
 
     const [processing, setProcessing] = useState(false);
     const [polling, setPolling] = useState(false);
+    const [generationId, setGenerationId] = useState<number | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [result, setResult] = useState<GenerationResult | null>(null);
     const [showResultModal, setShowResultModal] = useState(false);
-    const [generationId, setGenerationId] = useState<number | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-    const onFaceFileChange = (file: File | null) => {
-        setFaceFile(file);
-        setFacePreview(file ? URL.createObjectURL(file) : null);
+    const selectedTemplate = templates.find((t) => t.slug === templateSlug);
+
+    const onFileChange = (file: File | null) => {
+        setImageFile(file);
+        setImagePreview(file ? URL.createObjectURL(file) : null);
     };
 
     const pollStatus = useCallback(async (id: number) => {
@@ -56,35 +56,6 @@ export function VideoFaceSwapTab({ templates }: { templates: Template[] }) {
             });
 
             if (!response.ok) {
-                const contentType = response.headers.get('content-type') ?? '';
-                if (contentType.includes('text/html')) {
-                    setError(
-                        'Polling failed — received HTML instead of JSON. Check authentication.',
-                    );
-                    setProcessing(false);
-                    setPolling(false);
-                    setGenerationId(null);
-
-                    if (pollRef.current) {
-                        clearInterval(pollRef.current);
-                        pollRef.current = null;
-                    }
-                }
-                return;
-            }
-
-            const contentType = response.headers.get('content-type') ?? '';
-            if (!contentType.includes('application/json')) {
-                setError('Polling failed — server returned non-JSON response.');
-                setProcessing(false);
-                setPolling(false);
-                setGenerationId(null);
-                setShowResultModal(true);
-
-                if (pollRef.current) {
-                    clearInterval(pollRef.current);
-                    pollRef.current = null;
-                }
                 return;
             }
 
@@ -117,15 +88,7 @@ export function VideoFaceSwapTab({ templates }: { templates: Template[] }) {
                 router.reload({ only: ['generations'] });
             }
         } catch {
-            setError('Polling failed — network error or invalid response.');
-            setProcessing(false);
-            setPolling(false);
-            setGenerationId(null);
-
-            if (pollRef.current) {
-                clearInterval(pollRef.current);
-                pollRef.current = null;
-            }
+            // Keep polling on transient error
         }
     }, []);
 
@@ -133,7 +96,7 @@ export function VideoFaceSwapTab({ templates }: { templates: Template[] }) {
         if (generationId && polling) {
             pollRef.current = setInterval(() => {
                 pollStatus(generationId);
-            }, 5000);
+            }, 4000);
         }
 
         return () => {
@@ -150,40 +113,44 @@ export function VideoFaceSwapTab({ templates }: { templates: Template[] }) {
         setGenerationId(null);
         setPolling(false);
 
-        const form = new FormData();
-
-        if (faceMode === 'upload') {
-            if (!faceFile) {
-                setError('Upload a face image first.');
-                return;
-            }
-            form.append('face_image', faceFile);
-        } else {
-            form.append('face_image_url', faceUrl);
+        if (!templateSlug) {
+            setError('Please select a template first.');
+            return;
         }
 
-        if (targetMode === 'template') {
-            if (!templateSlug) {
-                setError('Pick a video template first.');
+        const form = new FormData();
+        form.append('template_slug', templateSlug);
+
+        if (imageMode === 'upload') {
+            if (!imageFile) {
+                setError('Please upload an input image first.');
                 return;
             }
-            form.append('template_slug', templateSlug);
+            form.append('image', imageFile);
         } else {
-            form.append('target_video_url', targetVideoUrl);
+            if (!imageUrl.trim()) {
+                setError('Please enter an image URL first.');
+                return;
+            }
+            form.append('image_url', imageUrl.trim());
         }
 
         setProcessing(true);
+        setShowResultModal(true);
 
         try {
-            const response = await fetch('/admin/ai/video-face-swap', {
-                method: 'POST',
-                headers: {
-                    Accept: 'application/json',
-                    'X-XSRF-TOKEN': csrfToken(),
+            const response = await fetch(
+                `/admin/ai/templates/${templateSlug}/generate`,
+                {
+                    method: 'POST',
+                    headers: {
+                        Accept: 'application/json',
+                        'X-XSRF-TOKEN': csrfToken(),
+                    },
+                    credentials: 'same-origin',
+                    body: form,
                 },
-                credentials: 'same-origin',
-                body: form,
-            });
+            );
 
             const body = await response.json();
 
@@ -191,19 +158,33 @@ export function VideoFaceSwapTab({ templates }: { templates: Template[] }) {
                 const message = body.errors
                     ? Object.values(body.errors).flat().join(' ')
                     : body.message;
-                setError(message ?? 'Generation failed.');
+                setError(message ?? 'Template generation failed.');
                 setProcessing(false);
+                setShowResultModal(false);
                 return;
             }
 
-            setGenerationId(body.generation.id);
-            setPolling(true);
+            if (body.status === 'queued' && body.generation?.id) {
+                setGenerationId(body.generation.id);
+                setPolling(true);
+                setShowResultModal(true);
+                return;
+            }
+
+            setResult(body);
+            setProcessing(false);
             setShowResultModal(true);
         } catch {
             setError('Network error — is the server running?');
             setProcessing(false);
+            setShowResultModal(false);
         }
     };
+
+    const isVideoResult =
+        result?.generation?.operation === 'video-face-swap' ||
+        result?.generation?.operation === 'image-to-video' ||
+        selectedTemplate?.type === 'video';
 
     return (
         <>
@@ -211,11 +192,16 @@ export function VideoFaceSwapTab({ templates }: { templates: Template[] }) {
                 <CardContent className="space-y-6 p-6">
                     <div className="flex flex-wrap items-center justify-between gap-2 border-b pb-4">
                         <div>
-                            <h3 className="text-lg font-bold">
-                                Video Face Swap
+                            <h3 className="flex items-center gap-2 text-lg font-bold">
+                                <Layers className="h-5 w-5 text-primary" />
+                                Unified Template Generation
                             </h3>
                             <p className="text-sm text-muted-foreground">
-                                Upload a face image and swap it onto a video template or custom video URL.
+                                Test any template by slug — automatically routes
+                                to Seedance (Image-to-Video), P-Image-Edit,
+                                Video Face Swap, or Image Face Swap based on the
+                                template&apos;s configured Generation Type &amp;
+                                AI Model.
                             </p>
                         </div>
                         {(result || processing) && (
@@ -236,39 +222,39 @@ export function VideoFaceSwapTab({ templates }: { templates: Template[] }) {
                         <div className="space-y-4 rounded-xl border bg-muted/10 p-5">
                             <div className="flex items-center justify-between">
                                 <Label className="text-sm font-semibold">
-                                    1. Source Face Image *
+                                    1. User Input Photo *
                                 </Label>
                                 <div className="flex gap-1.5">
                                     <Button
                                         type="button"
                                         variant={
-                                            faceMode === 'upload'
+                                            imageMode === 'upload'
                                                 ? 'default'
                                                 : 'outline'
                                         }
                                         size="sm"
                                         className="h-8 px-3 text-xs"
-                                        onClick={() => setFaceMode('upload')}
+                                        onClick={() => setImageMode('upload')}
                                     >
                                         Upload
                                     </Button>
                                     <Button
                                         type="button"
                                         variant={
-                                            faceMode === 'url'
+                                            imageMode === 'url'
                                                 ? 'default'
                                                 : 'outline'
                                         }
                                         size="sm"
                                         className="h-8 px-3 text-xs"
-                                        onClick={() => setFaceMode('url')}
+                                        onClick={() => setImageMode('url')}
                                     >
                                         URL
                                     </Button>
                                 </div>
                             </div>
 
-                            {faceMode === 'upload' ? (
+                            {imageMode === 'upload' ? (
                                 <>
                                     <input
                                         ref={fileInputRef}
@@ -276,7 +262,7 @@ export function VideoFaceSwapTab({ templates }: { templates: Template[] }) {
                                         accept="image/*"
                                         className="hidden"
                                         onChange={(e) =>
-                                            onFaceFileChange(
+                                            onFileChange(
                                                 e.target.files?.[0] ?? null,
                                             )
                                         }
@@ -287,17 +273,17 @@ export function VideoFaceSwapTab({ templates }: { templates: Template[] }) {
                                             fileInputRef.current?.click()
                                         }
                                     >
-                                        {facePreview ? (
+                                        {imagePreview ? (
                                             <img
-                                                src={facePreview}
-                                                alt="Face preview"
+                                                src={imagePreview}
+                                                alt="Input preview"
                                                 className="size-full object-contain p-2"
                                             />
                                         ) : (
                                             <>
                                                 <ImageIcon className="h-7 w-7 opacity-50" />
                                                 <span className="font-medium">
-                                                    Click to upload face image
+                                                    Click to upload user photo
                                                 </span>
                                             </>
                                         )}
@@ -305,9 +291,11 @@ export function VideoFaceSwapTab({ templates }: { templates: Template[] }) {
                                 </>
                             ) : (
                                 <Input
-                                    value={faceUrl}
-                                    onChange={(e) => setFaceUrl(e.target.value)}
-                                    placeholder="https://.../face.jpg"
+                                    value={imageUrl}
+                                    onChange={(e) =>
+                                        setImageUrl(e.target.value)
+                                    }
+                                    placeholder="https://.../photo.jpg"
                                     className="h-10 text-sm"
                                 />
                             )}
@@ -315,84 +303,67 @@ export function VideoFaceSwapTab({ templates }: { templates: Template[] }) {
 
                         <div className="flex flex-col justify-between space-y-4 rounded-xl border bg-muted/10 p-5">
                             <div className="space-y-4">
-                                <div className="flex items-center justify-between">
-                                    <Label className="text-sm font-semibold">
-                                        2. Target Video *
-                                    </Label>
-                                    <div className="flex gap-1.5">
-                                        <Button
-                                            type="button"
-                                            variant={
-                                                targetMode === 'template'
-                                                    ? 'default'
-                                                    : 'outline'
-                                            }
-                                            size="sm"
-                                            className="h-8 px-3 text-xs"
-                                            onClick={() =>
-                                                setTargetMode('template')
-                                            }
-                                        >
-                                            Template
-                                        </Button>
-                                        <Button
-                                            type="button"
-                                            variant={
-                                                targetMode === 'url'
-                                                    ? 'default'
-                                                    : 'outline'
-                                            }
-                                            size="sm"
-                                            className="h-8 px-3 text-xs"
-                                            onClick={() => setTargetMode('url')}
-                                        >
-                                            URL
-                                        </Button>
-                                    </div>
-                                </div>
+                                <Label className="text-sm font-semibold">
+                                    2. Select Template *
+                                </Label>
 
-                                {targetMode === 'template' ? (
-                                    <Select
-                                        value={templateSlug}
-                                        onValueChange={setTemplateSlug}
-                                    >
-                                        <SelectTrigger className="h-10 text-sm">
-                                            <SelectValue placeholder="Pick a video template..." />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {videoTemplates.length > 0 ? (
-                                                videoTemplates.map(
-                                                    (template) => (
-                                                        <SelectItem
-                                                            key={template.id}
-                                                            value={
-                                                                template.slug
-                                                            }
-                                                            className="text-sm"
-                                                        >
-                                                            {template.name}
-                                                        </SelectItem>
-                                                    ),
+                                <Select
+                                    value={templateSlug}
+                                    onValueChange={setTemplateSlug}
+                                >
+                                    <SelectTrigger className="h-10 text-sm">
+                                        <SelectValue placeholder="Pick any active template..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {templates.map((template) => (
+                                            <SelectItem
+                                                key={template.id}
+                                                value={template.slug}
+                                                className="text-sm"
+                                            >
+                                                #{template.id} {template.name} (
+                                                {template.ai_model
+                                                    ?.model_name ??
+                                                    template.model ??
+                                                    template.type}
                                                 )
-                                            ) : (
-                                                <SelectItem
-                                                    value="none"
-                                                    disabled
-                                                >
-                                                    No video templates yet
-                                                </SelectItem>
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+
+                                {selectedTemplate && (
+                                    <div className="space-y-2 rounded-lg border bg-background/60 p-3 text-xs">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <Badge variant="secondary">
+                                                {selectedTemplate.type.toUpperCase()}
+                                            </Badge>
+                                            {selectedTemplate.generation_type && (
+                                                <Badge variant="outline">
+                                                    {
+                                                        selectedTemplate
+                                                            .generation_type
+                                                            .name
+                                                    }
+                                                </Badge>
                                             )}
-                                        </SelectContent>
-                                    </Select>
-                                ) : (
-                                    <Input
-                                        value={targetVideoUrl}
-                                        onChange={(e) =>
-                                            setTargetVideoUrl(e.target.value)
-                                        }
-                                        placeholder="https://.../target.mp4"
-                                        className="h-10 text-sm"
-                                    />
+                                            {(selectedTemplate.ai_model
+                                                ?.model_name ||
+                                                selectedTemplate.model) && (
+                                                <Badge className="bg-primary/15 text-primary hover:bg-primary/20">
+                                                    {selectedTemplate.ai_model
+                                                        ?.model_name ??
+                                                        selectedTemplate.model}
+                                                </Badge>
+                                            )}
+                                        </div>
+                                        <p className="text-muted-foreground">
+                                            Slug:{' '}
+                                            <code className="text-foreground">
+                                                {selectedTemplate.slug}
+                                            </code>
+                                        </p>
+                                    </div>
                                 )}
                             </div>
 
@@ -409,8 +380,8 @@ export function VideoFaceSwapTab({ templates }: { templates: Template[] }) {
                                     className="h-11 w-full text-sm font-semibold"
                                 >
                                     {processing
-                                        ? 'Generating...'
-                                        : 'Generate Video Face Swap'}
+                                        ? 'Generating from Template...'
+                                        : 'Generate with Template'}
                                 </AnimatedButton>
                             </div>
                         </div>
@@ -422,10 +393,10 @@ export function VideoFaceSwapTab({ templates }: { templates: Template[] }) {
                 open={showResultModal}
                 onClose={() => setShowResultModal(false)}
                 processing={processing}
-                processingText="Video processing — this usually takes 1–5 minutes (polling every 5s)..."
+                processingText="Generating from template — polling every 4s..."
                 result={result}
-                isVideo={true}
-                filenamePrefix="video-face-swap"
+                isVideo={isVideoResult}
+                filenamePrefix="template-generation"
             />
         </>
     );

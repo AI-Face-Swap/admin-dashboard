@@ -3,8 +3,18 @@ export type Template = {
     name: string;
     slug: string;
     type: 'image' | 'video';
+    model?: string | null;
     thumbnail_path: string | null;
     file_path: string;
+    file_url?: string | null;
+    reference_video_url?: string | null;
+    generation_type?: { id: number; name: string; slug: string } | null;
+    ai_model?: {
+        id: number;
+        name: string;
+        model_name: string;
+        provider_name: string;
+    } | null;
 };
 
 export type Generation = {
@@ -191,8 +201,7 @@ export type GenerationResult = {
 };
 
 export type TabType =
-    | 'image'
-    | 'video'
+    | 'template'
     | 'generate'
     | 'image-to-video'
     | 'image-edit';

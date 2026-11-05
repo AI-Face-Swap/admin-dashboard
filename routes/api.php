@@ -1,13 +1,13 @@
 <?php
 
+use App\Events\TestBroadcastEvent;
 use App\Http\Controllers\Api\AIChatController;
-use App\Http\Controllers\Api\AIFaceSwapController;
 use App\Http\Controllers\Api\AIGenerationStatusController;
 use App\Http\Controllers\Api\AIImageEditController;
 use App\Http\Controllers\Api\AIImageGenerationController;
 use App\Http\Controllers\Api\AIImageToVideoController;
 use App\Http\Controllers\Api\AIModelApiController;
-use App\Http\Controllers\Api\AIVideoFaceSwapController;
+use App\Http\Controllers\Api\AITemplateGenerationController;
 use App\Http\Controllers\Api\Auth\SocialAuthController;
 use App\Http\Controllers\Api\CustomerAuthController;
 use App\Http\Controllers\Api\CustomerGenerationController;
@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\PointCostController;
 use App\Http\Controllers\Api\SliderController;
 use App\Http\Controllers\Api\TemplateCategoryController;
 use App\Http\Controllers\Api\TemplateController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -71,10 +72,11 @@ Route::prefix('v1')->group(function () {
 
     // Local Dev Testing Routes (WebSockets & SSE Streaming)
     Route::get('test/broadcast', function () {
-        broadcast(new \App\Events\TestBroadcastEvent(
+        broadcast(new TestBroadcastEvent(
             message: 'Hello from Laravel Reverb! WebSocket real-time broadcast is active 🚀',
             meta: ['triggered_by' => 'web_tester', 'sent_at' => now()->toIso8601String()]
         ));
+
         return response()->json([
             'status' => 'success',
             'message' => 'Event broadcasted to Reverb on channel [test-channel]!',
@@ -82,20 +84,21 @@ Route::prefix('v1')->group(function () {
         ]);
     });
 
-    Route::match(['GET', 'POST'], 'test/stream-chat', function (\Illuminate\Http\Request $request) {
+    Route::match(['GET', 'POST'], 'test/stream-chat', function (Request $request) {
         $prompt = $request->input('prompt', 'Why is HTUT AI so fast?');
+
         return response()->stream(function () use ($prompt) {
             $words = [
                 '✨', 'Hello!', 'This', 'is', 'a', 'live', 'SSE', '(Server-Sent', 'Events)', 'stream', 'from', 'HTUT', 'AI.',
                 "\n\n",
-                'You', 'asked:', '"' . htmlspecialchars($prompt) . '"',
+                'You', 'asked:', '"'.htmlspecialchars($prompt).'"',
                 "\n\n",
                 '⚡', 'Real-time', 'tokens', 'stream', 'directly', 'from', 'our', 'backend',
                 'to', 'your', 'client', 'without', 'waiting', 'for', 'the', 'entire', 'response', 'to', 'finish.',
                 "\n\n",
                 '🚀', 'Laravel', 'Reverb', 'handles', 'the', 'WebSockets,', 'and', 'PHP', 'SSE', 'handles', 'the', 'conversational', 'streaming!',
                 "\n\n",
-                'Everything', 'is', 'working', 'perfectly! ✅'
+                'Everything', 'is', 'working', 'perfectly! ✅',
             ];
 
             foreach ($words as $word) {
@@ -104,7 +107,7 @@ Route::prefix('v1')->group(function () {
                 }
                 $payload = json_encode([
                     'type' => 'chunk',
-                    'content' => $word . ' ',
+                    'content' => $word.' ',
                 ]);
                 echo "data: {$payload}\n\n";
                 if (ob_get_level() > 0) {
@@ -141,8 +144,8 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'customer.not-banned'])->group(
     // Customer AI Chat Question (Requires Bearer token authentication & sufficient points)
     Route::post('chat/send', [AIChatController::class, 'send'])->middleware('throttle:30,1');
 
-    Route::post('ai/face-swap', [AIFaceSwapController::class, 'store'])->middleware('throttle:30,1');
-    Route::post('ai/video-face-swap', [AIVideoFaceSwapController::class, 'store'])->middleware('throttle:10,1');
+    Route::post('templates/{slug}/generate', [AITemplateGenerationController::class, 'store'])->middleware('throttle:20,1');
+    Route::post('ai/template-generate', [AITemplateGenerationController::class, 'store'])->middleware('throttle:20,1');
     Route::post('ai/images', [AIImageGenerationController::class, 'store'])->middleware('throttle:20,1');
     Route::post('ai/image-to-video', [AIImageToVideoController::class, 'store'])->middleware('throttle:10,1');
     Route::post('ai/image-edit', [AIImageEditController::class, 'store'])->middleware('throttle:20,1');

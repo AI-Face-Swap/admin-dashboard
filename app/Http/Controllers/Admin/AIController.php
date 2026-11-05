@@ -22,8 +22,9 @@ class AIController extends Controller
     {
         return Inertia::render('admin/ai/index', [
             'templates' => Template::where('is_active', true)
+                ->with(['generationType:id,name,slug', 'aiModel:id,name,model_name,provider_name'])
                 ->orderBy('name')
-                ->get(['id', 'name', 'slug', 'type', 'thumbnail_path', 'file_path']),
+                ->get(['id', 'name', 'slug', 'type', 'model', 'generation_type_id', 'ai_model_id', 'thumbnail_path', 'file_path', 'reference_video_path']),
             'generations' => AIGeneration::with('template:id,name,slug')
                 ->latest()
                 ->limit(20)

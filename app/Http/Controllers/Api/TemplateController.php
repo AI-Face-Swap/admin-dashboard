@@ -26,11 +26,16 @@ class TemplateController extends Controller
 
         $templates = Template::query()
             ->where('is_active', true)
-            ->with(['category:id,name,slug', 'tags:id,name,slug', 'aiModel:id,name,provider_name,model_name,coin_cost'])
+            ->with([
+                'category:id,name,slug',
+                'tags:id,name,slug',
+                'aiModel:id,name,provider_name,model_name,coin_cost,generation_type_id',
+                'generationType:id,name,slug',
+            ])
             ->when($validated['search'] ?? null, fn ($query, $search) => $query
                 ->where(fn ($q) => $q
                     ->where('name', 'like', "%{$search}%")
-                    ->orWhere('slug', 'like', "%{$search}%")
+                    ->where('slug', 'like', "%{$search}%", 'or')
                     ->orWhereHas('tags', fn ($tag) => $tag->where('name', 'like', "%{$search}%"))))
             ->when($validated['category'] ?? null, fn ($query, $slug) => $query
                 ->whereHas('category', fn ($cat) => $cat->where('slug', $slug)))
@@ -51,7 +56,12 @@ class TemplateController extends Controller
     {
         $template = Template::where('slug', $slug)
             ->where('is_active', true)
-            ->with(['category:id,name,slug', 'tags:id,name,slug', 'aiModel:id,name,provider_name,model_name,coin_cost'])
+            ->with([
+                'category:id,name,slug',
+                'tags:id,name,slug',
+                'aiModel:id,name,provider_name,model_name,coin_cost,generation_type_id',
+                'generationType:id,name,slug',
+            ])
             ->firstOrFail();
 
         return response()->json($template);

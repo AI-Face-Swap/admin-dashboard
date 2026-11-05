@@ -61,6 +61,15 @@ type Template = {
     file_url?: string | null;
     thumbnail_path: string | null;
     thumbnail_url?: string | null;
+    reference_video_path?: string | null;
+    reference_video_url?: string | null;
+    reference_audio_path?: string | null;
+    reference_audio_url?: string | null;
+    reference_images?: string[] | null;
+    parameters?: Record<
+        string,
+        string | number | boolean | null | undefined
+    > | null;
     cost: number;
     manual_cost?: number | null;
     discount_cost?: number;
@@ -117,6 +126,37 @@ export default function Edit({
     const [thumbnail, setThumbnail] = useState<File | null>(null);
     const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(
         null,
+    );
+    const [referenceVideo, setReferenceVideo] = useState<File | null>(null);
+    const [referenceVideoPreview, setReferenceVideoPreview] = useState<
+        string | null
+    >(null);
+    const [referenceVideoUrl, setReferenceVideoUrl] = useState<string>(
+        template.reference_video_url ?? template.reference_video_path ?? '',
+    );
+    const [referenceImagesText, setReferenceImagesText] = useState<string>(
+        Array.isArray(template.reference_images)
+            ? template.reference_images.join('\n')
+            : '',
+    );
+    const [referenceImageFiles, setReferenceImageFiles] = useState<File[]>([]);
+    const initialParams = template.parameters ?? {};
+    const [imageMode, setImageMode] = useState<string>(
+        String(initialParams.image_mode ?? 'reference'),
+    );
+    const [duration, setDuration] = useState<string>(
+        String(initialParams.duration ?? '5'),
+    );
+    const [generateAudio, setGenerateAudio] = useState<boolean>(
+        Boolean(initialParams.generate_audio ?? false),
+    );
+    const [bitrateMode, setBitrateMode] = useState<string>(
+        String(initialParams.bitrate_mode ?? 'standard'),
+    );
+    const [autoResize, setAutoResize] = useState<boolean>(
+        initialParams.auto_resize !== undefined
+            ? Boolean(initialParams.auto_resize)
+            : true,
     );
     const [cost, setCost] = useState(
         template.manual_cost !== null &&
@@ -179,12 +219,21 @@ export default function Edit({
         }
     };
 
+    const handleReferenceVideoSelect = (f: File | null) => {
+        setReferenceVideo(f);
+        if (f) {
+            setReferenceVideoPreview(URL.createObjectURL(f));
+        } else {
+            setReferenceVideoPreview(null);
+        }
+    };
+
     const handleAIModelSelect = (id: string) => {
         setAiModelId(id);
         const selected = aiModels.find((m) => String(m.id) === id);
         if (selected) {
             setModel(selected.model_name);
-            if (selected.generation_type_id && !generationTypeId) {
+            if (selected.generation_type_id) {
                 setGenerationTypeId(String(selected.generation_type_id));
             }
         }
@@ -193,6 +242,23 @@ export default function Edit({
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
         setProcessing(true);
+
+        const parsedReferenceImages = referenceImagesText
+            .split('\n')
+            .map((s) => s.trim())
+            .filter(Boolean);
+
+        const mergedParameters: Record<
+            string,
+            string | number | boolean | null | undefined
+        > = {
+            ...(template.parameters ?? {}),
+            image_mode: imageMode,
+            duration: parseInt(duration, 10) || 5,
+            generate_audio: generateAudio,
+            bitrate_mode: bitrateMode,
+            auto_resize: autoResize,
+        };
 
         router.put(
             `/admin/templates/${template.id}`,
@@ -207,6 +273,14 @@ export default function Edit({
                 discount_cost: numDiscount,
                 file,
                 thumbnail,
+                reference_video: referenceVideo || undefined,
+                reference_video_url: referenceVideoUrl,
+                reference_images: parsedReferenceImages,
+                reference_image_files:
+                    referenceImageFiles.length > 0
+                        ? referenceImageFiles
+                        : undefined,
+                parameters: mergedParameters,
                 model,
                 ai_model_id: aiModelId ? parseInt(aiModelId, 10) : undefined,
                 is_active: isActive,
@@ -683,6 +757,119 @@ export default function Edit({
                                         message={errors.negative_prompt}
                                     />
                                 </div>
+
+                                {/* Advanced Model Parameters (Seedance / Image-to-Video / Multi-Modal) */}
+                                <div className="space-y-4 rounded-xl border border-border bg-muted/20 p-4">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                                            Model Runtime Parameters (Image-to-Video / Seedance / Editing)
+                                        </span>
+                                    </div>
+                                    <div className="grid gap-4 sm:grid-cols-3">
+                                        <div className="grid gap-1.5">
+                                            <Label htmlFor="imageMode" className="text-xs">
+                                                Image Mode
+                                            </Label>
+                                            <Select
+                                                value={imageMode}
+                                                onValueChange={setImageMode}
+                                            >
+                                                <SelectTrigger id="imageMode">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="reference">
+                                                        Reference (Character / Subject)
+                                                    </SelectItem>
+                                                    <SelectItem value="first_frame_url">
+                                                        First Frame URL
+                                                    </SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        <div className="grid gap-1.5">
+                                            <Label htmlFor="duration" className="text-xs">
+                                                Duration (Seconds)
+                                            </Label>
+                                            <Input
+                                                id="duration"
+                                                type="number"
+                                                min={4}
+                                                max={15}
+                                                value={duration}
+                                                onChange={(e) =>
+                                                    setDuration(e.target.value)
+                                                }
+                                                placeholder="5"
+                                            />
+                                        </div>
+
+                                        <div className="grid gap-1.5">
+                                            <Label htmlFor="bitrateMode" className="text-xs">
+                                                Bitrate Mode
+                                            </Label>
+                                            <Select
+                                                value={bitrateMode}
+                                                onValueChange={setBitrateMode}
+                                            >
+                                                <SelectTrigger id="bitrateMode">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="standard">
+                                                        Standard
+                                                    </SelectItem>
+                                                    <SelectItem value="high">
+                                                        High
+                                                    </SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid gap-3 sm:grid-cols-2">
+                                        <div className="flex items-center justify-between rounded-lg border border-border bg-background/60 p-3">
+                                            <div>
+                                                <Label
+                                                    htmlFor="generateAudio"
+                                                    className="text-xs font-medium"
+                                                >
+                                                    Generate Audio
+                                                </Label>
+                                                <p className="text-[11px] text-muted-foreground">
+                                                    Copyright block မထိစေရန် Off ထားနိုင်သည်
+                                                </p>
+                                            </div>
+                                            <Switch
+                                                id="generateAudio"
+                                                checked={generateAudio}
+                                                onCheckedChange={
+                                                    setGenerateAudio
+                                                }
+                                            />
+                                        </div>
+
+                                        <div className="flex items-center justify-between rounded-lg border border-border bg-background/60 p-3">
+                                            <div>
+                                                <Label
+                                                    htmlFor="autoResize"
+                                                    className="text-xs font-medium"
+                                                >
+                                                    Auto Resize
+                                                </Label>
+                                                <p className="text-[11px] text-muted-foreground">
+                                                    Automatically resize input media
+                                                </p>
+                                            </div>
+                                            <Switch
+                                                id="autoResize"
+                                                checked={autoResize}
+                                                onCheckedChange={setAutoResize}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
                             </CardContent>
                         </AnimatedCard>
                     </div>
@@ -795,6 +982,90 @@ export default function Edit({
                                         }
                                     />
                                     <InputError message={errors.thumbnail} />
+                                </div>
+
+                                {/* AI Reference Video (for Seedance / Image-to-Video / Video Face Swap) */}
+                                <div className="space-y-3 border-t border-border pt-3">
+                                    <div>
+                                        <Label htmlFor="referenceVideo">
+                                            AI Input Reference Video (Optional)
+                                        </Label>
+                                        <p className="text-[11px] text-muted-foreground">
+                                            Seedance လို Model မျိုးတွင် User ကို ပြမည့် Preview Video နဲ့ AI ဆီပို့မည့် မူရင်း Reference Video ခွဲထားချင်ပါက ဤနေရာတွင် ထည့်ပါ။ (မထည့်ထားပါက အပေါ်က Source File ကိုပဲ သုံးပါမည်)
+                                        </p>
+                                    </div>
+
+                                    {(referenceVideoPreview ||
+                                        referenceVideoUrl) && (
+                                        <div className="overflow-hidden rounded-xl border border-border bg-black/40 p-1">
+                                            <video
+                                                src={
+                                                    referenceVideoPreview ||
+                                                    referenceVideoUrl ||
+                                                    undefined
+                                                }
+                                                controls
+                                                className="max-h-40 w-full rounded-lg object-contain"
+                                            />
+                                        </div>
+                                    )}
+
+                                    <Input
+                                        id="referenceVideo"
+                                        type="file"
+                                        accept="video/*"
+                                        onChange={(e) =>
+                                            handleReferenceVideoSelect(
+                                                e.target.files?.[0] ?? null,
+                                            )
+                                        }
+                                    />
+                                    <Input
+                                        value={referenceVideoUrl}
+                                        onChange={(e) =>
+                                            setReferenceVideoUrl(e.target.value)
+                                        }
+                                        placeholder="Or paste Reference Video URL (https://...)"
+                                        className="text-xs"
+                                    />
+                                    <InputError
+                                        message={errors.reference_video}
+                                    />
+                                </div>
+
+                                {/* Extra Reference Images (for Multi-Image Models) */}
+                                <div className="space-y-2 border-t border-border pt-3">
+                                    <Label htmlFor="referenceImages">
+                                        Extra Reference Images (Optional)
+                                    </Label>
+                                    <p className="text-[11px] text-muted-foreground">
+                                        User တင်လိုက်သည့်ပုံ (Image #1) အပြင် အပိုတွဲပို့ချင်သော အဝတ်အစား/စတိုင် Reference ပုံများ ရှိပါက ထည့်နိုင်ပါသည်။
+                                    </p>
+                                    <Input
+                                        id="referenceImageFiles"
+                                        type="file"
+                                        accept="image/*"
+                                        multiple
+                                        onChange={(e) =>
+                                            setReferenceImageFiles(
+                                                e.target.files
+                                                    ? Array.from(e.target.files)
+                                                    : [],
+                                            )
+                                        }
+                                    />
+                                    <Textarea
+                                        id="referenceImages"
+                                        value={referenceImagesText}
+                                        onChange={(e) =>
+                                            setReferenceImagesText(
+                                                e.target.value,
+                                            )
+                                        }
+                                        placeholder="One image URL per line (https://...)"
+                                        rows={2}
+                                        className="text-xs"
+                                    />
                                 </div>
                             </CardContent>
                         </AnimatedCard>

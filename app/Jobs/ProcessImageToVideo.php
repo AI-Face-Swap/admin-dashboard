@@ -45,6 +45,8 @@ class ProcessImageToVideo implements ShouldQueue
         private readonly ?int $customerId = null,
         private readonly int $pointCost = 0,
         private readonly ?string $model = null,
+        private readonly ?int $templateId = null,
+        private readonly string $provider = 'segmind',
     ) {}
 
     /**
@@ -78,6 +80,8 @@ class ProcessImageToVideo implements ShouldQueue
                     operation: AIGeneration::OPERATION_IMAGE_TO_VIDEO,
                     payload: $this->payload,
                     model: $this->model,
+                    templateId: $this->templateId ?? $generation->template_id,
+                    provider: $this->provider,
                 ),
                 $requester,
                 $generation,

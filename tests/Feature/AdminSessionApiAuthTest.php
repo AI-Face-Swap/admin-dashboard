@@ -2,7 +2,9 @@
 
 use App\Models\AIGeneration;
 use App\Models\AIProvider;
+use App\Models\Template;
 use App\Models\User;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
 
@@ -26,9 +28,16 @@ beforeEach(function () {
 });
 
 test('admin session cookie authenticates the shared API without a token', function () {
-    \Illuminate\Support\Facades\Queue::fake();
+    Queue::fake();
 
     config(['session.driver' => 'database']);
+
+    $template = Template::create([
+        'name' => 'Superman Suit',
+        'type' => 'image',
+        'file_path' => 'templates/superman.jpg',
+        'is_active' => true,
+    ]);
 
     $login = $this->post(route('login.store'), [
         'email' => $this->admin->email,
@@ -44,9 +53,8 @@ test('admin session cookie authenticates the shared API without a token', functi
         $cookieName => $sessionCookie->getValue(),
     ])->withServerVariables([
         'HTTP_REFERER' => 'http://127.0.0.1:8000/admin/ai',
-    ])->postJson('/api/v1/ai/face-swap', [
-        'face_image_url' => 'https://example.com/face.jpg',
-        'target_image_url' => 'https://example.com/target.jpg',
+    ])->postJson("/api/v1/templates/{$template->slug}/generate", [
+        'image_url' => 'https://example.com/face.jpg',
     ]);
 
     $response->assertStatus(202)
@@ -69,9 +77,8 @@ test('api middleware group registers the Sanctum stateful middleware', function 
 });
 
 test('guest hitting the shared API still gets 401', function () {
-    $this->postJson('/api/v1/ai/face-swap', [
-        'face_image_url' => 'https://example.com/face.jpg',
-        'target_image_url' => 'https://example.com/target.jpg',
+    $this->postJson('/api/v1/templates/superman-suit/generate', [
+        'image_url' => 'https://example.com/face.jpg',
     ])->assertUnauthorized()
         ->assertJson(['message' => 'Unauthenticated.']);
 });

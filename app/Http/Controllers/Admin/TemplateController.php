@@ -93,6 +93,15 @@ class TemplateController extends Controller
             'type' => ['required', Rule::in([Template::TYPE_IMAGE, Template::TYPE_VIDEO])],
             'file' => ['required', 'file', 'max:51200'], // 50 MB
             'thumbnail' => ['nullable', 'image', 'max:5120'],
+            'reference_video' => ['nullable', 'file', 'max:51200'],
+            'reference_video_url' => ['nullable', 'string', 'max:2048'],
+            'reference_audio' => ['nullable', 'file', 'max:20480'],
+            'reference_audio_url' => ['nullable', 'string', 'max:2048'],
+            'reference_images' => ['nullable', 'array'],
+            'reference_images.*' => ['nullable', 'string', 'max:2048'],
+            'reference_image_files' => ['nullable', 'array'],
+            'reference_image_files.*' => ['image', 'max:20480'],
+            'parameters' => ['nullable', 'array'],
             'cost' => ['nullable', 'integer', 'min:0'],
             'discount_cost' => ['sometimes', 'nullable', 'integer', 'min:0'],
             'model' => ['nullable', 'string', 'max:255'],
@@ -117,6 +126,18 @@ class TemplateController extends Controller
 
         $filePath = $request->file('file')->store('templates', $this->disk);
         $thumbnailPath = $request->file('thumbnail')?->store('templates/thumbnails', $this->disk);
+        $referenceVideoPath = $request->file('reference_video')?->store('templates/references', $this->disk)
+            ?? ($validated['reference_video_url'] ?? null);
+        $referenceAudioPath = $request->file('reference_audio')?->store('templates/references', $this->disk)
+            ?? ($validated['reference_audio_url'] ?? null);
+
+        $referenceImages = array_values(array_filter($validated['reference_images'] ?? []));
+        if ($request->hasFile('reference_image_files')) {
+            foreach ($request->file('reference_image_files') as $refImg) {
+                $storedRefPath = $refImg->store('templates/references', $this->disk);
+                $referenceImages[] = Storage::disk($this->disk)->url($storedRefPath);
+            }
+        }
 
         $manualCost = isset($validated['cost']) && $validated['cost'] !== null && (int) $validated['cost'] > 0
             ? (int) $validated['cost']
@@ -134,6 +155,10 @@ class TemplateController extends Controller
             'discount_cost' => $validated['discount_cost'] ?? 0,
             'file_path' => $filePath,
             'thumbnail_path' => $thumbnailPath,
+            'reference_video_path' => $referenceVideoPath ?: null,
+            'reference_audio_path' => $referenceAudioPath ?: null,
+            'reference_images' => ! empty($referenceImages) ? $referenceImages : null,
+            'parameters' => ! empty($validated['parameters']) ? $validated['parameters'] : null,
             'model' => $modelName,
             'is_active' => $validated['is_active'] ?? true,
             'sort_order' => $validated['sort_order'] ?? 1,
@@ -155,7 +180,12 @@ class TemplateController extends Controller
     public function edit(Template $template): Response
     {
         return Inertia::render('admin/templates/edit', [
-            'template' => $template->load(['category:id,name,slug', 'tags:id,name,slug', 'aiModel:id,name,provider_name,model_name,coin_cost']),
+            'template' => $template->load([
+                'category:id,name,slug',
+                'tags:id,name,slug',
+                'aiModel:id,name,provider_name,model_name,coin_cost,generation_type_id',
+                'generationType:id,name,slug',
+            ]),
             'categories' => TemplateCategory::orderBy('name')->get(['id', 'name', 'slug']),
             'tags' => TemplateTag::orderBy('name')->get(['id', 'name', 'slug']),
             'aiModels' => AIModel::ordered()->get(['id', 'name', 'provider_name', 'model_name', 'coin_cost', 'generation_type_id']),
@@ -178,6 +208,16 @@ class TemplateController extends Controller
             'type' => ['required', Rule::in([Template::TYPE_IMAGE, Template::TYPE_VIDEO])],
             'file' => ['nullable', 'file', 'max:51200'],
             'thumbnail' => ['nullable', 'image', 'max:5120'],
+            'reference_video' => ['nullable', 'file', 'max:51200'],
+            'reference_video_url' => ['nullable', 'string', 'max:2048'],
+            'clear_reference_video' => ['sometimes', 'boolean'],
+            'reference_audio' => ['nullable', 'file', 'max:20480'],
+            'reference_audio_url' => ['nullable', 'string', 'max:2048'],
+            'reference_images' => ['nullable', 'array'],
+            'reference_images.*' => ['nullable', 'string', 'max:2048'],
+            'reference_image_files' => ['nullable', 'array'],
+            'reference_image_files.*' => ['image', 'max:20480'],
+            'parameters' => ['nullable', 'array'],
             'cost' => ['nullable', 'integer', 'min:0'],
             'discount_cost' => ['sometimes', 'nullable', 'integer', 'min:0'],
             'model' => ['nullable', 'string', 'max:255'],
@@ -224,6 +264,35 @@ class TemplateController extends Controller
             'resolution' => $validated['resolution'] ?? $template->resolution,
             'seed' => $validated['seed'] ?? $template->seed,
         ];
+
+        if ($request->has('parameters')) {
+            $data['parameters'] = ! empty($validated['parameters']) ? $validated['parameters'] : null;
+        }
+
+        if ($request->has('reference_images') || $request->hasFile('reference_image_files')) {
+            $referenceImages = array_values(array_filter($validated['reference_images'] ?? ($template->reference_images ?? [])));
+            if ($request->hasFile('reference_image_files')) {
+                foreach ($request->file('reference_image_files') as $refImg) {
+                    $storedRefPath = $refImg->store('templates/references', $this->disk);
+                    $referenceImages[] = Storage::disk($this->disk)->url($storedRefPath);
+                }
+            }
+            $data['reference_images'] = ! empty($referenceImages) ? $referenceImages : null;
+        }
+
+        if ($request->boolean('clear_reference_video')) {
+            $data['reference_video_path'] = null;
+        } elseif ($request->hasFile('reference_video')) {
+            $data['reference_video_path'] = $request->file('reference_video')->store('templates/references', $this->disk);
+        } elseif ($request->exists('reference_video_url')) {
+            $data['reference_video_path'] = $validated['reference_video_url'] ?: null;
+        }
+
+        if ($request->hasFile('reference_audio')) {
+            $data['reference_audio_path'] = $request->file('reference_audio')->store('templates/references', $this->disk);
+        } elseif ($request->exists('reference_audio_url')) {
+            $data['reference_audio_path'] = $validated['reference_audio_url'] ?: null;
+        }
 
         if ($request->hasFile('file')) {
             $data['file_path'] = $request->file('file')->store('templates', $this->disk);
@@ -311,21 +380,83 @@ class TemplateController extends Controller
             default => 'AI Generation',
         };
 
-        // Default generation type: Video Face Swap or Image Face Swap
-        $defaultGenTypeSlug = $isVideo ? 'video-faceswap' : 'image-faceswap';
-        $generationType = GenerationType::where('slug', $defaultGenTypeSlug)->first();
-
-        // Match AI model from the generation, or fallback to default model
+        // Match AI model from the generation first
         $aiModel = null;
-        $modelSlug = $generation->model ?? ($input['model'] ?? null);
+        $modelSlug = $generation->model ?? ($input['model'] ?? ($input['model_name'] ?? null));
         if (! empty($modelSlug)) {
             $aiModel = AIModel::where('model_name', $modelSlug)->first();
         }
+
+        // Resolve generation type: preserve Image-to-Video / Image-Editing when saving those operations, or fallback to Face Swap
+        $targetGenTypeSlug = match ($generation->operation) {
+            AIGeneration::OPERATION_IMAGE_TO_VIDEO => 'image-to-video',
+            AIGeneration::OPERATION_IMAGE_EDIT => 'image-editing',
+            AIGeneration::OPERATION_VIDEO_FACE_SWAP => 'video-faceswap',
+            default => $isVideo ? 'video-faceswap' : 'image-faceswap',
+        };
+        $generationType = GenerationType::where('slug', $targetGenTypeSlug)->first()
+            ?? ($aiModel?->generation_type_id ? GenerationType::find($aiModel->generation_type_id) : null)
+            ?? GenerationType::where('slug', $isVideo ? 'video-faceswap' : 'image-faceswap')->first();
+
         if (! $aiModel && $generationType) {
             $aiModel = AIModel::where('generation_type_id', $generationType->id)
                 ->where('is_default', true)
                 ->first()
                 ?? AIModel::where('generation_type_id', $generationType->id)->first();
+        }
+
+        // Extract reference media and model parameters from input_metadata
+        $referenceVideoPath = null;
+        if (! empty($input['reference_videos']) && is_array($input['reference_videos'])) {
+            $referenceVideoPath = $input['reference_videos'][0] ?? null;
+        } elseif (! empty($input['target_video'])) {
+            $referenceVideoPath = $input['target_video'];
+        }
+
+        $referenceAudioPath = null;
+        if (! empty($input['reference_audios']) && is_array($input['reference_audios'])) {
+            $referenceAudioPath = $input['reference_audios'][0] ?? null;
+        }
+
+        // Extra reference images beyond the primary subject image (index 1..N)
+        $extraRefImages = [];
+        $sourceImageList = $input['reference_images'] ?? $input['images'] ?? $input['image_input'] ?? $input['image_urls'] ?? [];
+        if (is_array($sourceImageList) && count($sourceImageList) > 1) {
+            $extraRefImages = array_values(array_filter(array_slice($sourceImageList, 1)));
+        }
+
+        // Preserve model parameters in the `parameters` JSON column
+        $parameterKeys = [
+            'image_mode',
+            'duration',
+            'generate_audio',
+            'bitrate_mode',
+            'auto_resize',
+            'prompt_extend',
+            'watermark',
+            'disable_safety_checker',
+            'guidance',
+            'num_inference_steps',
+            'output_quality',
+            'safety_tolerance',
+            'quality',
+            'background',
+            'output_compression',
+            'moderation',
+            'style_type',
+            'magic_prompt_option',
+            'system_prompt',
+            'output_resolution',
+            'response_modalities',
+            'last_frame_url',
+            'face_detector_score',
+            'target_face_index',
+        ];
+        $parameters = [];
+        foreach ($parameterKeys as $key) {
+            if (array_key_exists($key, $input) && $input[$key] !== null && $input[$key] !== '') {
+                $parameters[$key] = $input[$key];
+            }
         }
 
         // Leave cost null so the template dynamically inherits its AI model's point cost unless manually overridden
@@ -341,11 +472,15 @@ class TemplateController extends Controller
             'discount_cost' => 0,
             'file_path' => $newPath,
             'thumbnail_path' => $isVideo ? null : $newPath,
+            'reference_video_path' => $referenceVideoPath,
+            'reference_audio_path' => $referenceAudioPath,
+            'reference_images' => ! empty($extraRefImages) ? $extraRefImages : null,
+            'parameters' => ! empty($parameters) ? $parameters : null,
             'is_active' => true,
             'sort_order' => 1,
             'prompt' => $input['prompt'] ?? null,
             'negative_prompt' => $input['negative_prompt'] ?? null,
-            'aspect_ratio' => $input['aspect_ratio'] ?? null,
+            'aspect_ratio' => $input['aspect_ratio'] ?? ($input['ratio'] ?? null),
             'resolution' => $input['resolution'] ?? null,
             'seed' => isset($input['seed']) ? (string) $input['seed'] : null,
         ]);

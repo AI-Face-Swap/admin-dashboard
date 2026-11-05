@@ -21,12 +21,11 @@ use App\Http\Controllers\Admin\TemplateCategoryController;
 use App\Http\Controllers\Admin\TemplateController;
 use App\Http\Controllers\Admin\TemplateTagController;
 use App\Http\Controllers\Admin\UserController;
-use App\Http\Controllers\Api\AIFaceSwapController;
 use App\Http\Controllers\Api\AIGenerationStatusController;
 use App\Http\Controllers\Api\AIImageEditController;
 use App\Http\Controllers\Api\AIImageGenerationController;
 use App\Http\Controllers\Api\AIImageToVideoController;
-use App\Http\Controllers\Api\AIVideoFaceSwapController;
+use App\Http\Controllers\Api\AITemplateGenerationController;
 use App\Http\Controllers\Api\Auth\SocialAuthController;
 use App\Http\Controllers\Api\HtutCentralAuthController;
 use Illuminate\Support\Facades\Route;
@@ -74,8 +73,8 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::patch('providers/{provider}/toggle', [ProviderController::class, 'toggle'])->middleware('permission:providers.manage')->name('providers.toggle');
 
     Route::get('ai', [AIController::class, 'index'])->middleware('permission:ai.view')->name('ai.index');
-    Route::post('ai/face-swap', [AIFaceSwapController::class, 'store'])->middleware('permission:ai.view')->name('ai.face-swap');
-    Route::post('ai/video-face-swap', [AIVideoFaceSwapController::class, 'store'])->middleware('permission:ai.view')->name('ai.video-face-swap');
+    Route::post('ai/templates/{slug}/generate', [AITemplateGenerationController::class, 'store'])->middleware('permission:ai.view')->name('ai.templates.generate');
+    Route::post('ai/template-generate', [AITemplateGenerationController::class, 'store'])->middleware('permission:ai.view')->name('ai.template-generate');
     Route::post('ai/images', [AIImageGenerationController::class, 'store'])->middleware('permission:ai.view')->name('ai.images');
     Route::post('ai/image-to-video', [AIImageToVideoController::class, 'store'])->middleware('permission:ai.view')->name('ai.image-to-video');
     Route::post('ai/image-edit', [AIImageEditController::class, 'store'])->middleware('permission:ai.view')->name('ai.image-edit');

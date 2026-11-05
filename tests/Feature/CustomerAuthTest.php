@@ -1,12 +1,16 @@
 <?php
 
+use App\AI\Services\AIService;
+use App\Jobs\ProcessFaceSwap;
 use App\Models\AIGeneration;
 use App\Models\AIProvider;
 use App\Models\ApiRequestLog;
 use App\Models\Customer;
 use App\Models\Template;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\PersonalAccessToken;
 
@@ -140,7 +144,7 @@ test('an invalid token is rejected with 401', function () {
 });
 
 test('a customer can call face swap with a token and coins are deducted', function () {
-    \Illuminate\Support\Facades\Queue::fake();
+    Queue::fake();
     fakeCustomerFaceSwap();
 
     $template = Template::create([
@@ -153,9 +157,8 @@ test('a customer can call face swap with a token and coins are deducted', functi
     $customer = Customer::factory()->create(['coins' => 100]);
     $token = $customer->createToken('test')->plainTextToken;
 
-    $this->withToken($token)->postJson('/api/v1/ai/face-swap', [
-        'face_image' => UploadedFile::fake()->image('face.jpg'),
-        'template_slug' => $template->slug,
+    $this->withToken($token)->postJson("/api/v1/templates/{$template->slug}/generate", [
+        'image' => UploadedFile::fake()->image('face.jpg'),
     ])->assertStatus(202)
         ->assertJsonPath('generation.points_spent', 20)
         ->assertJsonPath('generation.points_remaining', 80);
@@ -185,9 +188,8 @@ test('a customer without enough coins gets 402 and no generation is made', funct
     $customer = Customer::factory()->create(['coins' => 10]);
     $token = $customer->createToken('test')->plainTextToken;
 
-    $this->withToken($token)->postJson('/api/v1/ai/face-swap', [
-        'face_image_url' => 'https://example.com/face.jpg',
-        'template_slug' => $template->slug,
+    $this->withToken($token)->postJson("/api/v1/templates/{$template->slug}/generate", [
+        'image_url' => 'https://example.com/face.jpg',
     ])->assertStatus(402);
 
     expect(AIGeneration::count())->toBe(0)
@@ -195,7 +197,7 @@ test('a customer without enough coins gets 402 and no generation is made', funct
 });
 
 test('coins are refunded when the generation job fails', function () {
-    \Illuminate\Support\Facades\Queue::fake();
+    Queue::fake();
     $currentBalance = 100;
     Http::fake([
         'https://api.segmind.com/v2/faceswap-v5' => Http::response([
@@ -209,10 +211,12 @@ test('coins are refunded when the generation job fails', function () {
         ),
         '*/api/v1/s2s/points/deduct' => function () use (&$currentBalance) {
             $currentBalance -= 20;
+
             return Http::response(['success' => true, 'points' => $currentBalance], 200);
         },
         '*/api/v1/s2s/points/add' => function () use (&$currentBalance) {
             $currentBalance += 20;
+
             return Http::response(['success' => true, 'points' => $currentBalance], 200);
         },
         '*/api/v1/s2s/points/*' => function () use (&$currentBalance) {
@@ -228,12 +232,11 @@ test('coins are refunded when the generation job fails', function () {
     ]);
 
     $customer = Customer::factory()->create(['coins' => 100]);
-    \Illuminate\Support\Facades\Cache::put("customer_points_{$customer->central_auth_uuid}", 100, 30);
+    Cache::put("customer_points_{$customer->central_auth_uuid}", 100, 30);
     $token = $customer->createToken('test')->plainTextToken;
 
-    $this->withToken($token)->postJson('/api/v1/ai/face-swap', [
-        'face_image_url' => 'https://example.com/face.jpg',
-        'template_slug' => $template->slug,
+    $this->withToken($token)->postJson("/api/v1/templates/{$template->slug}/generate", [
+        'image_url' => 'https://example.com/face.jpg',
     ])->assertStatus(202);
 
     // Coins deducted upfront
@@ -242,7 +245,7 @@ test('coins are refunded when the generation job fails', function () {
     $generation = AIGeneration::first();
 
     // Now execute job and simulate provider failure
-    $job = new \App\Jobs\ProcessFaceSwap(
+    $job = new ProcessFaceSwap(
         generationId: $generation->id,
         payload: $generation->input_metadata,
         templateId: $generation->template_id,
@@ -251,8 +254,8 @@ test('coins are refunded when the generation job fails', function () {
     );
 
     try {
-        $job->handle(app(\App\AI\Services\AIService::class));
-    } catch (\Throwable $e) {
+        $job->handle(app(AIService::class));
+    } catch (Throwable $e) {
         // Expected
     }
 

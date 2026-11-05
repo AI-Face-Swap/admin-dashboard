@@ -42,6 +42,8 @@ class ProcessImageGeneration implements ShouldQueue
         public readonly ?int $customerId = null,
         public readonly int $pointCost = 0,
         public readonly ?string $model = null,
+        public readonly ?int $templateId = null,
+        public readonly string $provider = 'segmind',
     ) {}
 
     /**
@@ -75,6 +77,8 @@ class ProcessImageGeneration implements ShouldQueue
                     operation: AIGeneration::OPERATION_IMAGE,
                     payload: $this->payload,
                     model: $this->model,
+                    templateId: $this->templateId ?? $generation->template_id,
+                    provider: $this->provider,
                 ),
                 $requester,
                 $generation,
