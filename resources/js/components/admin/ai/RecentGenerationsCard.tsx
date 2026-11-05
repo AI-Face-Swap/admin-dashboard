@@ -193,26 +193,26 @@ export function RecentGenerationsCard({
                             ))}
                         </div>
 
-                        <div className="mt-3 max-h-[540px] overflow-y-auto rounded-xl border">
-                            <Table>
+                        <div className="mt-3 max-h-[540px] overflow-x-hidden overflow-y-auto rounded-xl border">
+                            <Table className="w-full table-fixed">
                                 <TableHeader className="sticky top-0 z-10 bg-background shadow-2xs">
                                     <TableRow>
-                                        <TableHead className="w-[90px] py-2.5 text-xs font-semibold">
+                                        <TableHead className="w-[12%] px-3 py-2.5 text-xs font-semibold">
                                             ID / Status
                                         </TableHead>
-                                        <TableHead className="w-[180px] py-2.5 text-xs font-semibold">
+                                        <TableHead className="w-[18%] px-3 py-2.5 text-xs font-semibold">
                                             Operation &amp; Model
                                         </TableHead>
-                                        <TableHead className="min-w-[260px] py-2.5 text-xs font-semibold">
+                                        <TableHead className="w-[36%] px-3 py-2.5 text-xs font-semibold">
                                             Input Fields (Prompt &amp; Params)
                                         </TableHead>
-                                        <TableHead className="w-[90px] py-2.5 text-xs font-semibold">
+                                        <TableHead className="w-[8%] px-2 py-2.5 text-center text-xs font-semibold">
                                             Output
                                         </TableHead>
-                                        <TableHead className="w-[120px] py-2.5 text-xs font-semibold">
+                                        <TableHead className="w-[14%] px-3 py-2.5 text-xs font-semibold">
                                             API Cost &amp; Time
                                         </TableHead>
-                                        <TableHead className="py-2.5 text-right text-xs font-semibold">
+                                        <TableHead className="w-[12%] px-3 py-2.5 text-right text-xs font-semibold">
                                             Actions
                                         </TableHead>
                                     </TableRow>
@@ -255,10 +255,10 @@ export function RecentGenerationsCard({
                                                     )
                                                 }
                                             >
-                                                {/* ID & STATUS */}
-                                                <TableCell className="py-2.5 align-top">
+                                                {/* 1. ID & STATUS */}
+                                                <TableCell className="px-3 py-2.5 align-top whitespace-normal">
                                                     <div className="flex flex-col items-start gap-1">
-                                                        <span className="font-mono text-xs font-bold text-muted-foreground">
+                                                        <span className="font-mono text-xs font-bold text-primary">
                                                             #{generation.id}
                                                         </span>
                                                         <Badge
@@ -278,36 +278,33 @@ export function RecentGenerationsCard({
                                                     </div>
                                                 </TableCell>
 
-                                                {/* OPERATION & MODEL */}
-                                                <TableCell className="py-2.5 align-top">
+                                                {/* 2. OPERATION & MODEL */}
+                                                <TableCell className="px-3 py-2.5 align-top whitespace-normal">
                                                     <div className="flex flex-col items-start gap-1">
                                                         {getOperationBadge(
                                                             generation.operation,
                                                         )}
-                                                        <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[11px] font-semibold text-foreground">
+                                                        <code className="max-w-full truncate rounded bg-muted px-1.5 py-0.5 font-mono text-[11px] font-semibold text-foreground">
                                                             {modelName}
                                                         </code>
                                                         {generation.template && (
-                                                            <span className="text-[11px] text-muted-foreground">
-                                                                Template:{' '}
-                                                                <strong className="text-foreground">
-                                                                    {
-                                                                        generation
-                                                                            .template
-                                                                            .name
-                                                                    }
-                                                                </strong>
+                                                            <span className="w-full truncate text-[11px] text-muted-foreground">
+                                                                {
+                                                                    generation
+                                                                        .template
+                                                                        .name
+                                                                }
                                                             </span>
                                                         )}
                                                     </div>
                                                 </TableCell>
 
-                                                {/* INPUT FIELDS (PROMPT + INPUT THUMBNAILS + PARAMS) */}
-                                                <TableCell className="max-w-[340px] py-2.5 align-top">
+                                                {/* 3. INPUT FIELDS (PROMPT + INPUT THUMBNAILS + PARAMS) */}
+                                                <TableCell className="px-3 py-2.5 align-top whitespace-normal">
                                                     <div className="flex flex-col gap-1.5">
                                                         {promptText ? (
                                                             <p
-                                                                className="line-clamp-2 text-xs font-medium text-foreground"
+                                                                className="line-clamp-2 break-words text-xs font-medium leading-relaxed text-foreground"
                                                                 title={
                                                                     promptText
                                                                 }
@@ -316,13 +313,13 @@ export function RecentGenerationsCard({
                                                             </p>
                                                         ) : (
                                                             <span className="text-xs text-muted-foreground italic">
-                                                                No prompt
-                                                                (Template / Face
-                                                                Swap)
+                                                                {generation
+                                                                    .template
+                                                                    ?.name ||
+                                                                    'Template / Face Swap'}
                                                             </span>
                                                         )}
 
-                                                        {/* Input Media Thumbnails */}
                                                         {inputMedia.length >
                                                             0 && (
                                                             <div className="flex flex-wrap items-center gap-1.5">
@@ -348,10 +345,10 @@ export function RecentGenerationsCard({
                                                                                         alt={
                                                                                             media.label
                                                                                         }
-                                                                                        className="h-6 w-6 rounded object-cover"
+                                                                                        className="h-5 w-5 rounded object-cover"
                                                                                     />
                                                                                 ) : (
-                                                                                    <span className="flex h-6 w-6 items-center justify-center rounded bg-primary/10 font-bold text-primary">
+                                                                                    <span className="px-1">
                                                                                         {media.type ===
                                                                                         'video'
                                                                                             ? '🎬'
@@ -369,7 +366,6 @@ export function RecentGenerationsCard({
                                                             </div>
                                                         )}
 
-                                                        {/* Key Parameter Chips */}
                                                         {keyParams.length >
                                                             0 && (
                                                             <div className="flex flex-wrap gap-1">
@@ -395,24 +391,15 @@ export function RecentGenerationsCard({
                                                                             </span>
                                                                         ),
                                                                     )}
-                                                                {keyParams.length >
-                                                                    4 && (
-                                                                    <span className="rounded bg-muted/40 px-1.5 py-0.5 text-[10px] text-muted-foreground">
-                                                                        +
-                                                                        {keyParams.length -
-                                                                            4}{' '}
-                                                                        more
-                                                                    </span>
-                                                                )}
                                                             </div>
                                                         )}
                                                     </div>
                                                 </TableCell>
 
-                                                {/* OUTPUT PREVIEW */}
-                                                <TableCell className="py-2.5 align-top">
+                                                {/* 4. OUTPUT PREVIEW */}
+                                                <TableCell className="px-2 py-2.5 text-center align-top">
                                                     {firstOutput ? (
-                                                        <div className="relative h-12 w-12 overflow-hidden rounded-lg border bg-black/20">
+                                                        <div className="mx-auto h-11 w-11 overflow-hidden rounded-lg border bg-black/20">
                                                             {isVideoOutput ? (
                                                                 <video
                                                                     src={
@@ -438,23 +425,23 @@ export function RecentGenerationsCard({
                                                     )}
                                                 </TableCell>
 
-                                                {/* API COST & DURATION */}
-                                                <TableCell className="py-2.5 align-top">
+                                                {/* 5. API COST & DURATION */}
+                                                <TableCell className="px-3 py-2.5 align-top whitespace-normal">
                                                     <div className="flex flex-col gap-0.5 text-xs">
-                                                        <span className="font-mono font-semibold text-emerald-600 dark:text-emerald-400">
+                                                        <span className="font-mono font-semibold text-purple-600 dark:text-purple-400">
                                                             {generation.cost
                                                                 ? `$${Number(generation.cost).toFixed(4)} ${generation.currency ?? 'USD'}`
-                                                                : '—'}
+                                                                : 'API: —'}
                                                         </span>
                                                         {generation.coins_spent ? (
-                                                            <span className="text-[11px] text-muted-foreground">
+                                                            <span className="text-[11px] font-medium text-foreground">
                                                                 {
                                                                     generation.coins_spent
                                                                 }{' '}
                                                                 pts
                                                             </span>
                                                         ) : null}
-                                                        <span className="text-[11px] text-muted-foreground">
+                                                        <span className="font-mono text-[11px] text-muted-foreground">
                                                             ⏱{' '}
                                                             {generation.duration_ms
                                                                 ? `${(generation.duration_ms / 1000).toFixed(1)}s`
@@ -477,9 +464,9 @@ export function RecentGenerationsCard({
                                                     </div>
                                                 </TableCell>
 
-                                                {/* ACTIONS */}
-                                                <TableCell className="py-2.5 text-right align-top">
-                                                    <div className="flex flex-wrap items-center justify-end gap-1.5">
+                                                {/* 6. ACTIONS (SINGLE LINE) */}
+                                                <TableCell className="px-3 py-2.5 text-right align-top">
+                                                    <div className="flex items-center justify-end gap-1 whitespace-nowrap">
                                                         {generation.status ===
                                                             'completed' &&
                                                             firstOutput && (
@@ -491,7 +478,7 @@ export function RecentGenerationsCard({
                                                                             savingTemplateId ===
                                                                             generation.id
                                                                         }
-                                                                        className="h-8 gap-1 border border-primary/20 bg-primary/10 px-2.5 text-xs font-medium text-primary hover:bg-primary/20"
+                                                                        className="h-8 w-8 border border-primary/20 bg-primary/10 p-0 text-primary hover:bg-primary/20"
                                                                         onClick={(
                                                                             e,
                                                                         ) =>
@@ -500,19 +487,15 @@ export function RecentGenerationsCard({
                                                                                 generation.id,
                                                                             )
                                                                         }
-                                                                        title="Save this output & prompt as a reusable Template"
+                                                                        title="Save to Template"
                                                                     >
                                                                         <BookmarkPlus className="h-3.5 w-3.5" />
-                                                                        {savingTemplateId ===
-                                                                        generation.id
-                                                                            ? 'Saving...'
-                                                                            : 'Save to Template'}
                                                                     </Button>
 
                                                                     <Button
                                                                         variant="outline"
                                                                         size="sm"
-                                                                        className="h-8 gap-1 px-2.5 text-xs"
+                                                                        className="h-8 w-8 p-0"
                                                                         onClick={(
                                                                             e,
                                                                         ) => {

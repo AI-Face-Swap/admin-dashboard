@@ -230,7 +230,10 @@ export default function QueueMonitor({
         return `${(ms / 1000).toFixed(1)}s`;
     };
 
-    const formatCost = (cost: string | number | null | undefined, currency?: string | null) => {
+    const formatCost = (
+        cost: string | number | null | undefined,
+        currency?: string | null,
+    ) => {
         if (cost === null || cost === undefined || cost === '') return '—';
         const num = Number(cost);
         if (Number.isNaN(num)) return String(cost);
@@ -262,7 +265,7 @@ export default function QueueMonitor({
                 return (
                     <Badge
                         variant="outline"
-                        className="flex items-center gap-1 border-amber-500/40 bg-amber-500/10 text-amber-500"
+                        className="inline-flex items-center gap-1 border-amber-500/40 bg-amber-500/10 text-amber-500"
                     >
                         <Clock className="h-3 w-3 animate-pulse" />
                         Queued
@@ -272,7 +275,7 @@ export default function QueueMonitor({
                 return (
                     <Badge
                         variant="outline"
-                        className="flex items-center gap-1 border-blue-500/40 bg-blue-500/10 text-blue-500"
+                        className="inline-flex items-center gap-1 border-blue-500/40 bg-blue-500/10 text-blue-500"
                     >
                         <RefreshCw className="h-3 w-3 animate-spin" />
                         Processing
@@ -282,7 +285,7 @@ export default function QueueMonitor({
                 return (
                     <Badge
                         variant="outline"
-                        className="flex items-center gap-1 border-emerald-500/40 bg-emerald-500/10 text-emerald-500"
+                        className="inline-flex items-center gap-1 border-emerald-500/40 bg-emerald-500/10 text-emerald-500"
                     >
                         <CheckCircle2 className="h-3 w-3" />
                         Completed
@@ -292,7 +295,7 @@ export default function QueueMonitor({
                 return (
                     <Badge
                         variant="outline"
-                        className="flex items-center gap-1 border-red-500/40 bg-red-500/10 text-red-500"
+                        className="inline-flex items-center gap-1 border-red-500/40 bg-red-500/10 text-red-500"
                     >
                         <AlertCircle className="h-3 w-3" />
                         Failed
@@ -354,9 +357,9 @@ export default function QueueMonitor({
         <>
             <Head title="Queue Monitor — Admin" />
 
-            <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-6">
+            <div className="flex w-full flex-1 flex-col gap-5 p-4 md:p-6">
                 {/* TOP HEADER */}
-                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                     <div>
                         <Heading
                             title="Queue Monitor & Generations History"
@@ -364,7 +367,7 @@ export default function QueueMonitor({
                         />
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-2.5">
                         <Link
                             href="/admin/ai"
                             className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/5 px-3 text-xs font-semibold text-primary transition hover:bg-primary/10"
@@ -426,7 +429,7 @@ export default function QueueMonitor({
                 </div>
 
                 {/* KPI METRIC CARDS */}
-                <div className="grid grid-cols-2 gap-4 lg:grid-cols-6">
+                <div className="grid grid-cols-2 gap-3.5 lg:grid-cols-6">
                     {/* QUEUED */}
                     <AnimatedCard className="border-amber-500/20 bg-gradient-to-br from-amber-500/5 to-transparent">
                         <CardContent className="p-4">
@@ -663,29 +666,31 @@ export default function QueueMonitor({
                     </CardContent>
                 </AnimatedCard>
 
-                {/* GENERATIONS TABLE */}
+                {/* FIXED-WIDTH GENERATIONS TABLE (NO HORIZONTAL SCROLL) */}
                 <AnimatedCard>
                     <CardContent className="p-0">
-                        <Table>
+                        <Table className="w-full table-fixed">
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead className="w-[75px]">
-                                        ID
+                                    <TableHead className="w-[15%] px-3 py-3">
+                                        ID &amp; Customer
                                     </TableHead>
-                                    <TableHead>Customer</TableHead>
-                                    <TableHead>Type &amp; Model</TableHead>
-                                    <TableHead className="min-w-[240px]">
-                                        Input Fields (Prompt &amp; Media)
+                                    <TableHead className="w-[16%] px-3 py-3">
+                                        Type &amp; Model
                                     </TableHead>
-                                    <TableHead className="w-[75px]">
+                                    <TableHead className="w-[30%] px-3 py-3">
+                                        Input (Prompt &amp; Media)
+                                    </TableHead>
+                                    <TableHead className="w-[7%] px-2 py-3 text-center">
                                         Output
                                     </TableHead>
-                                    <TableHead>Status</TableHead>
-                                    <TableHead>
-                                        Points &amp; API Cost ($)
+                                    <TableHead className="w-[11%] px-3 py-3">
+                                        Status &amp; Time
                                     </TableHead>
-                                    <TableHead>Duration &amp; Time</TableHead>
-                                    <TableHead className="text-right">
+                                    <TableHead className="w-[11%] px-3 py-3">
+                                        Points &amp; Cost
+                                    </TableHead>
+                                    <TableHead className="w-[10%] px-3 py-3 text-right">
                                         Actions
                                     </TableHead>
                                 </TableRow>
@@ -694,7 +699,7 @@ export default function QueueMonitor({
                                 {generations.data.length === 0 ? (
                                     <TableRow>
                                         <TableCell
-                                            colSpan={9}
+                                            colSpan={7}
                                             className="py-10 text-center text-muted-foreground"
                                         >
                                             No generations match the current
@@ -731,49 +736,59 @@ export default function QueueMonitor({
                                                     setSelectedGeneration(item)
                                                 }
                                             >
-                                                {/* ID */}
-                                                <TableCell className="align-top font-mono text-xs font-semibold">
-                                                    #{item.id}
-                                                </TableCell>
-
-                                                {/* CUSTOMER */}
-                                                <TableCell className="align-top">
-                                                    {item.customer ? (
-                                                        <div>
-                                                            <div className="text-sm font-medium">
-                                                                {
-                                                                    item
-                                                                        .customer
-                                                                        .name
-                                                                }
-                                                            </div>
-                                                            <div className="max-w-[140px] truncate text-xs text-muted-foreground">
-                                                                {
-                                                                    item
-                                                                        .customer
-                                                                        .email
-                                                                }
-                                                            </div>
+                                                {/* 1. ID & CUSTOMER */}
+                                                <TableCell className="px-3 py-3 align-top whitespace-normal">
+                                                    <div className="flex flex-col gap-0.5">
+                                                        <div className="flex items-center gap-1.5">
+                                                            <span className="font-mono text-xs font-bold text-primary">
+                                                                #{item.id}
+                                                            </span>
+                                                            <span
+                                                                suppressHydrationWarning
+                                                                className="text-[11px] text-muted-foreground"
+                                                            >
+                                                                •{' '}
+                                                                {formatRelativeTime(
+                                                                    item.created_at,
+                                                                )}
+                                                            </span>
                                                         </div>
-                                                    ) : (
-                                                        <span className="text-xs text-muted-foreground">
-                                                            Admin / Studio
-                                                        </span>
-                                                    )}
+                                                        {item.customer ? (
+                                                            <>
+                                                                <div className="truncate text-xs font-semibold text-foreground">
+                                                                    {
+                                                                        item
+                                                                            .customer
+                                                                            .name
+                                                                    }
+                                                                </div>
+                                                                <div className="truncate text-[11px] text-muted-foreground">
+                                                                    {
+                                                                        item
+                                                                            .customer
+                                                                            .email
+                                                                    }
+                                                                </div>
+                                                            </>
+                                                        ) : (
+                                                            <span className="text-xs text-muted-foreground">
+                                                                Admin / Studio
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </TableCell>
 
-                                                {/* TYPE & MODEL */}
-                                                <TableCell className="align-top">
+                                                {/* 2. TYPE & MODEL */}
+                                                <TableCell className="px-3 py-3 align-top whitespace-normal">
                                                     <div className="flex flex-col items-start gap-1">
                                                         {getOperationBadge(
                                                             item.operation,
                                                         )}
-                                                        <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[11px] font-semibold text-foreground">
+                                                        <code className="max-w-full truncate rounded bg-muted px-1.5 py-0.5 font-mono text-[11px] font-semibold text-foreground">
                                                             {modelName}
                                                         </code>
                                                         {item.template && (
-                                                            <span className="text-[11px] text-muted-foreground">
-                                                                Template:{' '}
+                                                            <span className="w-full truncate text-[11px] text-muted-foreground">
                                                                 {
                                                                     item
                                                                         .template
@@ -784,10 +799,10 @@ export default function QueueMonitor({
                                                     </div>
                                                 </TableCell>
 
-                                                {/* PROMPT / INPUT PREVIEW */}
-                                                <TableCell className="max-w-[280px] align-top">
+                                                {/* 3. INPUT (PROMPT & MEDIA & PARAMS) */}
+                                                <TableCell className="px-3 py-3 align-top whitespace-normal">
                                                     <div className="flex flex-col gap-1.5">
-                                                        <div className="line-clamp-2 text-xs font-medium text-foreground">
+                                                        <p className="line-clamp-2 break-words text-xs font-medium leading-relaxed text-foreground">
                                                             {item.input_metadata
                                                                 ?.prompt ||
                                                                 item
@@ -796,7 +811,7 @@ export default function QueueMonitor({
                                                                 item.template
                                                                     ?.name ||
                                                                 '—'}
-                                                        </div>
+                                                        </p>
 
                                                         {inputMedia.length >
                                                             0 && (
@@ -855,7 +870,7 @@ export default function QueueMonitor({
                                                                                 key={
                                                                                     p.key
                                                                                 }
-                                                                                className="rounded border bg-muted/30 px-1 py-0.5 font-mono text-[10px] text-muted-foreground"
+                                                                                className="rounded border bg-muted/30 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground"
                                                                             >
                                                                                 {
                                                                                     p.key
@@ -874,7 +889,7 @@ export default function QueueMonitor({
 
                                                         {item.error && (
                                                             <div
-                                                                className="mt-0.5 truncate font-mono text-xs text-red-500"
+                                                                className="mt-0.5 truncate font-mono text-[11px] text-red-500"
                                                                 title={
                                                                     item.error
                                                                 }
@@ -886,10 +901,10 @@ export default function QueueMonitor({
                                                     </div>
                                                 </TableCell>
 
-                                                {/* OUTPUT THUMBNAIL */}
-                                                <TableCell className="align-top">
+                                                {/* 4. OUTPUT THUMBNAIL */}
+                                                <TableCell className="px-2 py-3 align-top text-center">
                                                     {firstOutput ? (
-                                                        <div className="h-11 w-11 overflow-hidden rounded-lg border bg-black/20">
+                                                        <div className="mx-auto h-11 w-11 overflow-hidden rounded-lg border bg-black/20">
                                                             {isVideoOutput ? (
                                                                 <video
                                                                     src={
@@ -915,15 +930,23 @@ export default function QueueMonitor({
                                                     )}
                                                 </TableCell>
 
-                                                {/* STATUS */}
-                                                <TableCell className="align-top">
-                                                    {getStatusBadge(
-                                                        item.status,
-                                                    )}
+                                                {/* 5. STATUS & DURATION */}
+                                                <TableCell className="px-3 py-3 align-top whitespace-normal">
+                                                    <div className="flex flex-col items-start gap-1">
+                                                        {getStatusBadge(
+                                                            item.status,
+                                                        )}
+                                                        <span className="font-mono text-xs text-muted-foreground">
+                                                            ⏱{' '}
+                                                            {formatDuration(
+                                                                item.duration_ms,
+                                                            )}
+                                                        </span>
+                                                    </div>
                                                 </TableCell>
 
-                                                {/* POINTS & API COST */}
-                                                <TableCell className="align-top">
+                                                {/* 6. POINTS & API COST */}
+                                                <TableCell className="px-3 py-3 align-top whitespace-normal">
                                                     <div className="flex flex-col items-start gap-1">
                                                         <div className="text-xs font-semibold">
                                                             {item.coins_spent
@@ -960,33 +983,14 @@ export default function QueueMonitor({
                                                     </div>
                                                 </TableCell>
 
-                                                {/* DURATION & TIME */}
-                                                <TableCell className="align-top">
-                                                    <div className="flex flex-col gap-0.5 text-xs">
-                                                        <span className="font-mono font-medium text-foreground">
-                                                            {formatDuration(
-                                                                item.duration_ms,
-                                                            )}
-                                                        </span>
-                                                        <span
-                                                            suppressHydrationWarning
-                                                            className="whitespace-nowrap text-[11px] text-muted-foreground"
-                                                        >
-                                                            {formatRelativeTime(
-                                                                item.created_at,
-                                                            )}
-                                                        </span>
-                                                    </div>
-                                                </TableCell>
-
-                                                {/* ACTIONS */}
+                                                {/* 7. ACTIONS (SINGLE LINE) */}
                                                 <TableCell
-                                                    className="align-top text-right"
+                                                    className="px-3 py-3 text-right align-top"
                                                     onClick={(e) =>
                                                         e.stopPropagation()
                                                     }
                                                 >
-                                                    <div className="flex flex-wrap items-center justify-end gap-1">
+                                                    <div className="flex items-center justify-end gap-1 whitespace-nowrap">
                                                         {item.status ===
                                                             'failed' && (
                                                             <Button
@@ -1000,8 +1004,7 @@ export default function QueueMonitor({
                                                                 }
                                                                 title="Re-queue this job"
                                                             >
-                                                                <RotateCw className="mr-1 h-3.5 w-3.5" />
-                                                                Retry
+                                                                <RotateCw className="h-3.5 w-3.5" />
                                                             </Button>
                                                         )}
 
@@ -1016,7 +1019,7 @@ export default function QueueMonitor({
                                                                             savingTemplateId ===
                                                                             item.id
                                                                         }
-                                                                        className="h-8 gap-1 border border-primary/20 bg-primary/10 px-2 text-xs text-primary hover:bg-primary/20"
+                                                                        className="h-8 w-8 border border-primary/20 bg-primary/10 p-0 text-primary hover:bg-primary/20"
                                                                         onClick={(
                                                                             e,
                                                                         ) =>
@@ -1025,15 +1028,9 @@ export default function QueueMonitor({
                                                                                 e,
                                                                             )
                                                                         }
-                                                                        title="Save as reusable Template"
+                                                                        title="Save to Template"
                                                                     >
                                                                         <BookmarkPlus className="h-3.5 w-3.5" />
-                                                                        <span className="hidden xl:inline">
-                                                                            {savingTemplateId ===
-                                                                            item.id
-                                                                                ? 'Saving...'
-                                                                                : 'Template'}
-                                                                        </span>
                                                                     </Button>
 
                                                                     <Button

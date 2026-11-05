@@ -50,12 +50,14 @@ export function resolveGenerationModel(generation: {
             return 'gpt-image-1.5-edit';
         if ('output_resolution' in meta || 'response_modalities' in meta)
             return 'nano-banana-pro';
-        if ('style_type' in meta || 'magic_prompt_option' in meta)
+        if ('style_type' in meta || 'magic_prompt_option' in meta || 'mask' in meta)
             return 'ideogram-4.5-edit';
         if ('disable_safety_checker' in meta && 'image_urls' in meta)
             return 'p-image-edit';
         if ('image_url' in meta && generation.operation.includes('edit'))
             return 'kling-3-image2image';
+        if ('image' in meta && generation.operation.includes('edit'))
+            return 'bria-extract-object';
     }
 
     if (generation.operation === 'face-swap') return 'face-swap-v5';
