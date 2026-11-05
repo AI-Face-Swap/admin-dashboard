@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Api;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
 class ImageEditRequest extends FormRequest
@@ -26,10 +27,10 @@ class ImageEditRequest extends FormRequest
             'model' => [
                 'required',
                 'string',
-                'in:multi-image-kontext-max,flux-kontext-dev,seedream-v5-lite-image-to-image,gpt-image-1.5-edit,kling-3-image2image,nano-banana-pro,ideogram-4.5-edit,bria-extract-object',
+                'in:multi-image-kontext-max,flux-kontext-dev,seedream-v5-lite-image-to-image,gpt-image-1.5-edit,kling-3-image2image,nano-banana-pro,ideogram-4.5-edit,bria-extract-object,p-image-edit',
             ],
             'prompt' => ['required', 'string', 'max:5000'],
-            'seed' => ['nullable', 'integer', 'min:0'],
+            'seed' => ['nullable', 'integer', 'min:-1'],
 
             // Common or model-specific fields
             'aspect_ratio' => ['nullable', 'string', 'max:30'],
@@ -57,13 +58,13 @@ class ImageEditRequest extends FormRequest
             'guidance' => ['nullable', 'numeric', 'between:1,20'],
             'num_inference_steps' => ['nullable', 'integer', 'between:1,50'],
             'output_quality' => ['nullable', 'integer', 'between:1,100'],
-            'disable_safety_checker' => ['nullable', 'string', 'in:true,false,0,1'],
+            'disable_safety_checker' => ['nullable', Rule::in([true, false, 'true', 'false', '0', '1', 0, 1])],
 
             // Seedream fields
             'size' => ['nullable', 'string', 'max:20'],
             'max_images' => ['nullable', 'integer', 'min:1', 'max:4'],
             'optimize_prompt' => ['nullable', 'string', 'max:20'],
-            'watermark' => ['nullable', 'string', 'in:true,false,0,1'],
+            'watermark' => ['nullable', Rule::in([true, false, 'true', 'false', '0', '1', 0, 1])],
 
             // GPT Image fields
             'quality' => ['nullable', 'string', 'max:20'],

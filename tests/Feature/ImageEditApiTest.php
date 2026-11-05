@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\AI\Services\AIService;
+use App\Jobs\ProcessImageEdit;
 use App\Models\AIGeneration;
 use App\Models\Customer;
 use App\Models\Role;
@@ -12,6 +14,7 @@ use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -27,12 +30,12 @@ class ImageEditApiTest extends TestCase
         $this->seed(AIProviderSeeder::class);
 
         Storage::fake('spaces');
-        \Illuminate\Support\Facades\Queue::fake();
+        Queue::fake();
     }
 
     public function test_flux_kontext_dev_creates_completed_generation(): void
     {
-        \Illuminate\Support\Facades\Queue::fake();
+        Queue::fake();
 
         $customer = Customer::factory()->create(['coins' => 100]);
 
@@ -73,28 +76,28 @@ class ImageEditApiTest extends TestCase
             ],
         ]);
 
-        \Illuminate\Support\Facades\Queue::assertPushed(\App\Jobs\ProcessImageEdit::class);
+        Queue::assertPushed(ProcessImageEdit::class);
 
         $this->assertEquals(90, $customer->fresh()->coins);
         $generation = AIGeneration::first();
         $this->assertEquals('queued', $generation->status);
 
         // Execute background job
-        $job = new \App\Jobs\ProcessImageEdit(
+        $job = new ProcessImageEdit(
             generationId: $generation->id,
             payload: $generation->input_metadata,
             customerId: $customer->id,
             pointCost: 10,
             model: 'flux-kontext-dev',
         );
-        $job->handle(app(\App\AI\Services\AIService::class));
+        $job->handle(app(AIService::class));
 
         $this->assertEquals('completed', $generation->fresh()->status);
     }
 
     public function test_multi_image_kontext_max_with_uploaded_files(): void
     {
-        \Illuminate\Support\Facades\Queue::fake();
+        Queue::fake();
 
         $customer = Customer::factory()->create(['coins' => 100]);
 
@@ -120,7 +123,7 @@ class ImageEditApiTest extends TestCase
             ],
         ]);
 
-        \Illuminate\Support\Facades\Queue::assertPushed(\App\Jobs\ProcessImageEdit::class);
+        Queue::assertPushed(ProcessImageEdit::class);
     }
 
     public function test_validation_rejects_missing_image_sources(): void
@@ -229,7 +232,7 @@ class ImageEditApiTest extends TestCase
                 'status' => 'queued',
             ],
         ]);
-        \Illuminate\Support\Facades\Queue::assertPushed(\App\Jobs\ProcessImageEdit::class);
+        Queue::assertPushed(ProcessImageEdit::class);
     }
 
     public function test_gpt_image_1_5_edit_creates_completed_generation(): void
@@ -253,7 +256,7 @@ class ImageEditApiTest extends TestCase
                 'status' => 'queued',
             ],
         ]);
-        \Illuminate\Support\Facades\Queue::assertPushed(\App\Jobs\ProcessImageEdit::class);
+        Queue::assertPushed(ProcessImageEdit::class);
     }
 
     public function test_kling_3_image2image_creates_completed_generation(): void
@@ -276,7 +279,7 @@ class ImageEditApiTest extends TestCase
                 'status' => 'queued',
             ],
         ]);
-        \Illuminate\Support\Facades\Queue::assertPushed(\App\Jobs\ProcessImageEdit::class);
+        Queue::assertPushed(ProcessImageEdit::class);
     }
 
     public function test_nano_banana_pro_creates_completed_generation(): void
@@ -299,6 +302,39 @@ class ImageEditApiTest extends TestCase
                 'status' => 'queued',
             ],
         ]);
-        \Illuminate\Support\Facades\Queue::assertPushed(\App\Jobs\ProcessImageEdit::class);
+        Queue::assertPushed(ProcessImageEdit::class);
+    }
+
+    public function test_p_image_edit_creates_completed_generation(): void
+    {
+        $customer = Customer::factory()->create(['coins' => 100]);
+
+        $response = $this->actingAs($customer, 'sanctum')
+            ->postJson('/api/v1/ai/image-edit', [
+                'model' => 'p-image-edit',
+                'prompt' => 'Replace the background with a futuristic neon cityscape',
+                'image_urls' => ['https://example.com/source.jpg'],
+                'aspect_ratio' => 'match_input_image',
+                'seed' => -1,
+                'disable_safety_checker' => false,
+            ]);
+
+        $response->assertStatus(202)->assertJson([
+            'status' => 'queued',
+            'generation' => [
+                'operation' => 'image-editing',
+                'status' => 'queued',
+            ],
+        ]);
+        Queue::assertPushed(ProcessImageEdit::class);
+
+        $generation = AIGeneration::latest('id')->first();
+        $this->assertEquals([
+            'prompt' => 'Replace the background with a futuristic neon cityscape',
+            'image_urls' => ['https://example.com/source.jpg'],
+            'aspect_ratio' => 'match_input_image',
+            'disable_safety_checker' => false,
+            'seed' => -1,
+        ], $generation->input_metadata);
     }
 }

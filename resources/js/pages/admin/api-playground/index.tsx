@@ -252,6 +252,18 @@ const ENDPOINT_TEMPLATES: EndpointTemplate[] = [
         ],
     },
     {
+        label: 'Image Edit - P Image Edit (URL)',
+        group: 'ai',
+        method: 'POST',
+        url: '/api/v1/ai/image-edit',
+        bodyType: 'json',
+        body: '{\n  "model": "p-image-edit",\n  "prompt": "Replace the background with a bokeh light effect, keeping the subject identical.",\n  "image_urls": [\n    "https://images.segmind.com/generations/901b78cd-381a-4284-8391-306d4c7409e1/6852c6602b5db2d623cc373cfa699b55.webp"\n  ],\n  "aspect_ratio": "match_input_image",\n  "seed": -1,\n  "disable_safety_checker": false\n}',
+        headers: [
+            { key: 'Content-Type', value: 'application/json' },
+            { key: 'Accept', value: 'application/json' },
+        ],
+    },
+    {
         label: 'Image Edit - Flux (URL)',
         group: 'ai',
         method: 'POST',

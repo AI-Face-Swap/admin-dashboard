@@ -253,6 +253,20 @@ class AIModelSeeder extends Seeder
                 'sort_order' => 8,
                 'description' => 'Intelligent AI cutout that segments and extracts objects with alpha transparency.',
             ],
+            [
+                'generation_type_slug' => 'image-editing',
+                'provider_name' => 'segmind',
+                'model_name' => 'p-image-edit',
+                'name' => 'Pruna P Image Edit',
+                'coin_cost' => 6,
+                'resolution_costs' => null,
+                'duration_costs' => null,
+                'is_active' => true,
+                'is_default' => false,
+                'docs_link' => 'https://www.segmind.com/models/p-image-edit',
+                'sort_order' => 9,
+                'description' => 'Fast multi-image editing and composition with AI-guided precision and style control.',
+            ],
 
             // Image to Video
             [

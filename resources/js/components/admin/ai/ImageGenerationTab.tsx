@@ -14,7 +14,11 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { ResultPopupModal } from './ResultPopupModal';
-import { csrfToken, type GenerationResult } from './types';
+import {
+    csrfToken,
+    TEXT_TO_IMAGE_MODEL_GUIDE,
+    type GenerationResult,
+} from './types';
 
 export function ImageGenerationTab() {
     const [prompt, setPrompt] = useState('');
@@ -153,12 +157,12 @@ export function ImageGenerationTab() {
             <AnimatedCard className="w-full">
                 <CardContent className="space-y-5 p-6">
                     <div className="flex flex-wrap items-center justify-between gap-2 border-b pb-4">
-                        <div>
+                        <div className="space-y-1">
                             <h3 className="text-lg font-bold">
-                                Text-to-Image Generation
+                                Text-to-Image Generation (စာသားမှ ပုံဖန်တီးခြင်း)
                             </h3>
                             <p className="text-sm text-muted-foreground">
-                                Generate high-resolution images from text prompts using Segmind models.
+                                💡 {TEXT_TO_IMAGE_MODEL_GUIDE[model]}
                             </p>
                         </div>
                         {result && (
@@ -176,7 +180,7 @@ export function ImageGenerationTab() {
                     <div className="grid gap-4 md:grid-cols-3">
                         <div className="space-y-2">
                             <Label className="text-sm font-semibold">
-                                Model
+                                Model ရွေးချယ်ရန်
                             </Label>
                             <Select value={model} onValueChange={setModel}>
                                 <SelectTrigger className="h-10 text-sm">
@@ -184,31 +188,31 @@ export function ImageGenerationTab() {
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="seedream-v5-lite-text-to-image">
-                                        Seedream 5.0 Lite
+                                        Seedream 5.0 Lite — သဘာဝကျပြီး အမြန်ဆုံး ပုံထုတ်ရန် (အကြံပြုချက်)
                                     </SelectItem>
                                     <SelectItem value="nano-banana-2-lite">
-                                        Nano Banana 2 Lite
+                                        Nano Banana 2 Lite — ၄ စက္ကန့်အတွင်း အမြန်ဆုံး ပုံကြမ်းထုတ်ရန်
                                     </SelectItem>
                                     <SelectItem value="qwen-image-3">
-                                        Qwen Image 3
+                                        Qwen Image 3 — ပုံထဲတွင် စာသားပါဝင်သော ပုံများထုတ်ရန်
                                     </SelectItem>
                                     <SelectItem value="flux-schnell">
-                                        FLUX.1 Schnell
+                                        FLUX.1 Schnell — မြန်ဆန်ပြီး အရည်အသွေးမြင့် ပုံထုတ်ရန်
                                     </SelectItem>
                                     <SelectItem value="sdxl">
-                                        Stable Diffusion XL
+                                        Stable Diffusion XL — အရောင်အသွေး စိုပြည်သော ပန်းချီ/ဓာတ်ပုံအတွက်
                                     </SelectItem>
                                     <SelectItem value="flux-dev">
-                                        FLUX.1 Dev
+                                        FLUX.1 Dev — အနုစိတ်အရည်အသွေး အမြင့်ဆုံး ပုံထုတ်ရန်
                                     </SelectItem>
                                     <SelectItem value="ideogram-4.5">
-                                        Ideogram 4.5
+                                        Ideogram 4.5 — Logo၊ ပိုစတာနှင့် စာလုံးဒီဇိုင်းအတွက် အကောင်းဆုံး
                                     </SelectItem>
                                     <SelectItem value="recraft-v4-pro">
-                                        Recraft V4 Pro
+                                        Recraft V4 Pro — Brand ဒီဇိုင်းနှင့် 2K Vector/ပုံနှိပ်ပုံအတွက်
                                     </SelectItem>
                                     <SelectItem value="grok-imagine-image-2">
-                                        Grok Imagine 2
+                                        Grok Imagine 2 — အစစ်အမှန်ဆန်သော လူနှင့် သဘာဝဓာတ်ပုံအတွက်
                                     </SelectItem>
                                 </SelectContent>
                             </Select>

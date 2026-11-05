@@ -196,6 +196,14 @@ class AIImageEditController extends Controller
                     ?: ($this->resolveImageUrl($request, 'input_image') ?: $this->resolveImageUrl($request, 'input_image_1'));
                 $payload['image'] = $img;
                 break;
+
+            case 'p-image-edit':
+                $payload['image_urls'] = $this->resolveImageArray($request);
+                $payload['aspect_ratio'] = $request->string('aspect_ratio', 'match_input_image')->toString();
+                $payload['disable_safety_checker'] = $request->has('disable_safety_checker')
+                    ? $request->boolean('disable_safety_checker')
+                    : false;
+                break;
         }
 
         return $payload;

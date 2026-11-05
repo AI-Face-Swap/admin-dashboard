@@ -43,6 +43,7 @@ export type TabType =
     | 'image-edit';
 
 export type EditModel =
+    | 'p-image-edit'
     | 'multi-image-kontext-max'
     | 'flux-kontext-dev'
     | 'seedream-v5-lite-image-to-image'
@@ -136,4 +137,46 @@ export const MODEL_GUIDE: Record<string, string> = {
         'Wan 3.0 Video Prime — 1080P အရည်အသွေးဖြင့် အစပုံမှ ဆက်လက်လှုပ်ရှားစေသည့် မော်ဒယ်။',
     'ltx-2.5-pro':
         'LTX 2.5 Pro — ကင်မရာရွေ့လျားမှု (Camera Motion) ဦးစားပေး အစပုံအခြေခံ မော်ဒယ်။',
+};
+
+export const IMAGE_EDIT_MODEL_GUIDE: Record<EditModel, string> = {
+    'p-image-edit':
+        'Pruna P Image Edit — ပုံ (၁) ပုံ သို့မဟုတ် (၂) ပုံကို ပေါင်းစပ်ပြုပြင်ရန်၊ စတိုင်ပြောင်းရန် အမြန်ဆုံးနှင့် စရိတ်အသက်သာဆုံး မော်ဒယ် (အကြံပြုချက်)။',
+    'multi-image-kontext-max':
+        'Multi-Image Kontext Max — လူပုံ (Image 1) နှင့် အဝတ်အစား/ပစ္စည်းပုံ (Image 2) နှစ်ပုံကို ကိုယ်နေဟန်ထား မပျက်ဘဲ ပေါင်းစပ်ပေးသည့် မော်ဒယ်။',
+    'flux-kontext-dev':
+        'Flux Kontext Dev — ပုံ (၁) ပုံတည်းမှ နောက်ခံပြောင်းခြင်း၊ အလင်းအမှောင်နှင့် အရောင်အသွေး ပြုပြင်ခြင်းအတွက် အကောင်းဆုံး မော်ဒယ်။',
+    'seedream-v5-lite-image-to-image':
+        'Seedream 5.0 Lite I2I — ဖက်ရှင်၊ Portrait နှင့် ကြော်ငြာဓာတ်ပုံများကို 3K/4K အကြည်နှုန်းဖြင့် အလှပဆုံး ပြောင်းလဲပေးသည့် မော်ဒယ်။',
+    'gpt-image-1.5-edit':
+        'GPT Image 1.5 Edit — ရှုပ်ထွေးသော Prompt ညွှန်ကြားချက်များနှင့် နောက်ခံအကြည် (Transparent PNG) ထုတ်ယူရန် အသင့်တော်ဆုံး OpenAI မော်ဒယ်။',
+    'kling-3-image2image':
+        'Kling 3 Image-to-Image — ရုပ်ရှင်ဆန်သော အလင်းအမှောင် (Cinematic Lighting) နှင့် ပတ်ဝန်းကျင်တစ်ခုလုံး ပြောင်းလဲရန် အကောင်းဆုံး မော်ဒယ်။',
+    'nano-banana-pro':
+        'Nano Banana Pro — မူရင်းမျက်နှာ မပျက်ယွင်းစေဘဲ 4K ပုံရိပ်၊ ကာတွန်းနှင့် စတိုင်အမျိုးမျိုး ပြောင်းလဲပေးသည့် မော်ဒယ်။',
+    'ideogram-4.5-edit':
+        'Ideogram 4.5 Edit — ပုံပေါ်တွင် စာလုံး/Logo (Typography) အတိအကျ ရေးထိုးရန် သို့မဟုတ် Mask ဖြင့် လိုချင်သည့်နေရာကိုသာ ကွက်ပြင်ရန် အကောင်းဆုံး။',
+    'bria-extract-object':
+        'Bria Extract Object — ပုံထဲမှ အမည်တပ်ပြောသော အရာဝတ္ထု/လူကိုသာ နောက်ခံဖျောက်ပြီး (Cutout PNG) သီးသန့်ဖြတ်ထုတ်ပေးသည့် မော်ဒယ်။',
+};
+
+export const TEXT_TO_IMAGE_MODEL_GUIDE: Record<string, string> = {
+    'seedream-v5-lite-text-to-image':
+        'Seedream 5.0 Lite — သဘာဝကျသော အရောင်အသွေးဖြင့် အမြန်ဆုံး ပုံထုတ်ပေးသည့် မော်ဒယ် (အကြံပြုချက်)။',
+    'nano-banana-2-lite':
+        'Nano Banana 2 Lite — Google ၏ ၄ စက္ကန့်အတွင်း အမြန်ဆုံး ပုံဖန်တီးပေးသည့် မော်ဒယ်။',
+    'qwen-image-3':
+        'Qwen Image 3 — Prompt အတိုင်း အတိအကျ လိုက်နာပြီး ပုံထဲတွင် စာသားများ ရှင်းလင်းစွာ ထည့်သွင်းနိုင်သည့် မော်ဒယ်။',
+    'flux-schnell':
+        'FLUX.1 Schnell — မြန်ဆန်ပြီး အရည်အသွေးမြင့်မားသော Black Forest Labs မော်ဒယ်။',
+    'sdxl':
+        'Stable Diffusion XL — အရောင်အသွေး စိုပြည်ပြီး အသေးစိတ်ကျသော စံနှုန်းမြင့် မော်ဒယ်။',
+    'flux-dev':
+        'FLUX.1 Dev — 28-step ဖြင့် အနုစိတ်အရည်အသွေး အမြင့်ဆုံး ထုတ်ပေးသည့် မော်ဒယ်။',
+    'ideogram-4.5':
+        'Ideogram 4.5 — Logo၊ ပိုစတာနှင့် စာလုံးဒီဇိုင်း (Typography) များအတွက် အကောင်းဆုံး မော်ဒယ်။',
+    'recraft-v4-pro':
+        'Recraft V4 Pro — ပုံနှိပ်လုပ်ငန်းနှင့် Brand ဒီဇိုင်းများအတွက် ပြတ်သားသော 2K မော်ဒယ်။',
+    'grok-imagine-image-2':
+        'Grok Imagine 2 — xAI ၏ အလင်းအမှောင်နှင့် အသားအရေ အစစ်အမှန်ဆန်သော ဓာတ်ပုံမော်ဒယ်။',
 };

@@ -3,6 +3,7 @@ import { Image as ImageIcon } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AnimatedButton } from '@/components/animated/AnimatedButton';
 import { AnimatedCard } from '@/components/animated/AnimatedCard';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -15,12 +16,19 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { ResultPopupModal } from './ResultPopupModal';
-import { csrfToken, type EditModel, type GenerationResult } from './types';
+import {
+    csrfToken,
+    IMAGE_EDIT_MODEL_GUIDE,
+    SEED_PRESET_DESCRIPTIONS,
+    type EditModel,
+    type GenerationResult,
+} from './types';
 
 export function ImageEditingTab() {
-    const [model, setModel] = useState<EditModel>('multi-image-kontext-max');
+    const [model, setModel] = useState<EditModel>('p-image-edit');
     const [prompt, setPrompt] = useState('');
-    const [seed, setSeed] = useState('');
+    const [seedPreset, setSeedPreset] = useState<string>('42');
+    const [customSeed, setCustomSeed] = useState('');
     const [processing, setProcessing] = useState(false);
     const [polling, setPolling] = useState(false);
     const [generationId, setGenerationId] = useState<number | null>(null);
@@ -105,14 +113,21 @@ export function ImageEditingTab() {
     const [img2Url, setImg2Url] = useState('');
     const file2InputRef = useRef<HTMLInputElement>(null);
 
+    // Optional Mask image for Ideogram 4.5 Edit
+    const [maskMode, setMaskMode] = useState<'upload' | 'url'>('upload');
+    const [maskFile, setMaskFile] = useState<File | null>(null);
+    const [maskPreview, setMaskPreview] = useState<string | null>(null);
+    const [maskUrl, setMaskUrl] = useState('');
+    const maskInputRef = useRef<HTMLInputElement>(null);
+
     // Common and model-specific parameters
-    const [aspectRatio, setAspectRatio] = useState('1:1');
+    const [aspectRatio, setAspectRatio] = useState('match_input_image');
     const [outputFormat, setOutputFormat] = useState('jpg');
 
     // Multi-Image Kontext Max
     const [safetyTolerance, setSafetyTolerance] = useState('1');
 
-    // Flux Kontext Dev
+    // Flux Kontext Dev & Pruna P Image Edit
     const [guidance, setGuidance] = useState('7');
     const [inferenceSteps, setInferenceSteps] = useState('35');
     const [outputQuality, setOutputQuality] = useState('90');
@@ -120,6 +135,7 @@ export function ImageEditingTab() {
 
     // Seedream 5.0 Lite I2I
     const [seedreamSize, setSeedreamSize] = useState('3K');
+    const [maxImages, setMaxImages] = useState('1');
     const [optimizePrompt, setOptimizePrompt] = useState('fast');
     const [watermark, setWatermark] = useState(false);
 
@@ -151,6 +167,11 @@ export function ImageEditingTab() {
         setImg2Preview(file ? URL.createObjectURL(file) : null);
     };
 
+    const onMaskChange = (file: File | null) => {
+        setMaskFile(file);
+        setMaskPreview(file ? URL.createObjectURL(file) : null);
+    };
+
     const isSingleImageModel =
         model === 'flux-kontext-dev' ||
         model === 'kling-3-image2image' ||
@@ -162,7 +183,7 @@ export function ImageEditingTab() {
         setResult(null);
 
         if (!prompt.trim()) {
-            setError('Please enter a prompt instruction.');
+            setError('ကျေးဇူးပြု၍ Prompt ညွှန်ကြားချက် ရေးထည့်ပေးပါ။');
             return;
         }
 
@@ -170,16 +191,21 @@ export function ImageEditingTab() {
         form.append('model', model);
         form.append('prompt', prompt.trim());
 
-        if (seed.trim()) {
-            form.append('seed', seed.trim());
+        const resolvedSeed =
+            seedPreset === 'custom' ? customSeed.trim() : seedPreset;
+        if (resolvedSeed !== '') {
+            const numericSeed = Number(resolvedSeed);
+            if (model === 'p-image-edit' || numericSeed >= 0) {
+                form.append('seed', String(numericSeed));
+            }
         }
 
         if (img1Mode === 'upload') {
             if (!img1File) {
                 setError(
                     isSingleImageModel
-                        ? 'Upload an input image first.'
-                        : 'Upload input image 1 first.',
+                        ? 'ကျေးဇူးပြု၍ ပုံတစ်ပုံ အရင်တင်ပေးပါ (Upload an input image).'
+                        : 'ကျေးဇူးပြု၍ ပုံ (၁) ကို အရင်တင်ပေးပါ (Upload input image 1).',
                 );
                 return;
             }
@@ -189,8 +215,8 @@ export function ImageEditingTab() {
             if (!img1Url.trim()) {
                 setError(
                     isSingleImageModel
-                        ? 'Enter input image URL.'
-                        : 'Enter input image 1 URL.',
+                        ? 'ကျေးဇူးပြု၍ ပုံ URL ထည့်ပေးပါ (Enter input image URL).'
+                        : 'ကျေးဇူးပြု၍ ပုံ (၁) URL ထည့်ပေးပါ (Enter input image 1 URL).',
                 );
                 return;
             }
@@ -202,12 +228,14 @@ export function ImageEditingTab() {
         if (!isSingleImageModel) {
             if (model === 'multi-image-kontext-max') {
                 if (img2Mode === 'upload' && !img2File) {
-                    setError('Multi-Image Kontext Max requires input image 2.');
+                    setError(
+                        'Multi-Image Kontext Max အတွက် ဒုတိယပုံ (Image 2) မဖြစ်မနေ လိုအပ်ပါသည်။',
+                    );
                     return;
                 }
                 if (img2Mode === 'url' && !img2Url.trim()) {
                     setError(
-                        'Multi-Image Kontext Max requires input image 2 URL.',
+                        'Multi-Image Kontext Max အတွက် ဒုတိယပုံ (Image 2 URL) မဖြစ်မနေ လိုအပ်ပါသည်။',
                     );
                     return;
                 }
@@ -221,6 +249,14 @@ export function ImageEditingTab() {
         }
 
         switch (model) {
+            case 'p-image-edit':
+                form.append('aspect_ratio', aspectRatio || 'match_input_image');
+                form.append(
+                    'disable_safety_checker',
+                    String(disableSafetyChecker),
+                );
+                break;
+
             case 'multi-image-kontext-max':
                 form.append('aspect_ratio', aspectRatio);
                 form.append('output_format', outputFormat);
@@ -242,6 +278,7 @@ export function ImageEditingTab() {
             case 'seedream-v5-lite-image-to-image':
                 form.append('aspect_ratio', aspectRatio || '16:9');
                 form.append('size', seedreamSize);
+                form.append('max_images', maxImages);
                 form.append('optimize_prompt', optimizePrompt);
                 form.append('watermark', String(watermark));
                 break;
@@ -273,6 +310,11 @@ export function ImageEditingTab() {
 
             case 'ideogram-4.5-edit':
                 form.append('quality', ideogramQuality);
+                if (maskMode === 'upload' && maskFile) {
+                    form.append('mask', maskFile);
+                } else if (maskMode === 'url' && maskUrl.trim()) {
+                    form.append('mask_url', maskUrl.trim());
+                }
                 break;
 
             case 'bria-extract-object':
@@ -329,37 +371,54 @@ export function ImageEditingTab() {
     return (
         <>
             <AnimatedCard className="w-full">
-                <CardContent className="space-y-5 p-6">
-                    <div className="flex flex-wrap items-center justify-between gap-2 border-b pb-4">
-                        <div>
+                <CardContent className="space-y-6 p-6">
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-b pb-4">
+                        <div className="space-y-1">
                             <h3 className="text-lg font-bold">
-                                Image Editing Studio
+                                Image Editing Studio (ပုံပြုပြင်ခြင်းနှင့် ပေါင်းစပ်ခြင်း)
                             </h3>
                             <p className="text-sm text-muted-foreground">
-                                Transform, restyle, or combine reference images with AI instructions.
+                                💡 {IMAGE_EDIT_MODEL_GUIDE[model]}
                             </p>
                         </div>
-                        {result && (
-                            <Button
-                                type="button"
+                        <div className="flex items-center gap-2.5">
+                            <Badge
                                 variant="outline"
-                                className="h-10 px-4 text-sm"
-                                onClick={() => setShowResultModal(true)}
+                                className="px-3 py-1 text-xs font-medium"
                             >
-                                View Latest Result
-                            </Button>
-                        )}
+                                {isSingleImageModel
+                                    ? 'Single Image (ပုံ ၁ ပုံသုံး)'
+                                    : 'Multi-Image (ပုံ ၁-၂ ပုံ ပေါင်းသုံး)'}
+                            </Badge>
+                            {(result || processing) && (
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="h-10 px-4 text-sm"
+                                    onClick={() => setShowResultModal(true)}
+                                >
+                                    {processing
+                                        ? 'View Progress'
+                                        : 'View Latest Result'}
+                                </Button>
+                            )}
+                        </div>
                     </div>
 
-                    {/* Model Switcher */}
+                    {/* Step 1: Model Switcher with concise Burmese descriptions next to each model name */}
                     <div className="space-y-2">
-                        <Label className="text-sm font-semibold">Model</Label>
+                        <Label className="text-sm font-semibold">
+                            ၁။ AI Image Editing Model ရွေးချယ်ရန်
+                        </Label>
                         <Select
                             value={model}
                             onValueChange={(val: EditModel) => {
                                 setModel(val);
                                 setError(null);
-                                if (
+                                if (val === 'p-image-edit') {
+                                    setAspectRatio('match_input_image');
+                                    setOutputFormat('jpg');
+                                } else if (
                                     val === 'multi-image-kontext-max' ||
                                     val === 'nano-banana-pro'
                                 ) {
@@ -392,103 +451,43 @@ export function ImageEditingTab() {
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
+                                <SelectItem value="p-image-edit">
+                                    Pruna P Image Edit — ပုံ ၁-၂ ပုံ ပေါင်းစပ်ပြုပြင်ရန် (မြန်ဆန်/အကြံပြုချက်)
+                                </SelectItem>
                                 <SelectItem value="multi-image-kontext-max">
-                                    Multi-Image Kontext Max (2 reference images)
+                                    Multi-Image Kontext Max — လူပုံ + အဝတ်အစား/ပစ္စည်း ၂ ပုံပေါင်းရန်
                                 </SelectItem>
                                 <SelectItem value="flux-kontext-dev">
-                                    Flux Kontext Dev (Single image editing)
+                                    Flux Kontext Dev — ပုံ ၁ ပုံတည်း နောက်ခံနှင့် စတိုင်ပြောင်းရန်
                                 </SelectItem>
                                 <SelectItem value="seedream-v5-lite-image-to-image">
-                                    Seedream 5.0 Lite I2I (Fashion & Editorial)
+                                    Seedream 5.0 Lite I2I — ဖက်ရှင်နှင့် အလှဓာတ်ပုံ 3K/4K အကြည်ပြောင်းရန်
                                 </SelectItem>
                                 <SelectItem value="gpt-image-1.5-edit">
-                                    GPT Image 1.5 Edit (Intelligent Composition)
+                                    GPT Image 1.5 Edit — ရှုပ်ထွေးသော Prompt နှင့် နောက်ခံအကြည် (PNG) ထုတ်ရန်
                                 </SelectItem>
                                 <SelectItem value="kling-3-image2image">
-                                    Kling 3 Image-to-Image (Cinematic)
+                                    Kling 3 Image-to-Image — ရုပ်ရှင်အလင်းအမှောင်နှင့် ပတ်ဝန်းကျင်ပြောင်းရန်
                                 </SelectItem>
                                 <SelectItem value="nano-banana-pro">
-                                    Nano Banana Pro (Comic & Concept Art)
+                                    Nano Banana Pro — မျက်နှာမပျက် 4K ပုံရိပ်နှင့် ကာတွန်းစတိုင်ပြောင်းရန်
                                 </SelectItem>
                                 <SelectItem value="ideogram-4.5-edit">
-                                    Ideogram 4.5 Edit (Precision Text & Style)
+                                    Ideogram 4.5 Edit — ပုံပေါ်တွင် စာလုံး/Logo အတိအကျ ရေးထိုးပြုပြင်ရန်
                                 </SelectItem>
                                 <SelectItem value="bria-extract-object">
-                                    Bria Extract Object (Cutout PNG)
+                                    Bria Extract Object — ပုံထဲမှ လိုချင်သောအရာကိုသာ နောက်ခံဖျောက်ဖြတ်ထုတ်ရန်
                                 </SelectItem>
                             </SelectContent>
                         </Select>
-                        <p className="text-sm text-muted-foreground">
-                            {model === 'multi-image-kontext-max' &&
-                                'Combine 2 reference images (model person + garment/style) guided by prompt instructions.'}
-                            {model === 'flux-kontext-dev' &&
-                                'Edit a single image (e.g. background replacement, subject restyling) while preserving pose and composition.'}
-                            {model === 'seedream-v5-lite-image-to-image' &&
-                                'High-resolution editorial & fashion photography image-to-image transformation (1 or 2 reference images).'}
-                            {model === 'gpt-image-1.5-edit' &&
-                                'Intelligent subject editing and photo composition based on reference images.'}
-                            {model === 'kling-3-image2image' &&
-                                'High-end cinematic image-to-image stylization and environmental transformation.'}
-                            {model === 'nano-banana-pro' &&
-                                'Multi-panel comic art, concept illustrations, and expressive stylized generation.'}
-                            {model === 'ideogram-4.5-edit' &&
-                                'Surgically edit elements or add clean legible typography while keeping the rest untouched.'}
-                            {model === 'bria-extract-object' &&
-                                'Intelligent AI cutout to isolate and extract named objects with transparent alpha channel.'}
-                        </p>
                     </div>
 
-                    {/* Prompt */}
-                    <div className="space-y-2">
-                        <Label className="text-sm font-semibold">
-                            Prompt *
-                        </Label>
-                        <textarea
-                            value={prompt}
-                            onChange={(e) => setPrompt(e.target.value)}
-                            placeholder={
-                                model === 'multi-image-kontext-max'
-                                    ? 'put the green dress on the woman while maintaining the pose of the woman as it is'
-                                    : model === 'flux-kontext-dev'
-                                      ? 'Replace the background with a bokeh light effect, zooming in on the subject, keeping pose identical.'
-                                      : model ===
-                                          'seedream-v5-lite-image-to-image'
-                                        ? 'Editorial street style fashion photograph of the model wearing an oversized brown wool coat...'
-                                        : model === 'gpt-image-1.5-edit'
-                                          ? 'A photorealistic wide shot of the person casually sitting across a London street...'
-                                          : model === 'kling-3-image2image'
-                                            ? 'Transform this garden into a magical winter wonderland with crystalline ice patterns...'
-                                            : model === 'ideogram-4.5-edit'
-                                              ? 'Paint the bold wordmark "RAMPWORKS" in a 1970s chrome script across the center...'
-                                              : model === 'bria-extract-object'
-                                                ? 'Name the object to extract (e.g., "sunglasses", "the cat", "the red dress")...'
-                                                : 'Create a multi-panel GTA-style comic page featuring two coworkers on launch day...'
-                            }
-                            className="flex min-h-[100px] w-full rounded-lg border border-input bg-background px-3.5 py-2.5 text-sm leading-relaxed ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
-                        />
-                    </div>
-
-                    {/* System Prompt (for Nano Banana Pro) */}
-                    {model === 'nano-banana-pro' && (
-                        <div className="space-y-2">
-                            <Label className="text-sm font-semibold">
-                                System Prompt (optional)
-                            </Label>
-                            <Input
-                                value={systemPrompt}
-                                onChange={(e) =>
-                                    setSystemPrompt(e.target.value)
-                                }
-                                placeholder="Keep the composition polished, cheerful, and suitable for a campaign."
-                                className="h-10 text-sm"
-                            />
-                        </div>
-                    )}
-
-                    {/* Reference Images Section */}
+                    {/* Step 2: Reference Images Section */}
                     <div
                         className={`grid gap-5 ${
-                            isSingleImageModel ? 'grid-cols-1' : 'md:grid-cols-2'
+                            isSingleImageModel && model !== 'ideogram-4.5-edit'
+                                ? 'grid-cols-1'
+                                : 'md:grid-cols-2'
                         }`}
                     >
                         {/* Image 1 */}
@@ -496,8 +495,8 @@ export function ImageEditingTab() {
                             <div className="flex items-center justify-between">
                                 <Label className="text-sm font-semibold">
                                     {isSingleImageModel
-                                        ? 'Input Image *'
-                                        : 'Input Image 1 *'}
+                                        ? '၂။ မူရင်းပုံ (Input Image) *'
+                                        : '၂။ ပထမပုံ / အဓိကပုံ (Image 1) *'}
                                 </Label>
                                 <div className="flex gap-1.5">
                                     <Button
@@ -558,10 +557,9 @@ export function ImageEditingTab() {
                                             <>
                                                 <ImageIcon className="h-6 w-6 opacity-50" />
                                                 <span className="font-medium">
-                                                    Click to upload{' '}
                                                     {isSingleImageModel
-                                                        ? 'Input Image'
-                                                        : 'Image 1'}
+                                                        ? 'မူရင်းပုံ တင်ရန် နှိပ်ပါ (JPG / PNG / WebP)'
+                                                        : 'ပထမပုံ (Image 1) တင်ရန် နှိပ်ပါ'}
                                                 </span>
                                             </>
                                         )}
@@ -579,13 +577,12 @@ export function ImageEditingTab() {
 
                         {/* Image 2 (Multi-image models) */}
                         {!isSingleImageModel && (
-                            <div className="space-y-3 rounded-xl border bg-muted/10 p-4">
+                            <div className="space-y-3 rounded-xl border border-dashed bg-muted/10 p-4">
                                 <div className="flex items-center justify-between">
                                     <Label className="text-sm font-semibold">
-                                        Input Image 2{' '}
                                         {model === 'multi-image-kontext-max'
-                                            ? '*'
-                                            : '(optional)'}
+                                            ? 'ဒုတိယပုံ / တွဲဖက်ပုံ (Image 2 — မဖြစ်မနေ) *'
+                                            : 'ဒုတိယပုံ / တွဲဖက်ပုံ (Image 2 — Optional)'}
                                     </Label>
                                     <div className="flex gap-1.5">
                                         <Button
@@ -648,7 +645,7 @@ export function ImageEditingTab() {
                                                 <>
                                                     <ImageIcon className="h-6 w-6 opacity-50" />
                                                     <span className="font-medium">
-                                                        Click to upload Image 2
+                                                        ဒုတိယပုံ (Image 2) တင်ရန် နှိပ်ပါ (အဝတ်အစား/နောက်ခံ/Logo)
                                                     </span>
                                                 </>
                                             )}
@@ -666,14 +663,219 @@ export function ImageEditingTab() {
                                 )}
                             </div>
                         )}
+
+                        {/* Optional Mask for Ideogram 4.5 Edit */}
+                        {model === 'ideogram-4.5-edit' && (
+                            <div className="space-y-3 rounded-xl border border-dashed bg-muted/10 p-4">
+                                <div className="flex items-center justify-between">
+                                    <Label className="text-sm font-semibold">
+                                        Mask ပုံ (ပြင်လိုသောနေရာ ကွက်ပြင်ရန် — Optional)
+                                    </Label>
+                                    <div className="flex gap-1.5">
+                                        <Button
+                                            type="button"
+                                            variant={
+                                                maskMode === 'upload'
+                                                    ? 'default'
+                                                    : 'outline'
+                                            }
+                                            size="sm"
+                                            className="h-8 px-3 text-xs"
+                                            onClick={() =>
+                                                setMaskMode('upload')
+                                            }
+                                        >
+                                            Upload
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            variant={
+                                                maskMode === 'url'
+                                                    ? 'default'
+                                                    : 'outline'
+                                            }
+                                            size="sm"
+                                            className="h-8 px-3 text-xs"
+                                            onClick={() => setMaskMode('url')}
+                                        >
+                                            URL
+                                        </Button>
+                                    </div>
+                                </div>
+
+                                {maskMode === 'upload' ? (
+                                    <>
+                                        <input
+                                            ref={maskInputRef}
+                                            type="file"
+                                            accept="image/*"
+                                            className="hidden"
+                                            onChange={(e) =>
+                                                onMaskChange(
+                                                    e.target.files?.[0] ?? null,
+                                                )
+                                            }
+                                        />
+                                        <div
+                                            className="flex h-40 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed bg-background/50 text-sm text-muted-foreground hover:bg-muted/30"
+                                            onClick={() =>
+                                                maskInputRef.current?.click()
+                                            }
+                                        >
+                                            {maskPreview ? (
+                                                <img
+                                                    src={maskPreview}
+                                                    alt="Mask Preview"
+                                                    className="size-full object-contain p-2"
+                                                />
+                                            ) : (
+                                                <>
+                                                    <ImageIcon className="h-6 w-6 opacity-50" />
+                                                    <span className="font-medium">
+                                                        Mask ပုံ တင်ရန် နှိပ်ပါ (မထည့်ပါက ပုံတစ်ခုလုံးကို ပြင်ပေးပါမည်)
+                                                    </span>
+                                                </>
+                                            )}
+                                        </div>
+                                    </>
+                                ) : (
+                                    <Input
+                                        value={maskUrl}
+                                        onChange={(e) =>
+                                            setMaskUrl(e.target.value)
+                                        }
+                                        placeholder="https://.../mask.png (Optional)"
+                                        className="h-10 text-sm"
+                                    />
+                                )}
+                            </div>
+                        )}
                     </div>
 
-                    {/* Model Parameters */}
-                    {model === 'multi-image-kontext-max' && (
-                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    {/* Step 3: Prompt */}
+                    <div className="space-y-2">
+                        <Label className="text-sm font-semibold">
+                            ၃။ ပြုပြင်လိုသည့် ညွှန်ကြားချက် (Prompt) *
+                        </Label>
+                        <textarea
+                            value={prompt}
+                            onChange={(e) => setPrompt(e.target.value)}
+                            placeholder={
+                                model === 'p-image-edit'
+                                    ? 'ဥပမာ - Make the character from image 1 wear the traditional outfit from image 2 in a golden pagoda sunset...'
+                                    : model === 'multi-image-kontext-max'
+                                      ? 'ဥပမာ - put the green dress on the woman while maintaining the pose of the woman as it is'
+                                      : model === 'flux-kontext-dev'
+                                        ? 'ဥပမာ - Replace the background with a bokeh light effect, keeping the person pose identical.'
+                                        : model ===
+                                            'seedream-v5-lite-image-to-image'
+                                          ? 'ဥပမာ - Editorial street style fashion photograph of the model wearing an oversized coat...'
+                                          : model === 'gpt-image-1.5-edit'
+                                            ? 'ဥပမာ - A photorealistic wide shot of the person casually sitting across a street...'
+                                            : model === 'kling-3-image2image'
+                                              ? 'ဥပမာ - Transform this scene into a magical winter wonderland with cinematic lighting...'
+                                              : model === 'ideogram-4.5-edit'
+                                                ? 'ဥပမာ - Paint the bold wordmark "HTUT AI" in a gold 3D script across the center...'
+                                                : model ===
+                                                    'bria-extract-object'
+                                                  ? 'ဥပမာ - ဖြတ်ထုတ်လိုသော အရာဝတ္ထုအမည် ရေးပါ ("the person", "sunglasses", "the red dress")...'
+                                                  : 'ဥပမာ - Transform the portrait into a realistic Myanmar traditional festival scene...'
+                            }
+                            className="flex min-h-[100px] w-full rounded-lg border border-input bg-background px-3.5 py-2.5 text-sm leading-relaxed ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
+                        />
+                    </div>
+
+                    {/* System Prompt (for Nano Banana Pro) */}
+                    {model === 'nano-banana-pro' && (
+                        <div className="space-y-2">
+                            <Label className="text-sm font-semibold">
+                                အထူးညွှန်ကြားချက် (System Prompt — Optional)
+                            </Label>
+                            <Input
+                                value={systemPrompt}
+                                onChange={(e) =>
+                                    setSystemPrompt(e.target.value)
+                                }
+                                placeholder="ဥပမာ - Keep the face identity 100% accurate and composition suitable for a poster."
+                                className="h-10 text-sm"
+                            />
+                        </div>
+                    )}
+
+                    {/* Step 4: Model-Specific Segmind Features */}
+                    {model === 'p-image-edit' && (
+                        <div className="grid grid-cols-1 gap-4 rounded-xl border bg-muted/15 p-4 sm:grid-cols-2">
                             <div className="space-y-2">
                                 <Label className="text-sm font-semibold">
-                                    Aspect Ratio
+                                    ပုံအချိုးအစား (Aspect Ratio)
+                                </Label>
+                                <Select
+                                    value={aspectRatio}
+                                    onValueChange={setAspectRatio}
+                                >
+                                    <SelectTrigger className="h-10 text-sm">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="match_input_image">
+                                            Match Input Image (မူရင်းပုံအချိုးအတိုင်း — Default)
+                                        </SelectItem>
+                                        <SelectItem value="1:1">
+                                            1:1 (Square — ပတ်လည်)
+                                        </SelectItem>
+                                        <SelectItem value="16:9">
+                                            16:9 (Landscape — အလျားလိုက်)
+                                        </SelectItem>
+                                        <SelectItem value="9:16">
+                                            9:16 (Portrait / Reels — ဒေါင်လိုက်)
+                                        </SelectItem>
+                                        <SelectItem value="4:3">
+                                            4:3 (Classic Landscape)
+                                        </SelectItem>
+                                        <SelectItem value="3:4">
+                                            3:4 (Classic Portrait)
+                                        </SelectItem>
+                                        <SelectItem value="3:2">
+                                            3:2 (DSLR Landscape)
+                                        </SelectItem>
+                                        <SelectItem value="2:3">
+                                            2:3 (DSLR Portrait)
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="flex flex-col justify-center space-y-1.5 pt-2 sm:pt-5">
+                                <div className="flex items-center gap-2.5">
+                                    <input
+                                        type="checkbox"
+                                        id="pImageDisableSafety"
+                                        checked={disableSafetyChecker}
+                                        onChange={(e) =>
+                                            setDisableSafetyChecker(
+                                                e.target.checked,
+                                            )
+                                        }
+                                        className="h-4 w-4 rounded"
+                                    />
+                                    <Label
+                                        htmlFor="pImageDisableSafety"
+                                        className="cursor-pointer text-sm font-medium"
+                                    >
+                                        Safety Checker ပိတ်မည် (Disable Safety Filter)
+                                    </Label>
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                    ပုံမှန်အားဖြင့် ပိတ်ထားရန် မလိုပါ။ Creative / Fashion ပုံများ စစ်ဆေးမှု တင်းကျပ်နေပါက ဖွင့်သုံးနိုင်ပါသည်။
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
+                    {model === 'multi-image-kontext-max' && (
+                        <div className="grid grid-cols-1 gap-4 rounded-xl border bg-muted/15 p-4 sm:grid-cols-2">
+                            <div className="space-y-2">
+                                <Label className="text-sm font-semibold">
+                                    ပုံအချိုးအစား (Aspect Ratio)
                                 </Label>
                                 <Select
                                     value={aspectRatio}
@@ -684,13 +886,13 @@ export function ImageEditingTab() {
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="1:1">
-                                            1:1 (Square)
+                                            1:1 (Square — ပတ်လည်)
                                         </SelectItem>
                                         <SelectItem value="16:9">
-                                            16:9 (Landscape)
+                                            16:9 (Landscape — အလျားလိုက်)
                                         </SelectItem>
                                         <SelectItem value="9:16">
-                                            9:16 (Portrait)
+                                            9:16 (Portrait — ဒေါင်လိုက်)
                                         </SelectItem>
                                         <SelectItem value="4:3">4:3</SelectItem>
                                         <SelectItem value="3:4">3:4</SelectItem>
@@ -699,7 +901,7 @@ export function ImageEditingTab() {
                             </div>
                             <div className="space-y-2">
                                 <Label className="text-sm font-semibold">
-                                    Safety Tolerance (1-6)
+                                    စစ်ဆေးမှု အတိုင်းအတာ (Safety Tolerance 1–6)
                                 </Label>
                                 <Select
                                     value={safetyTolerance}
@@ -710,14 +912,16 @@ export function ImageEditingTab() {
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="1">
-                                            1 (Strict)
+                                            1 — အတင်းကျပ်ဆုံး (Strict)
                                         </SelectItem>
-                                        <SelectItem value="2">2</SelectItem>
+                                        <SelectItem value="2">
+                                            2 — ပုံမှန် (Balanced)
+                                        </SelectItem>
                                         <SelectItem value="3">3</SelectItem>
                                         <SelectItem value="4">4</SelectItem>
                                         <SelectItem value="5">5</SelectItem>
                                         <SelectItem value="6">
-                                            6 (Permissive)
+                                            6 — အလွတ်လပ်ဆုံး (Permissive)
                                         </SelectItem>
                                     </SelectContent>
                                 </Select>
@@ -726,11 +930,11 @@ export function ImageEditingTab() {
                     )}
 
                     {model === 'flux-kontext-dev' && (
-                        <>
+                        <div className="space-y-4 rounded-xl border bg-muted/15 p-4">
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div className="space-y-2">
                                     <Label className="text-sm font-semibold">
-                                        Aspect Ratio
+                                        ပုံအချိုးအစား (Aspect Ratio)
                                     </Label>
                                     <Select
                                         value={aspectRatio}
@@ -741,16 +945,16 @@ export function ImageEditingTab() {
                                         </SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="match_input_image">
-                                                Match Input Image
+                                                Match Input Image (မူရင်းပုံအတိုင်း)
                                             </SelectItem>
                                             <SelectItem value="1:1">
-                                                1:1 (Square)
+                                                1:1 (Square — ပတ်လည်)
                                             </SelectItem>
                                             <SelectItem value="16:9">
-                                                16:9 (Landscape)
+                                                16:9 (Landscape — အလျားလိုက်)
                                             </SelectItem>
                                             <SelectItem value="9:16">
-                                                9:16 (Portrait)
+                                                9:16 (Portrait — ဒေါင်လိုက်)
                                             </SelectItem>
                                             <SelectItem value="4:3">
                                                 4:3
@@ -763,7 +967,7 @@ export function ImageEditingTab() {
                                 </div>
                                 <div className="space-y-2">
                                     <Label className="text-sm font-semibold">
-                                        Guidance Scale
+                                        Prompt လိုက်နာမှုအား (Guidance 1–20)
                                     </Label>
                                     <Input
                                         type="number"
@@ -782,7 +986,7 @@ export function ImageEditingTab() {
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div className="space-y-2">
                                     <Label className="text-sm font-semibold">
-                                        Inference Steps (1-50)
+                                        အနုစိတ် အဆင့်အရေအတွက် (Steps 1–50)
                                     </Label>
                                     <Input
                                         type="number"
@@ -798,7 +1002,7 @@ export function ImageEditingTab() {
                                 </div>
                                 <div className="space-y-2">
                                     <Label className="text-sm font-semibold">
-                                        Output Quality (1-100)
+                                        ပုံထွက် အရည်အသွေး (Quality 1–100)
                                     </Label>
                                     <Input
                                         type="number"
@@ -829,17 +1033,17 @@ export function ImageEditingTab() {
                                     htmlFor="disableSafetyChecker"
                                     className="cursor-pointer text-sm font-medium"
                                 >
-                                    Disable Safety Checker
+                                    Safety Checker ပိတ်မည် (Disable Safety Filter)
                                 </Label>
                             </div>
-                        </>
+                        </div>
                     )}
 
                     {model === 'seedream-v5-lite-image-to-image' && (
-                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div className="grid grid-cols-1 gap-4 rounded-xl border bg-muted/15 p-4 sm:grid-cols-2 lg:grid-cols-4">
                             <div className="space-y-2">
                                 <Label className="text-sm font-semibold">
-                                    Aspect Ratio
+                                    ပုံအချိုးအစား (Aspect Ratio)
                                 </Label>
                                 <Select
                                     value={aspectRatio}
@@ -865,7 +1069,7 @@ export function ImageEditingTab() {
                             </div>
                             <div className="space-y-2">
                                 <Label className="text-sm font-semibold">
-                                    Image Size
+                                    အကြည်နှုန်း (Image Size)
                                 </Label>
                                 <Select
                                     value={seedreamSize}
@@ -875,18 +1079,51 @@ export function ImageEditingTab() {
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="1K">1K</SelectItem>
-                                        <SelectItem value="2K">2K</SelectItem>
-                                        <SelectItem value="3K">
-                                            3K (Default)
+                                        <SelectItem value="1K">
+                                            1K (Standard)
                                         </SelectItem>
-                                        <SelectItem value="4K">4K</SelectItem>
+                                        <SelectItem value="2K">
+                                            2K (HD)
+                                        </SelectItem>
+                                        <SelectItem value="3K">
+                                            3K (Ultra — Default)
+                                        </SelectItem>
+                                        <SelectItem value="4K">
+                                            4K (Max Detail)
+                                        </SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
                             <div className="space-y-2">
                                 <Label className="text-sm font-semibold">
-                                    Optimize Prompt
+                                    ထုတ်မည့် ပုံအရေအတွက် (Max Images)
+                                </Label>
+                                <Select
+                                    value={maxImages}
+                                    onValueChange={setMaxImages}
+                                >
+                                    <SelectTrigger className="h-10 text-sm">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="1">
+                                            ၁ ပုံ (1 Image)
+                                        </SelectItem>
+                                        <SelectItem value="2">
+                                            ၂ ပုံ (2 Images)
+                                        </SelectItem>
+                                        <SelectItem value="3">
+                                            ၃ ပုံ (3 Images)
+                                        </SelectItem>
+                                        <SelectItem value="4">
+                                            ၄ ပုံ (4 Images)
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label className="text-sm font-semibold">
+                                    Prompt မြှင့်တင်မှု (Optimize)
                                 </Label>
                                 <Select
                                     value={optimizePrompt}
@@ -897,15 +1134,15 @@ export function ImageEditingTab() {
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="fast">
-                                            Fast
+                                            Fast (အမြန်နှုန်း)
                                         </SelectItem>
                                         <SelectItem value="standard">
-                                            Standard
+                                            Standard (အသေးစိတ်)
                                         </SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <div className="flex items-center gap-2.5 pt-6">
+                            <div className="flex items-center gap-2.5 sm:col-span-2 lg:col-span-4">
                                 <input
                                     type="checkbox"
                                     id="seedreamWatermark"
@@ -919,17 +1156,17 @@ export function ImageEditingTab() {
                                     htmlFor="seedreamWatermark"
                                     className="cursor-pointer text-sm font-medium"
                                 >
-                                    Add Watermark
+                                    Watermark ထည့်မည် (Add Watermark)
                                 </Label>
                             </div>
                         </div>
                     )}
 
                     {model === 'gpt-image-1.5-edit' && (
-                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div className="grid grid-cols-1 gap-4 rounded-xl border bg-muted/15 p-4 sm:grid-cols-2 lg:grid-cols-3">
                             <div className="space-y-2">
                                 <Label className="text-sm font-semibold">
-                                    Resolution / Size
+                                    အရွယ်အစား (Size)
                                 </Label>
                                 <Select
                                     value={gptSize}
@@ -940,23 +1177,23 @@ export function ImageEditingTab() {
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="auto">
-                                            Auto
+                                            Auto (အလိုအလျောက်)
                                         </SelectItem>
                                         <SelectItem value="1024x1024">
-                                            1024x1024 (1:1)
+                                            1024×1024 (1:1 ပတ်လည်)
                                         </SelectItem>
                                         <SelectItem value="1536x1024">
-                                            1536x1024 (3:2)
+                                            1536×1024 (3:2 အလျားလိုက်)
                                         </SelectItem>
                                         <SelectItem value="1024x1536">
-                                            1024x1536 (2:3)
+                                            1024×1536 (2:3 ဒေါင်လိုက်)
                                         </SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
                             <div className="space-y-2">
                                 <Label className="text-sm font-semibold">
-                                    Quality
+                                    အရည်အသွေး (Quality)
                                 </Label>
                                 <Select
                                     value={gptQuality}
@@ -967,18 +1204,20 @@ export function ImageEditingTab() {
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="high">
-                                            High
+                                            High (အမြင့်ဆုံး)
                                         </SelectItem>
                                         <SelectItem value="medium">
-                                            Medium
+                                            Medium (အလယ်အလတ်)
                                         </SelectItem>
-                                        <SelectItem value="low">Low</SelectItem>
+                                        <SelectItem value="low">
+                                            Low (အမြန်)
+                                        </SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
                             <div className="space-y-2">
                                 <Label className="text-sm font-semibold">
-                                    Background
+                                    နောက်ခံပုံစံ (Background)
                                 </Label>
                                 <Select
                                     value={gptBackground}
@@ -989,17 +1228,17 @@ export function ImageEditingTab() {
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="opaque">
-                                            Opaque
+                                            Opaque (နောက်ခံအပြည့်)
                                         </SelectItem>
                                         <SelectItem value="transparent">
-                                            Transparent
+                                            Transparent (နောက်ခံအကြည် PNG)
                                         </SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
                             <div className="space-y-2">
                                 <Label className="text-sm font-semibold">
-                                    Moderation
+                                    စစ်ဆေးမှု (Moderation)
                                 </Label>
                                 <Select
                                     value={gptModeration}
@@ -1010,20 +1249,38 @@ export function ImageEditingTab() {
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="auto">
-                                            Auto
+                                            Auto (ပုံမှန်)
                                         </SelectItem>
-                                        <SelectItem value="low">Low</SelectItem>
+                                        <SelectItem value="low">
+                                            Low (လျှော့ပေါ့)
+                                        </SelectItem>
                                     </SelectContent>
                                 </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label className="text-sm font-semibold">
+                                    Compression (1–100%)
+                                </Label>
+                                <Input
+                                    type="number"
+                                    min="1"
+                                    max="100"
+                                    value={gptCompression}
+                                    onChange={(e) =>
+                                        setGptCompression(e.target.value)
+                                    }
+                                    placeholder="100"
+                                    className="h-10 text-sm"
+                                />
                             </div>
                         </div>
                     )}
 
                     {model === 'kling-3-image2image' && (
-                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div className="grid grid-cols-1 gap-4 rounded-xl border bg-muted/15 p-4 sm:grid-cols-2">
                             <div className="space-y-2">
                                 <Label className="text-sm font-semibold">
-                                    Resolution
+                                    အကြည်နှုန်း (Resolution)
                                 </Label>
                                 <Select
                                     value={klingResolution}
@@ -1033,14 +1290,18 @@ export function ImageEditingTab() {
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="1K">1K</SelectItem>
-                                        <SelectItem value="2K">2K</SelectItem>
+                                        <SelectItem value="1K">
+                                            1K (Standard HD)
+                                        </SelectItem>
+                                        <SelectItem value="2K">
+                                            2K (Ultra HD)
+                                        </SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
                             <div className="space-y-2">
                                 <Label className="text-sm font-semibold">
-                                    Aspect Ratio
+                                    ပုံအချိုးအစား (Aspect Ratio)
                                 </Label>
                                 <Select
                                     value={aspectRatio}
@@ -1068,10 +1329,10 @@ export function ImageEditingTab() {
                     )}
 
                     {model === 'nano-banana-pro' && (
-                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div className="grid grid-cols-1 gap-4 rounded-xl border bg-muted/15 p-4 sm:grid-cols-2">
                             <div className="space-y-2">
                                 <Label className="text-sm font-semibold">
-                                    Aspect Ratio
+                                    ပုံအချိုးအစား (Aspect Ratio)
                                 </Label>
                                 <Select
                                     value={aspectRatio}
@@ -1082,13 +1343,13 @@ export function ImageEditingTab() {
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="1:1">
-                                            1:1 (Square)
+                                            1:1 (Square — ပတ်လည်)
                                         </SelectItem>
                                         <SelectItem value="16:9">
-                                            16:9 (Landscape)
+                                            16:9 (Landscape — အလျားလိုက်)
                                         </SelectItem>
                                         <SelectItem value="9:16">
-                                            9:16 (Portrait)
+                                            9:16 (Portrait — ဒေါင်လိုက်)
                                         </SelectItem>
                                         <SelectItem value="4:3">4:3</SelectItem>
                                         <SelectItem value="3:4">3:4</SelectItem>
@@ -1097,7 +1358,7 @@ export function ImageEditingTab() {
                             </div>
                             <div className="space-y-2">
                                 <Label className="text-sm font-semibold">
-                                    Output Resolution
+                                    အကြည်နှုန်း (Output Resolution)
                                 </Label>
                                 <Select
                                     value={nanoResolution}
@@ -1108,10 +1369,14 @@ export function ImageEditingTab() {
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="4K">
-                                            4K (Default)
+                                            4K (အကြည်ဆုံး — Default)
                                         </SelectItem>
-                                        <SelectItem value="2K">2K</SelectItem>
-                                        <SelectItem value="1K">1K</SelectItem>
+                                        <SelectItem value="2K">
+                                            2K (HD)
+                                        </SelectItem>
+                                        <SelectItem value="1K">
+                                            1K (Fast)
+                                        </SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -1119,34 +1384,35 @@ export function ImageEditingTab() {
                     )}
 
                     {model === 'ideogram-4.5-edit' && (
-                        <div className="space-y-4 rounded-xl border p-4">
-                            <h4 className="text-sm font-semibold">
-                                Ideogram 4.5 Edit Settings
-                            </h4>
-                            <div className="space-y-2">
-                                <Label className="text-sm font-semibold">
-                                    Quality Tier
-                                </Label>
-                                <Select
-                                    value={ideogramQuality}
-                                    onValueChange={setIdeogramQuality}
-                                >
-                                    <SelectTrigger className="h-10 text-sm">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="medium">
-                                            Medium (Standard)
-                                        </SelectItem>
-                                        <SelectItem value="high">
-                                            High (Maximum Detail)
-                                        </SelectItem>
-                                        <SelectItem value="low">
-                                            Low (Fast Draft)
-                                        </SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
+                        <div className="space-y-2 rounded-xl border bg-muted/15 p-4">
+                            <Label className="text-sm font-semibold">
+                                အရည်အသွေး အဆင့် (Ideogram Quality Tier)
+                            </Label>
+                            <Select
+                                value={ideogramQuality}
+                                onValueChange={setIdeogramQuality}
+                            >
+                                <SelectTrigger className="h-10 text-sm">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="medium">
+                                        Medium — ပုံမှန် စံနှုန်း (Standard)
+                                    </SelectItem>
+                                    <SelectItem value="high">
+                                        High — အသေးစိတ် အမြင့်ဆုံး (Maximum Detail)
+                                    </SelectItem>
+                                    <SelectItem value="low">
+                                        Low — အမြန်စမ်းသပ်ရန် (Fast Draft)
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    )}
+
+                    {model === 'bria-extract-object' && (
+                        <div className="rounded-xl border bg-muted/15 p-4 text-sm text-muted-foreground">
+                            ✂️ <strong>Bria Extract Object:</strong> Prompt တွင် ရေးပေးလိုက်သော အရာဝတ္ထု သို့မဟုတ် လူကို အလိုအလျောက် ရွေးထုတ်ပြီး နောက်ခံအကြည် (Transparent Cutout PNG) အဖြစ် ထုတ်ပေးပါမည်။
                         </div>
                     )}
 
@@ -1154,7 +1420,7 @@ export function ImageEditingTab() {
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div className="space-y-2">
                             <Label className="text-sm font-semibold">
-                                Output Format
+                                ပုံဖိုင် အမျိုးအစား (Output Format)
                             </Label>
                             <Select
                                 value={outputFormat}
@@ -1164,25 +1430,64 @@ export function ImageEditingTab() {
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="jpg">JPG</SelectItem>
-                                    <SelectItem value="png">PNG</SelectItem>
-                                    <SelectItem value="webp">WEBP</SelectItem>
+                                    <SelectItem value="jpg">
+                                        JPG (ဖိုင်ဆိုဒ်သေးပြီး ပေါ့ပါးသည်)
+                                    </SelectItem>
+                                    <SelectItem value="png">
+                                        PNG (အကြည်လင်ဆုံး / Transparent ရသည်)
+                                    </SelectItem>
+                                    <SelectItem value="webp">
+                                        WEBP (Web အတွက် အသင့်တော်ဆုံး)
+                                    </SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
                         <div className="space-y-2">
                             <Label className="text-sm font-semibold">
-                                Seed (optional)
+                                ပုံစံထိန်းချုပ်မှု (Seed)
                             </Label>
-                            <Input
-                                value={seed}
-                                onChange={(e) => setSeed(e.target.value)}
-                                placeholder="e.g. 42"
-                                type="number"
-                                className="h-10 text-sm"
-                            />
+                            <Select
+                                value={seedPreset}
+                                onValueChange={setSeedPreset}
+                            >
+                                <SelectTrigger className="h-10 text-sm">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="-1">
+                                        🎲 ကျပန်း (-1 Random — ထုတ်တိုင်းပုံစံသစ်)
+                                    </SelectItem>
+                                    <SelectItem value="42">
+                                        ⚖️ စံနှုန်း (Seed #42 — Default)
+                                    </SelectItem>
+                                    <SelectItem value="777">
+                                        🎥 ရုပ်ရှင်စတိုင် (Seed #777)
+                                    </SelectItem>
+                                    <SelectItem value="2026">
+                                        ⚡ တောက်ပပြတ်သား (Seed #2026)
+                                    </SelectItem>
+                                    <SelectItem value="custom">
+                                        🔢 စိတ်ကြိုက်ဂဏန်း ရိုက်ထည့်မည်...
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
                     </div>
+
+                    {seedPreset === 'custom' && (
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                            <Input
+                                value={customSeed}
+                                onChange={(e) => setCustomSeed(e.target.value)}
+                                placeholder="စိတ်ကြိုက် Seed ဂဏန်း ရိုက်ထည့်ပါ (ဥပမာ - 42)"
+                                type="number"
+                                className="h-10 max-w-sm text-sm"
+                            />
+                            <span className="text-sm text-muted-foreground">
+                                {SEED_PRESET_DESCRIPTIONS.custom}
+                            </span>
+                        </div>
+                    )}
 
                     {error && (
                         <p className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
@@ -1197,8 +1502,8 @@ export function ImageEditingTab() {
                         className="h-11 w-full text-sm font-semibold"
                     >
                         {processing
-                            ? 'Editing Image...'
-                            : 'Generate Edited Image'}
+                            ? 'ပုံပြုပြင်နေပါသည် (Editing Image...)...'
+                            : 'ပုံစတင်ပြုပြင်မည် (Generate Edited Image)'}
                     </AnimatedButton>
                 </CardContent>
             </AnimatedCard>
@@ -1207,7 +1512,7 @@ export function ImageEditingTab() {
                 open={showResultModal}
                 onClose={() => setShowResultModal(false)}
                 processing={processing}
-                processingText="Editing image — this usually takes 10–25 seconds..."
+                processingText="ပုံပြုပြင်နေပါသည် — ပုံမှန် ၆ စက္ကန့်မှ ၂၅ စက္ကန့်ခန့် ကြာနိုင်ပါသည်..."
                 result={result}
                 isVideo={false}
                 filenamePrefix="image-edit"

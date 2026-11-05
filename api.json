@@ -3057,7 +3057,8 @@
                             "kling-3-image2image",
                             "nano-banana-pro",
                             "ideogram-4.5-edit",
-                            "bria-extract-object"
+                            "bria-extract-object",
+                            "p-image-edit"
                         ]
                     },
                     "prompt": {
@@ -3069,7 +3070,7 @@
                             "integer",
                             "null"
                         ],
-                        "minimum": 0
+                        "minimum": -1
                     },
                     "aspect_ratio": {
                         "type": [
@@ -3225,8 +3226,12 @@
                             "null"
                         ],
                         "enum": [
+                            "1",
+                            "",
                             "true",
                             "false",
+                            "0",
+                            "1",
                             "0",
                             "1",
                             null
@@ -3261,8 +3266,12 @@
                             "null"
                         ],
                         "enum": [
+                            "1",
+                            "",
                             "true",
                             "false",
+                            "0",
+                            "1",
                             "0",
                             "1",
                             null

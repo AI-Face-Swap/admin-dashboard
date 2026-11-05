@@ -331,28 +331,28 @@ export function ImageToVideoTab() {
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="seedance-2.0-fast">
-                                        Seedance 2.0 Fast (Multimodal — အကြံပြုချက်)
+                                        Seedance 2.0 Fast — မြန်ဆန်ပြီး ပုံ/ဗီဒီယို/အသံ အစုံသုံးနိုင်သည် (အကြံပြုချက်)
                                     </SelectItem>
                                     <SelectItem value="seedance-2.0">
-                                        Seedance 2.0 Standard (High-Quality Multimodal)
+                                        Seedance 2.0 Standard — အရည်အသွေးအမြင့်ဆုံး Multimodal ဗီဒီယိုထုတ်ရန်
                                     </SelectItem>
                                     <SelectItem value="seedance-2.5">
-                                        Seedance 2.5 (Expressive Motion & Reference)
+                                        Seedance 2.5 — မျက်နှာနှင့် လှုပ်ရှားမှု သဘာဝအကျဆုံး ဗီဒီယိုထုတ်ရန်
                                     </SelectItem>
                                     <SelectItem value="kling-o1-reference-image-to-video">
-                                        Kling Reference I2V (Cinematic Reference)
+                                        Kling Reference I2V — ပုံပါဇာတ်ကောင်အတိုင်း ရုပ်ရှင်ဆန်သော ဗီဒီယိုထုတ်ရန်
                                     </SelectItem>
                                     <SelectItem value="minimax-h3-max-reference-to-video">
-                                        MiniMax H3 Max I2V (Character & Product)
+                                        MiniMax H3 Max I2V — လူနှင့် ကုန်ပစ္စည်းပုံစံ မပျက်ဘဲ ဗီဒီယိုထုတ်ရန်
                                     </SelectItem>
                                     <SelectItem value="wan-2.2-i2v-flash">
-                                        Wan 2.2 I2V Flash (Fast Starting Frame)
+                                        Wan 2.2 I2V Flash — အစပုံမှ အမြန်ဆုံး ဗီဒီယိုအတိုထုတ်ရန်
                                     </SelectItem>
                                     <SelectItem value="wan3.0-video-prime">
-                                        Wan 3.0 Video Prime (1080P Starting Frame)
+                                        Wan 3.0 Video Prime — အစပုံမှ 1080P အကြည် ဗီဒီယိုထုတ်ရန်
                                     </SelectItem>
                                     <SelectItem value="ltx-2.5-pro">
-                                        LTX 2.5 Pro (Camera Trajectory)
+                                        LTX 2.5 Pro — ကင်မရာရွေ့လျားမှု (Camera Motion) အသားပေးရိုက်ချက်အတွက်
                                     </SelectItem>
                                 </SelectContent>
                             </Select>
