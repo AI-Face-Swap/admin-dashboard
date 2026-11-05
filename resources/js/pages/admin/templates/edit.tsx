@@ -136,12 +136,6 @@ export default function Edit({
     const [referenceVideoUrl, setReferenceVideoUrl] = useState<string>(
         template.reference_video_url ?? template.reference_video_path ?? '',
     );
-    const [referenceImagesText, setReferenceImagesText] = useState<string>(
-        Array.isArray(template.reference_images)
-            ? template.reference_images.join('\n')
-            : '',
-    );
-    const [referenceImageFiles, setReferenceImageFiles] = useState<File[]>([]);
     const initialParams = template.parameters ?? {};
     const [imageMode, setImageMode] = useState<string>(
         String(initialParams.image_mode ?? 'reference'),
@@ -245,11 +239,6 @@ export default function Edit({
         e.preventDefault();
         setProcessing(true);
 
-        const parsedReferenceImages = referenceImagesText
-            .split('\n')
-            .map((s) => s.trim())
-            .filter(Boolean);
-
         const mergedParameters: Record<
             string,
             string | number | boolean | null | undefined
@@ -277,11 +266,7 @@ export default function Edit({
                 thumbnail,
                 reference_video: referenceVideo || undefined,
                 reference_video_url: referenceVideoUrl,
-                reference_images: parsedReferenceImages,
-                reference_image_files:
-                    referenceImageFiles.length > 0
-                        ? referenceImageFiles
-                        : undefined,
+                reference_images: [],
                 parameters: mergedParameters,
                 model,
                 ai_model_id: aiModelId ? parseInt(aiModelId, 10) : undefined,
@@ -687,7 +672,7 @@ export default function Edit({
                                             AI Input Reference Video (Optional)
                                         </Label>
                                         <p className="text-[11px] text-muted-foreground">
-                                            Seedance လို Model မျိုးတွင် User ကို ပြမည့် Preview Video နဲ့ AI ဆီပို့မည့် မူရင်း Reference Video ခွဲထားချင်ပါက ဤနေရာတွင် ထည့်ပါ။ (မထည့်ထားပါက အပေါ်က Source File ကိုပဲ သုံးပါမည်)
+                                            Reference Video ပါဝင်မှသာ ထည့်ရန် လိုအပ်ပါသည် (Prompt + Reference Image သီးသန့်ဖြင့် ထုတ်ထားသော Template များအတွက် လုံးဝထည့်ရန် မလိုပါ)။
                                         </p>
                                     </div>
 
@@ -726,41 +711,6 @@ export default function Edit({
                                     />
                                     <InputError
                                         message={errors.reference_video}
-                                    />
-                                </div>
-
-                                {/* Extra Reference Images (for Multi-Image Models) */}
-                                <div className="space-y-2 border-t border-border pt-3">
-                                    <Label htmlFor="referenceImages">
-                                        Extra Reference Images (Optional)
-                                    </Label>
-                                    <p className="text-[11px] text-muted-foreground">
-                                        User တင်လိုက်သည့်ပုံ (Image #1) အပြင် အပိုတွဲပို့ချင်သော အဝတ်အစား/စတိုင် Reference ပုံများ ရှိပါက ထည့်နိုင်ပါသည်။
-                                    </p>
-                                    <Input
-                                        id="referenceImageFiles"
-                                        type="file"
-                                        accept="image/*"
-                                        multiple
-                                        onChange={(e) =>
-                                            setReferenceImageFiles(
-                                                e.target.files
-                                                    ? Array.from(e.target.files)
-                                                    : [],
-                                            )
-                                        }
-                                    />
-                                    <Textarea
-                                        id="referenceImages"
-                                        value={referenceImagesText}
-                                        onChange={(e) =>
-                                            setReferenceImagesText(
-                                                e.target.value,
-                                            )
-                                        }
-                                        placeholder="One image URL per line (https://...)"
-                                        rows={2}
-                                        className="text-xs"
                                     />
                                 </div>
                             </CardContent>

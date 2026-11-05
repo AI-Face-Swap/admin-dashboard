@@ -406,7 +406,7 @@ class TemplateController extends Controller
                 ?? AIModel::where('generation_type_id', $generationType->id)->first();
         }
 
-        // Extract reference media and model parameters from input_metadata
+        // Only save reference_video_path when the original generation actually used a reference video
         $referenceVideoPath = null;
         if (! empty($input['reference_videos']) && is_array($input['reference_videos'])) {
             $referenceVideoPath = $input['reference_videos'][0] ?? null;
@@ -417,13 +417,6 @@ class TemplateController extends Controller
         $referenceAudioPath = null;
         if (! empty($input['reference_audios']) && is_array($input['reference_audios'])) {
             $referenceAudioPath = $input['reference_audios'][0] ?? null;
-        }
-
-        // Extra reference images beyond the primary subject image (index 1..N)
-        $extraRefImages = [];
-        $sourceImageList = $input['reference_images'] ?? $input['images'] ?? $input['image_input'] ?? $input['image_urls'] ?? [];
-        if (is_array($sourceImageList) && count($sourceImageList) > 1) {
-            $extraRefImages = array_values(array_filter(array_slice($sourceImageList, 1)));
         }
 
         // Preserve model parameters in the `parameters` JSON column
@@ -438,8 +431,12 @@ class TemplateController extends Controller
             'disable_safety_checker',
             'guidance',
             'num_inference_steps',
+            'output_format',
             'output_quality',
             'safety_tolerance',
+            'size',
+            'max_images',
+            'optimize_prompt',
             'quality',
             'background',
             'output_compression',
@@ -475,7 +472,7 @@ class TemplateController extends Controller
             'thumbnail_path' => $isVideo ? null : $newPath,
             'reference_video_path' => $referenceVideoPath,
             'reference_audio_path' => $referenceAudioPath,
-            'reference_images' => ! empty($extraRefImages) ? $extraRefImages : null,
+            'reference_images' => null,
             'parameters' => ! empty($parameters) ? $parameters : null,
             'is_active' => true,
             'sort_order' => 1,

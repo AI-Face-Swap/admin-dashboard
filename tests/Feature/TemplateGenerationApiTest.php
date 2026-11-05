@@ -26,22 +26,21 @@ beforeEach(function () {
     $this->seed(AIModelSeeder::class);
 });
 
-test('a Seedance 2.0 Fast template routes to ProcessImageToVideo with prompt, reference_videos, reference_images, and parameters instead of video-face-swap', function () {
+test('a Seedance 2.0 Fast template with reference video routes to ProcessImageToVideo with prompt, reference_videos, and only customer reference_images', function () {
     Queue::fake();
 
     $i2vType = GenerationType::where('slug', 'image-to-video')->firstOrFail();
     $seedanceModel = AIModel::where('model_name', 'seedance-2.0-fast')->firstOrFail();
 
     $template = Template::create([
-        'name' => 'Football Replace Template #46',
-        'slug' => 'football-replace-46',
+        'name' => 'Football Replace Template #47',
+        'slug' => 'football-replace-47',
         'type' => Template::TYPE_VIDEO,
         'generation_type_id' => $i2vType->id,
         'ai_model_id' => $seedanceModel->id,
         'model' => 'seedance-2.0-fast',
         'file_path' => 'templates/preview-output.mp4',
         'reference_video_path' => 'https://bucket.example.com/inputs/original-football.mp4',
-        'reference_images' => ['https://bucket.example.com/inputs/extra-jersey.png'],
         'prompt' => 'Replace the main man wearing green in Video1 with the man from image 1 Image1.',
         'aspect_ratio' => '16:9',
         'resolution' => '720p',
@@ -79,13 +78,51 @@ test('a Seedance 2.0 Fast template routes to ProcessImageToVideo with prompt, re
         ->and($generation->input_metadata['model'])->toBe('seedance-2.0-fast')
         ->and($generation->input_metadata['prompt'])->toContain('Replace the main man wearing green')
         ->and($generation->input_metadata['reference_videos'])->toBe(['https://bucket.example.com/inputs/original-football.mp4'])
-        ->and($generation->input_metadata['reference_images'])->toHaveCount(2)
-        ->and($generation->input_metadata['reference_images'][1])->toBe('https://bucket.example.com/inputs/extra-jersey.png')
+        ->and($generation->input_metadata['reference_images'])->toHaveCount(1)
         ->and($generation->input_metadata['generate_audio'])->toBeFalse()
         ->and($generation->input_metadata['duration'])->toBe(5);
 });
 
-test('a P-Image-Edit template routes to ProcessImageEdit with prompt and images array', function () {
+test('a Seedance 2.0 Fast template without reference_video_path does NOT attach the template preview video as reference_videos', function () {
+    Queue::fake();
+
+    $i2vType = GenerationType::where('slug', 'image-to-video')->firstOrFail();
+    $seedanceModel = AIModel::where('model_name', 'seedance-2.0-fast')->firstOrFail();
+
+    $template = Template::create([
+        'name' => 'Airline Captain Walk #46',
+        'slug' => 'airline-captain-46',
+        'type' => Template::TYPE_VIDEO,
+        'generation_type_id' => $i2vType->id,
+        'ai_model_id' => $seedanceModel->id,
+        'model' => 'seedance-2.0-fast',
+        'file_path' => 'templates/captain-preview.mp4',
+        'reference_video_path' => null,
+        'prompt' => 'Cinematic video, 8 seconds. Slow motion, continuous forward walking. @Image 1',
+        'negative_prompt' => 'Sun glass',
+        'aspect_ratio' => '9:16',
+        'resolution' => '720p',
+        'seed' => '-1',
+        'is_active' => true,
+    ]);
+
+    $customer = Customer::factory()->create(['coins' => 100]);
+    $token = $customer->createToken('test')->plainTextToken;
+
+    $this->withToken($token)
+        ->postJson("/api/v1/templates/{$template->slug}/generate", [
+            'image' => UploadedFile::fake()->image('customer-face.png'),
+        ])
+        ->assertStatus(202);
+
+    $generation = AIGeneration::firstOrFail();
+    expect($generation->operation)->toBe('image-to-video')
+        ->and($generation->input_metadata['reference_images'])->toHaveCount(1)
+        ->and($generation->input_metadata)->not->toHaveKey('reference_videos')
+        ->and($generation->input_metadata['negative_prompt'])->toBe('Sun glass');
+});
+
+test('a P-Image-Edit template routes to ProcessImageEdit with prompt and image_urls array containing only customer image', function () {
     Queue::fake();
 
     $editType = GenerationType::where('slug', 'image-editing')->firstOrFail();
@@ -125,7 +162,7 @@ test('a P-Image-Edit template routes to ProcessImageEdit with prompt and images 
     $generation = AIGeneration::firstOrFail();
     expect($generation->input_metadata['model'])->toBe('p-image-edit')
         ->and($generation->input_metadata['prompt'])->toBe('Transform the person into a neon cyberpunk character.')
-        ->and($generation->input_metadata['images'])->toHaveCount(1);
+        ->and($generation->input_metadata['image_urls'])->toHaveCount(1);
 });
 
 test('image-faceswap and video-faceswap templates route to ProcessFaceSwap and ProcessVideoFaceSwap via the unified endpoint', function () {
@@ -169,7 +206,7 @@ test('image-faceswap and video-faceswap templates route to ProcessFaceSwap and P
     Queue::assertPushed(ProcessVideoFaceSwap::class);
 });
 
-test('saving an image-to-video generation to a template preserves generation_type, ai_model, reference_video_path, reference_images, and parameters', function () {
+test('saving an image-to-video generation to a template only saves reference_video_path when reference_videos was present and never saves reference_images', function () {
     $this->seed(RolePermissionSeeder::class);
     $admin = User::factory()->create();
     $admin->roles()->attach(Role::where('slug', 'admin')->first());
@@ -178,7 +215,45 @@ test('saving an image-to-video generation to a template preserves generation_typ
     Storage::disk('spaces')->put('generations/seedance-out.mp4', 'video bytes');
 
     $provider = AIProvider::where('slug', 'segmind')->firstOrFail();
-    $generation = AIGeneration::create([
+
+    // 1. Generation with ONLY prompt + reference_images (no reference_videos)
+    $genPromptAndImageOnly = AIGeneration::create([
+        'provider_id' => $provider->id,
+        'operation' => AIGeneration::OPERATION_IMAGE_TO_VIDEO,
+        'status' => AIGeneration::STATUS_COMPLETED,
+        'output_metadata' => ['generations/seedance-out.mp4'],
+        'input_metadata' => [
+            'model' => 'seedance-2.0-fast',
+            'prompt' => 'Cinematic walking captain @Image 1',
+            'reference_images' => [
+                'https://bucket.example.com/inputs/subject.jpg',
+            ],
+            'image_mode' => 'reference',
+            'resolution' => '720p',
+            'aspect_ratio' => '9:16',
+            'duration' => 5,
+            'generate_audio' => true,
+            'bitrate_mode' => 'standard',
+            'auto_resize' => true,
+            'seed' => -1,
+        ],
+    ]);
+
+    $this->post(route('admin.templates.from-generation', $genPromptAndImageOnly))
+        ->assertRedirect();
+
+    $templateWithoutRefVid = Template::latest('id')->firstOrFail();
+
+    expect($templateWithoutRefVid->model)->toBe('seedance-2.0-fast')
+        ->and($templateWithoutRefVid->generationType?->slug)->toBe('image-to-video')
+        ->and($templateWithoutRefVid->reference_video_path)->toBeNull()
+        ->and($templateWithoutRefVid->reference_images)->toBeNull()
+        ->and($templateWithoutRefVid->parameters['image_mode'])->toBe('reference')
+        ->and($templateWithoutRefVid->parameters['duration'])->toBe(5)
+        ->and($templateWithoutRefVid->parameters['generate_audio'])->toBeTrue();
+
+    // 2. Generation WITH reference_videos
+    $genWithRefVideo = AIGeneration::create([
         'provider_id' => $provider->id,
         'operation' => AIGeneration::OPERATION_IMAGE_TO_VIDEO,
         'status' => AIGeneration::STATUS_COMPLETED,
@@ -188,7 +263,6 @@ test('saving an image-to-video generation to a template preserves generation_typ
             'prompt' => 'Replace the main man wearing green in Video1 with the man from image 1 Image1.',
             'reference_images' => [
                 'https://bucket.example.com/inputs/subject.jpg',
-                'https://bucket.example.com/inputs/outfit.jpg',
             ],
             'reference_videos' => [
                 'https://bucket.example.com/inputs/ref-football.mp4',
@@ -204,17 +278,14 @@ test('saving an image-to-video generation to a template preserves generation_typ
         ],
     ]);
 
-    $this->post(route('admin.templates.from-generation', $generation))
+    $this->post(route('admin.templates.from-generation', $genWithRefVideo))
         ->assertRedirect();
 
-    $template = Template::latest('id')->firstOrFail();
+    $templateWithRefVid = Template::latest('id')->firstOrFail();
 
-    expect($template->model)->toBe('seedance-2.0-fast')
-        ->and($template->generationType?->slug)->toBe('image-to-video')
-        ->and($template->aiModel?->model_name)->toBe('seedance-2.0-fast')
-        ->and($template->reference_video_path)->toBe('https://bucket.example.com/inputs/ref-football.mp4')
-        ->and($template->reference_images)->toBe(['https://bucket.example.com/inputs/outfit.jpg'])
-        ->and($template->parameters['image_mode'])->toBe('reference')
-        ->and($template->parameters['duration'])->toBe(5)
-        ->and($template->parameters['generate_audio'])->toBeFalse();
+    expect($templateWithRefVid->model)->toBe('seedance-2.0-fast')
+        ->and($templateWithRefVid->generationType?->slug)->toBe('image-to-video')
+        ->and($templateWithRefVid->reference_video_path)->toBe('https://bucket.example.com/inputs/ref-football.mp4')
+        ->and($templateWithRefVid->reference_images)->toBeNull()
+        ->and($templateWithRefVid->parameters['generate_audio'])->toBeFalse();
 });

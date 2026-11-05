@@ -285,11 +285,12 @@ class SegmindProvider implements AIProviderInterface
      */
     private function sanitizeImageToVideoPayload(string $endpoint, array $payload): array
     {
-        unset($payload['model'], $payload['image_mode']);
+        unset($payload['model'], $payload['image_mode'], $payload['template_id']);
 
         return match ($endpoint) {
             'seedance-2.0', 'seedance-2.0-fast', 'seedance-2.5' => array_intersect_key($payload, array_flip([
                 'prompt',
+                'negative_prompt',
                 'first_frame_url',
                 'last_frame_url',
                 'reference_images',
@@ -301,6 +302,7 @@ class SegmindProvider implements AIProviderInterface
                 'generate_audio',
                 'bitrate_mode',
                 'auto_resize',
+                'prompt_extend',
                 'seed',
             ])),
             'kling-o1-reference-image-to-video' => array_intersect_key($payload, array_flip([

@@ -182,23 +182,18 @@ class AITemplateGenerationController extends Controller
         ?string $userImageUrl,
     ): array {
         $params = is_array($template->parameters) ? $template->parameters : [];
-        $extraRefImages = is_array($template->reference_images)
-            ? array_values(array_filter($template->reference_images))
-            : [];
 
         return match ($operation) {
             AIGeneration::OPERATION_IMAGE_TO_VIDEO => $this->buildImageToVideoPayload(
                 $modelSlug ?: 'seedance-2.0-fast',
                 $template,
                 $userImageUrl,
-                $extraRefImages,
                 $params,
             ),
             AIGeneration::OPERATION_IMAGE_EDIT => $this->buildImageEditPayload(
                 $modelSlug ?: 'flux-kontext-dev',
                 $template,
                 $userImageUrl,
-                $extraRefImages,
                 $params,
             ),
             AIGeneration::OPERATION_IMAGE => array_filter([
@@ -235,7 +230,9 @@ class AITemplateGenerationController extends Controller
     /**
      * Build the Image-to-Video payload for Seedance, Kling, MiniMax, Wan, LTX, or future models.
      *
-     * @param  array<int, string>  $extraRefImages
+     * Only sends the user's uploaded image as the reference/input image, and only includes
+     * `reference_videos` when a reference video was explicitly stored on the template.
+     *
      * @param  array<string, mixed>  $params
      * @return array<string, mixed>
      */
@@ -243,10 +240,10 @@ class AITemplateGenerationController extends Controller
         string $model,
         Template $template,
         ?string $userImageUrl,
-        array $extraRefImages,
         array $params,
     ): array {
         $prompt = $template->prompt ?: ($params['prompt'] ?? 'Animate this reference smoothly and naturally.');
+        $negativePrompt = $template->negative_prompt ?: ($params['negative_prompt'] ?? null);
         $resolution = $template->resolution ?: ($params['resolution'] ?? '720p');
         $aspectRatio = $template->aspect_ratio ?: ($params['aspect_ratio'] ?? '16:9');
         $seed = $template->seed !== null && $template->seed !== ''
@@ -254,16 +251,14 @@ class AITemplateGenerationController extends Controller
             : (int) ($params['seed'] ?? -1);
         $durationInt = (int) preg_replace('/[^0-9]/', '', (string) ($params['duration'] ?? '5')) ?: 5;
 
-        $allRefImages = array_values(array_filter([$userImageUrl, ...$extraRefImages]));
+        $refImages = $userImageUrl ? [$userImageUrl] : [];
 
-        // Determine reference video URL: explicit reference_video_url, or parameters['reference_videos'], or fallback to template file_url when video
+        // Only send reference_videos when the template actually has an explicit reference video
         $refVideos = [];
         if ($template->reference_video_url) {
             $refVideos = [$template->reference_video_url];
         } elseif (! empty($params['reference_videos']) && is_array($params['reference_videos'])) {
             $refVideos = array_values(array_filter($params['reference_videos']));
-        } elseif ($template->type === Template::TYPE_VIDEO && $template->file_url) {
-            $refVideos = [$template->file_url];
         }
 
         if (in_array($model, ['seedance-2.0', 'seedance-2.0-fast', 'seedance-2.5'], true)) {
@@ -282,17 +277,24 @@ class AITemplateGenerationController extends Controller
                 'auto_resize' => isset($params['auto_resize'])
                     ? filter_var($params['auto_resize'], FILTER_VALIDATE_BOOLEAN)
                     : true,
+                'prompt_extend' => isset($params['prompt_extend'])
+                    ? filter_var($params['prompt_extend'], FILTER_VALIDATE_BOOLEAN)
+                    : true,
                 'seed' => $seed,
                 'image_mode' => $imageMode,
             ];
+
+            if (! empty($negativePrompt)) {
+                $payload['negative_prompt'] = $negativePrompt;
+            }
 
             if ($imageMode === 'first_frame_url' && $userImageUrl) {
                 $payload['first_frame_url'] = $userImageUrl;
                 if (! empty($params['last_frame_url'])) {
                     $payload['last_frame_url'] = $params['last_frame_url'];
                 }
-            } elseif (! empty($allRefImages)) {
-                $payload['reference_images'] = $allRefImages;
+            } elseif (! empty($refImages)) {
+                $payload['reference_images'] = $refImages;
             }
 
             if (! empty($refVideos)) {
@@ -312,7 +314,7 @@ class AITemplateGenerationController extends Controller
             return [
                 'model' => $model,
                 'prompt' => $prompt,
-                'image_urls' => $allRefImages,
+                'image_urls' => $refImages,
                 'aspect_ratio' => $aspectRatio,
                 'duration' => $durationInt >= 10 ? 10 : 5,
             ];
@@ -322,7 +324,7 @@ class AITemplateGenerationController extends Controller
             return [
                 'model' => $model,
                 'prompt' => $prompt,
-                'reference_images' => $allRefImages,
+                'reference_images' => $refImages,
                 'duration' => $durationInt >= 10 ? 10 : 6,
                 'resolution' => $resolution,
                 'ratio' => $aspectRatio,
@@ -334,7 +336,7 @@ class AITemplateGenerationController extends Controller
             'model' => $model,
             'image' => $userImageUrl,
             'prompt' => $prompt,
-            'negative_prompt' => $template->negative_prompt ?: ($params['negative_prompt'] ?? null),
+            'negative_prompt' => $negativePrompt,
             'resolution' => $resolution,
             'aspect_ratio' => $aspectRatio,
             'duration' => $durationInt,
@@ -345,7 +347,8 @@ class AITemplateGenerationController extends Controller
     /**
      * Build the Image-Editing payload for P-Image-Edit, Flux Kontext, Multi-Image Kontext, Seedream, GPT, Kling, etc.
      *
-     * @param  array<int, string>  $extraRefImages
+     * Only sends the customer's uploaded image (`$userImageUrl`) as the input image, never the template's output preview image.
+     *
      * @param  array<string, mixed>  $params
      * @return array<string, mixed>
      */
@@ -353,7 +356,6 @@ class AITemplateGenerationController extends Controller
         string $model,
         Template $template,
         ?string $userImageUrl,
-        array $extraRefImages,
         array $params,
     ): array {
         $prompt = $template->prompt ?: ($params['prompt'] ?? 'Apply the template style to the subject.');
@@ -362,7 +364,7 @@ class AITemplateGenerationController extends Controller
             ? (int) $template->seed
             : ($params['seed'] ?? null);
 
-        $allImages = array_values(array_filter([$userImageUrl, ...$extraRefImages]));
+        $refImages = $userImageUrl ? [$userImageUrl] : [];
 
         $base = array_filter([
             ...$params,
@@ -375,17 +377,21 @@ class AITemplateGenerationController extends Controller
         return match ($model) {
             'p-image-edit', 'gpt-image-1.5-edit', 'nano-banana-pro' => [
                 ...$base,
-                'images' => $allImages,
-            ],
-            'multi-image-kontext-max' => [
-                ...$base,
-                'image_input' => $allImages,
+                'image_urls' => $refImages,
             ],
             'seedream-v5-lite-image-to-image' => [
                 ...$base,
-                'image_urls' => $allImages,
+                'image_input' => $refImages,
             ],
-            'kling-3-image2image', 'bria-extract-object' => [
+            'multi-image-kontext-max' => [
+                ...$base,
+                'input_image_1' => $userImageUrl,
+            ],
+            'kling-3-image2image' => [
+                ...$base,
+                'image_url' => $userImageUrl,
+            ],
+            'ideogram-4.5-edit', 'bria-extract-object' => [
                 ...$base,
                 'image' => $userImageUrl,
             ],
