@@ -1,5 +1,7 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { useState } from 'react';
+import { TemplatePricingCard } from '@/components/admin/templates/TemplatePricingCard';
+import { TemplatePromptsParametersCard } from '@/components/admin/templates/TemplatePromptsParametersCard';
 import { AnimatedButton } from '@/components/animated/AnimatedButton';
 import { AnimatedCard } from '@/components/animated/AnimatedCard';
 import Heading from '@/components/heading';
@@ -431,351 +433,44 @@ export default function Create({
                         </AnimatedCard>
 
                         {/* 2. Point Pricing & Discount Card */}
-                        <AnimatedCard className="border-amber-500/30 bg-gradient-to-br from-amber-500/5 via-card to-card shadow-sm">
-                            <CardHeader className="pb-4">
-                                <CardTitle className="flex items-center justify-between text-lg">
-                                    <div className="flex items-center gap-2">
-                                        <Coins className="h-5 w-5 text-amber-400" />
-                                        <span>Point Pricing & Discount</span>
-                                    </div>
-                                    {discountPercent > 0 && (
-                                        <Badge className="border-emerald-500/30 bg-emerald-500/20 font-semibold text-emerald-400 hover:bg-emerald-500/30">
-                                            <Percent className="mr-1 h-3 w-3" />
-                                            {discountPercent}% OFF
-                                        </Badge>
-                                    )}
-                                </CardTitle>
-                                <CardDescription>
-                                    Set the base cost and optional discount.
-                                    Final points are deducted upon customer
-                                    generation.
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="grid gap-4 sm:grid-cols-2">
-                                    <div className="grid gap-2">
-                                        <div className="flex items-center justify-between">
-                                            <Label
-                                                htmlFor="cost"
-                                                className="font-medium"
-                                            >
-                                                Base Cost Override (Optional)
-                                            </Label>
-                                            {hasManualCost ? (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setCost('')}
-                                                    className="text-xs font-medium text-amber-400 hover:underline"
-                                                >
-                                                    Reset to AI Model ({modelBaseCost} pts)
-                                                </button>
-                                            ) : (
-                                                <span className="text-xs text-emerald-400">
-                                                    Auto: AI Model ({modelBaseCost} pts)
-                                                </span>
-                                            )}
-                                        </div>
-                                        <div className="relative">
-                                            <Input
-                                                id="cost"
-                                                type="number"
-                                                min={0}
-                                                value={cost}
-                                                onChange={(e) =>
-                                                    setCost(e.target.value)
-                                                }
-                                                className="pl-8"
-                                                placeholder={`Auto from AI Model (${modelBaseCost} pts)`}
-                                            />
-                                            <Coins className="absolute top-1/2 left-2.5 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                                        </div>
-                                        <p className="text-[11px] text-muted-foreground">
-                                            အလွတ်ထားပါက ရွေးချယ်ထားသော AI Model ၏ Point အတိုင်း အလိုအလျောက် ယူသုံးပါမည်။
-                                        </p>
-                                        <InputError message={errors.cost} />
-                                    </div>
-
-                                    <div className="grid gap-2">
-                                        <Label
-                                            htmlFor="discountCost"
-                                            className="font-medium"
-                                        >
-                                            Discount Points
-                                        </Label>
-                                        <div className="relative">
-                                            <Input
-                                                id="discountCost"
-                                                type="number"
-                                                min={0}
-                                                value={discountCost}
-                                                onChange={(e) =>
-                                                    setDiscountCost(
-                                                        e.target.value,
-                                                    )
-                                                }
-                                                className="pl-8"
-                                                placeholder="0"
-                                            />
-                                            <Percent className="absolute top-1/2 left-2.5 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                                        </div>
-                                        <InputError
-                                            message={errors.discount_cost}
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* Live Preview Box */}
-                                <div className="flex flex-wrap items-center justify-between rounded-xl border border-amber-500/20 bg-amber-500/10 p-4">
-                                    <div className="space-y-0.5">
-                                        <span className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
-                                            Customer Final Price
-                                        </span>
-                                        <div className="flex items-baseline gap-2">
-                                            <span className="text-2xl font-bold text-amber-300">
-                                                {effectiveCost} points
-                                            </span>
-                                            {numDiscount > 0 && (
-                                                <span className="text-sm text-muted-foreground line-through">
-                                                    {numCost} points
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    <div className="text-right text-xs text-muted-foreground">
-                                        {numDiscount > 0 ? (
-                                            <div className="space-y-0.5">
-                                                <div className="font-medium text-emerald-400">
-                                                    Save {numDiscount} points (
-                                                    {discountPercent}% discount)
-                                                </div>
-                                                <div>
-                                                    Calculation: {numCost} -{' '}
-                                                    {numDiscount} ={' '}
-                                                    {effectiveCost}
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <span className="italic">
-                                                No discount applied
-                                            </span>
-                                        )}
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </AnimatedCard>
+                        <TemplatePricingCard
+                            cost={cost}
+                            onCostChange={setCost}
+                            discountCost={discountCost}
+                            onDiscountCostChange={setDiscountCost}
+                            hasManualCost={hasManualCost}
+                            modelBaseCost={modelBaseCost}
+                            numCost={numCost}
+                            numDiscount={numDiscount}
+                            effectiveCost={effectiveCost}
+                            discountPercent={discountPercent}
+                            errors={errors}
+                        />
 
                         {/* 3. AI Prompts & Generation Parameters */}
-                        <AnimatedCard>
-                            <CardHeader className="pb-4">
-                                <CardTitle className="flex items-center gap-2 text-lg">
-                                    <Sliders className="h-5 w-5 text-primary" />
-                                    AI Prompts & Parameters
-                                </CardTitle>
-                                <CardDescription>
-                                    Optional generation parameters and guidance
-                                    prompts for this template.
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="grid gap-4 sm:grid-cols-3">
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="aspectRatio">
-                                            Aspect Ratio
-                                        </Label>
-                                        <Input
-                                            id="aspectRatio"
-                                            value={aspectRatio}
-                                            onChange={(e) =>
-                                                setAspectRatio(e.target.value)
-                                            }
-                                            placeholder="e.g. 16:9, 1:1"
-                                        />
-                                        <InputError
-                                            message={errors.aspect_ratio}
-                                        />
-                                    </div>
-
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="resolution">
-                                            Resolution
-                                        </Label>
-                                        <Input
-                                            id="resolution"
-                                            value={resolution}
-                                            onChange={(e) =>
-                                                setResolution(e.target.value)
-                                            }
-                                            placeholder="e.g. 720p, 1080p"
-                                        />
-                                        <InputError
-                                            message={errors.resolution}
-                                        />
-                                    </div>
-
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="seed">Seed</Label>
-                                        <Input
-                                            id="seed"
-                                            type="number"
-                                            value={seed}
-                                            onChange={(e) =>
-                                                setSeed(e.target.value)
-                                            }
-                                            placeholder="Random"
-                                        />
-                                        <InputError message={errors.seed} />
-                                    </div>
-                                </div>
-
-                                <div className="grid gap-2">
-                                    <Label htmlFor="prompt">
-                                        Prompt (optional)
-                                    </Label>
-                                    <Textarea
-                                        id="prompt"
-                                        value={prompt}
-                                        onChange={(e) =>
-                                            setPrompt(e.target.value)
-                                        }
-                                        placeholder="Specific prompt template..."
-                                        rows={3}
-                                    />
-                                    <InputError message={errors.prompt} />
-                                </div>
-
-                                <div className="grid gap-2">
-                                    <Label htmlFor="negativePrompt">
-                                        Negative Prompt (optional)
-                                    </Label>
-                                    <Textarea
-                                        id="negativePrompt"
-                                        value={negativePrompt}
-                                        onChange={(e) =>
-                                            setNegativePrompt(e.target.value)
-                                        }
-                                        placeholder="Things to avoid..."
-                                        rows={2}
-                                    />
-                                    <InputError
-                                        message={errors.negative_prompt}
-                                    />
-                                </div>
-
-                                {/* Advanced Model Parameters */}
-                                <div className="space-y-4 rounded-xl border border-border bg-muted/20 p-4">
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
-                                            Model Runtime Parameters (Image-to-Video / Seedance / Editing)
-                                        </span>
-                                    </div>
-                                    <div className="grid gap-4 sm:grid-cols-3">
-                                        <div className="grid gap-1.5">
-                                            <Label htmlFor="imageMode" className="text-xs">
-                                                Image Mode
-                                            </Label>
-                                            <Select
-                                                value={imageMode}
-                                                onValueChange={setImageMode}
-                                            >
-                                                <SelectTrigger id="imageMode">
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="reference">
-                                                        Reference (Character / Subject)
-                                                    </SelectItem>
-                                                    <SelectItem value="first_frame_url">
-                                                        First Frame URL
-                                                    </SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-
-                                        <div className="grid gap-1.5">
-                                            <Label htmlFor="duration" className="text-xs">
-                                                Duration (Seconds)
-                                            </Label>
-                                            <Input
-                                                id="duration"
-                                                type="number"
-                                                min={4}
-                                                max={15}
-                                                value={duration}
-                                                onChange={(e) =>
-                                                    setDuration(e.target.value)
-                                                }
-                                                placeholder="5"
-                                            />
-                                        </div>
-
-                                        <div className="grid gap-1.5">
-                                            <Label htmlFor="bitrateMode" className="text-xs">
-                                                Bitrate Mode
-                                            </Label>
-                                            <Select
-                                                value={bitrateMode}
-                                                onValueChange={setBitrateMode}
-                                            >
-                                                <SelectTrigger id="bitrateMode">
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="standard">
-                                                        Standard
-                                                    </SelectItem>
-                                                    <SelectItem value="high">
-                                                        High
-                                                    </SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                    </div>
-
-                                    <div className="grid gap-3 sm:grid-cols-2">
-                                        <div className="flex items-center justify-between rounded-lg border border-border bg-background/60 p-3">
-                                            <div>
-                                                <Label
-                                                    htmlFor="generateAudio"
-                                                    className="text-xs font-medium"
-                                                >
-                                                    Generate Audio
-                                                </Label>
-                                                <p className="text-[11px] text-muted-foreground">
-                                                    Copyright block မထိစေရန် Off ထားနိုင်သည်
-                                                </p>
-                                            </div>
-                                            <Switch
-                                                id="generateAudio"
-                                                checked={generateAudio}
-                                                onCheckedChange={
-                                                    setGenerateAudio
-                                                }
-                                            />
-                                        </div>
-
-                                        <div className="flex items-center justify-between rounded-lg border border-border bg-background/60 p-3">
-                                            <div>
-                                                <Label
-                                                    htmlFor="autoResize"
-                                                    className="text-xs font-medium"
-                                                >
-                                                    Auto Resize
-                                                </Label>
-                                                <p className="text-[11px] text-muted-foreground">
-                                                    Automatically resize input media
-                                                </p>
-                                            </div>
-                                            <Switch
-                                                id="autoResize"
-                                                checked={autoResize}
-                                                onCheckedChange={setAutoResize}
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </AnimatedCard>
+                        <TemplatePromptsParametersCard
+                            aspectRatio={aspectRatio}
+                            onAspectRatioChange={setAspectRatio}
+                            resolution={resolution}
+                            onResolutionChange={setResolution}
+                            seed={seed}
+                            onSeedChange={setSeed}
+                            prompt={prompt}
+                            onPromptChange={setPrompt}
+                            negativePrompt={negativePrompt}
+                            onNegativePromptChange={setNegativePrompt}
+                            imageMode={imageMode}
+                            onImageModeChange={setImageMode}
+                            duration={duration}
+                            onDurationChange={setDuration}
+                            bitrateMode={bitrateMode}
+                            onBitrateModeChange={setBitrateMode}
+                            generateAudio={generateAudio}
+                            onGenerateAudioChange={setGenerateAudio}
+                            autoResize={autoResize}
+                            onAutoResizeChange={setAutoResize}
+                            errors={errors}
+                        />
                     </div>
 
                     {/* Right Column: 5 Cols (Media Upload, Preview, Tags, Status) */}
