@@ -1,5 +1,6 @@
-OpenAPI document exported to api.json.
-
+{
+    "openapi": "3.1.0",
+    "info": {
         "title": "HTUT AI \u2014 API Docs",
         "version": "1.0.0",
         "description": "# HTUT AI \u2014 REST API\n\nAI-powered image generation, face swap, image editing, video face swap, and customer portal API.\n\n## Authentication\n\nAll protected endpoints require a **Bearer token** issued via HTUT Central Auth SSO.\n\nInclude the token in the `Authorization` header:\n```\nAuthorization: Bearer YOUR_TOKEN_HERE\n```\n\n## SSO & Customer Auth Flow\n\n1. Redirect user to `GET /api/v1/auth/htut/redirect`\n2. User authenticates on HTUT Central Auth (SSO)\n3. Callback to `GET /api/v1/auth/htut/callback` returns the customer record and access token\n4. Retrieve customer profile & coin balance via `GET /api/v1/auth/me`\n5. Terminate session via `POST /api/v1/auth/logout`\n\n## Coin System & Packages\n\n- Customers use coins for AI operations (Face Swap, Image Generation, Video Face Swap, etc.)\n- Coin balance and costs can be retrieved via `GET /api/v1/coin-costs` and `GET /api/v1/auth/me`\n- Available coin top-up packages can be fetched via `GET /api/v1/packages` and purchased via `POST /api/v1/packages/checkout`\n- Insufficient coins return `402 Payment Required` status code\n\n## Base URLs\n\n| Environment | URL |\n|---|---|\n| Local | `http://localhost:8001/api` |\n| Production | `https://ai.htut.com/api` |"
@@ -747,8 +748,7 @@ OpenAPI document exported to api.json.
                                     "type": "object",
                                     "properties": {
                                         "message": {
-                                            "type": "string",
-                                            "const": "Generation deleted successfully."
+                                            "type": "string"
                                         }
                                     },
                                     "required": [
@@ -1236,8 +1236,10 @@ OpenAPI document exported to api.json.
                             ],
                             "enum": [
                                 "image-generation",
+                                "image-editing",
                                 "face-swap",
                                 "video-face-swap",
+                                "image-to-video",
                                 null
                             ]
                         }
@@ -1422,20 +1424,16 @@ OpenAPI document exported to api.json.
                                             "type": "object",
                                             "properties": {
                                                 "total": {
-                                                    "type": "integer",
-                                                    "minimum": 0
+                                                    "type": "string"
                                                 },
                                                 "completed": {
-                                                    "type": "integer",
-                                                    "minimum": 0
+                                                    "type": "string"
                                                 },
                                                 "processing": {
-                                                    "type": "integer",
-                                                    "minimum": 0
+                                                    "type": "string"
                                                 },
                                                 "failed": {
-                                                    "type": "integer",
-                                                    "minimum": 0
+                                                    "type": "string"
                                                 }
                                             },
                                             "required": [
@@ -1461,6 +1459,147 @@ OpenAPI document exported to api.json.
                         "$ref": "#/components/responses/AuthenticationException"
                     }
                 }
+            }
+        },
+        "/v1/project-landings": {
+            "get": {
+                "operationId": "homePage.projectLandings",
+                "summary": "Get HTUT Ecosystem Project Landings from Central Auth SSO",
+                "tags": [
+                    "HomePage"
+                ],
+                "parameters": [
+                    {
+                        "name": "refresh",
+                        "in": "query",
+                        "schema": {
+                            "type": "boolean",
+                            "default": false
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "const": "success"
+                                        },
+                                        "total": {
+                                            "type": "integer"
+                                        },
+                                        "project_landings": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "additionalProperties": {}
+                                            }
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "additionalProperties": {}
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "status",
+                                        "total",
+                                        "project_landings",
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": []
+            }
+        },
+        "/v1/project-landings/{identifier}": {
+            "get": {
+                "operationId": "homePage.projectLandingDetail",
+                "summary": "Get Single HTUT Ecosystem Project Landing Detail by Project Slug or Landing ID",
+                "tags": [
+                    "HomePage"
+                ],
+                "parameters": [
+                    {
+                        "name": "identifier",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "const": "success"
+                                        },
+                                        "project_landing": {
+                                            "type": [
+                                                "object",
+                                                "null"
+                                            ],
+                                            "additionalProperties": {}
+                                        },
+                                        "data": {
+                                            "type": [
+                                                "object",
+                                                "null"
+                                            ],
+                                            "additionalProperties": {}
+                                        }
+                                    },
+                                    "required": [
+                                        "status",
+                                        "project_landing",
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "const": "error"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "status",
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": []
             }
         },
         "/v1/home-heroes": {
@@ -2317,16 +2456,12 @@ OpenAPI document exported to api.json.
                                 "schema": {
                                     "type": "object",
                                     "properties": {
-                                        "success": {
-                                            "type": "boolean"
-                                        },
                                         "message": {
                                             "type": "string",
                                             "const": "Invalid or expired token. Please try signing in again."
                                         }
                                     },
                                     "required": [
-                                        "success",
                                         "message"
                                     ]
                                 }
@@ -2408,16 +2543,12 @@ OpenAPI document exported to api.json.
                                 "schema": {
                                     "type": "object",
                                     "properties": {
-                                        "success": {
-                                            "type": "boolean"
-                                        },
                                         "message": {
                                             "type": "string",
                                             "const": "Invalid or expired token. Please try signing in again."
                                         }
                                     },
                                     "required": [
-                                        "success",
                                         "message"
                                     ]
                                 }
@@ -3310,7 +3441,7 @@ OpenAPI document exported to api.json.
                 "properties": {
                     "prompt": {
                         "type": "string",
-                        "maxLength": 2000
+                        "maxLength": 5000
                     },
                     "image": {
                         "type": "string",
@@ -3322,12 +3453,72 @@ OpenAPI document exported to api.json.
                         "type": "string",
                         "format": "uri"
                     },
+                    "image_mode": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "enum": [
+                            "reference",
+                            "reference_images",
+                            "first_frame_url",
+                            null
+                        ]
+                    },
+                    "last_frame_image": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "binary",
+                        "contentMediaType": "application/octet-stream",
+                        "description": "Maximum file size: 10240 kilobytes."
+                    },
+                    "last_frame_url": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uri"
+                    },
+                    "reference_video": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "binary",
+                        "contentMediaType": "application/octet-stream",
+                        "description": "Maximum file size: 51200 kilobytes."
+                    },
+                    "reference_video_url": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uri"
+                    },
+                    "reference_audio": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "binary",
+                        "contentMediaType": "application/octet-stream",
+                        "description": "Maximum file size: 20480 kilobytes."
+                    },
+                    "reference_audio_url": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uri"
+                    },
                     "negative_prompt": {
                         "type": [
                             "string",
                             "null"
                         ],
-                        "maxLength": 1000
+                        "maxLength": 2000
                     },
                     "model": {
                         "type": [
@@ -3347,6 +3538,7 @@ OpenAPI document exported to api.json.
                             "16:9",
                             "4:3",
                             "3:4",
+                            "adaptive",
                             null
                         ]
                     },
@@ -3382,12 +3574,49 @@ OpenAPI document exported to api.json.
                             null
                         ]
                     },
+                    "generate_audio": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "enum": [
+                            "true",
+                            "false",
+                            "0",
+                            "1",
+                            null
+                        ]
+                    },
+                    "bitrate_mode": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "enum": [
+                            "standard",
+                            "high",
+                            null
+                        ]
+                    },
+                    "auto_resize": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "enum": [
+                            "true",
+                            "false",
+                            "0",
+                            "1",
+                            null
+                        ]
+                    },
                     "seed": {
                         "type": [
                             "integer",
                             "null"
                         ],
-                        "minimum": 0
+                        "minimum": -1
                     },
                     "watermark": {
                         "type": [
@@ -3682,6 +3911,9 @@ OpenAPI document exported to api.json.
                     "thumbnail_url": {
                         "type": "string"
                     },
+                    "manual_cost": {
+                        "type": "string"
+                    },
                     "effective_cost": {
                         "type": "integer"
                     }
@@ -3711,6 +3943,7 @@ OpenAPI document exported to api.json.
                     "updated_at",
                     "file_url",
                     "thumbnail_url",
+                    "manual_cost",
                     "effective_cost"
                 ],
                 "title": "Template"

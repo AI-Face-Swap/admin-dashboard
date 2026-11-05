@@ -10,7 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\HttpFoundation\Response;
 
 class AIGenerationStatusController extends Controller
 {
@@ -60,7 +60,7 @@ class AIGenerationStatusController extends Controller
     /**
      * Download an output file of an AI generation.
      */
-    public function download(AIGeneration $generation, Request $request): \Symfony\Component\HttpFoundation\Response
+    public function download(AIGeneration $generation, Request $request): Response
     {
         $user = $request->user();
 
@@ -105,6 +105,8 @@ class AIGenerationStatusController extends Controller
      *
      * Customers can delete their own generations.
      * Admins can delete any generation.
+     *
+     * @response array{message: string}
      */
     public function destroy(AIGeneration $generation, Request $request): JsonResponse|RedirectResponse
     {
@@ -136,10 +138,10 @@ class AIGenerationStatusController extends Controller
 
         $generation->delete();
 
-        if ($request->header('X-Inertia')) {
-            return back()->with('success', 'Generation deleted successfully.');
+        if ($request->wantsJson() && ! $request->hasHeader('X-Inertia')) {
+            return response()->json(['message' => 'Generation deleted successfully.']);
         }
 
-        return response()->json(['message' => 'Generation deleted successfully.']);
+        return back()->with('success', 'Generation deleted successfully.');
     }
 }

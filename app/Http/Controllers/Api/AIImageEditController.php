@@ -21,7 +21,6 @@ use RuntimeException;
 
 class AIImageEditController extends Controller
 {
-
     /**
      * Edit an image using AI models.
      *
@@ -33,14 +32,14 @@ class AIImageEditController extends Controller
     {
         $requester = $request->user();
         $model = $request->string('model')->toString();
-        $idempotencyToken = $request->string('client_idempotency_token');
+        $idempotencyToken = $request->string('client_idempotency_token')->toString() ?: null;
 
         $payload = $this->buildPayload($request, $model);
 
         // Check for existing generation with the same idempotency token
         if ($idempotencyResponse = AIIdempotencyService::check(
             $requester,
-            $idempotencyToken ?: null,
+            $idempotencyToken,
             AIGeneration::OPERATION_IMAGE_EDIT,
             $payload
         )) {
@@ -74,7 +73,7 @@ class AIImageEditController extends Controller
             'operation' => AIGeneration::OPERATION_IMAGE_EDIT,
             'status' => AIGeneration::STATUS_QUEUED,
             'input_metadata' => $payload,
-            'client_idempotency_token' => $idempotencyToken ?: null,
+            'client_idempotency_token' => $idempotencyToken,
         ]);
 
         if ($requester instanceof Customer && $pointCost > 0) {
