@@ -25,7 +25,7 @@ class ImageToVideoRequest extends FormRequest
             'image_mode' => ['nullable', 'string', 'in:reference,reference_images,first_frame_url'],
             'last_frame_image' => ['nullable', 'file', 'image', 'max:10240'],
             'last_frame_url' => ['nullable', 'url'],
-            'reference_video' => ['nullable', 'file', 'mimetypes:video/mp4,video/quicktime,video/webm', 'max:51200'],
+            'reference_video' => ['nullable', 'file', 'mimetypes:video/mp4,video/quicktime,video/webm', 'max:5120000'],
             'reference_video_url' => ['nullable', 'url'],
             'reference_audio' => ['nullable', 'file', 'mimetypes:audio/mpeg,audio/mp3,audio/wav,audio/x-wav,audio/ogg', 'max:20480'],
             'reference_audio_url' => ['nullable', 'url'],
