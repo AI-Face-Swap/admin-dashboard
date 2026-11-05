@@ -9,6 +9,7 @@ use App\Models\GenerationType;
 use App\Models\Template;
 use App\Models\TemplateCategory;
 use App\Models\TemplateTag;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -27,26 +28,39 @@ class TemplateController extends Controller
     /**
      * Display a listing of the templates.
      */
-    public function index(Request $request): Response
+    public function index(Request $request): Response|JsonResponse
     {
         $templates = Template::query()
-            ->with(['category:id,name,slug', 'tags:id,name,slug', 'aiModel:id,name,provider_name,model_name,coin_cost'])
+            ->with([
+                'category:id,name,slug',
+                'tags:id,name,slug',
+                'aiModel:id,name,provider_name,model_name,coin_cost',
+                'generationType:id,name,slug',
+            ])
             ->when($request->category, fn ($query, $category) => $query->where('category_id', $category))
+            ->when($request->type && in_array($request->type, [Template::TYPE_IMAGE, Template::TYPE_VIDEO], true), fn ($query) => $query->where('type', $request->type))
             ->when($request->search, fn ($query, $search) => $query
                 ->where(fn ($q) => $q
                     ->where('name', 'like', "%{$search}%")
                     ->orWhere('slug', 'like', "%{$search}%")
+                    ->orWhere('prompt', 'like', "%{$search}%")
                     ->orWhereHas('tags', fn ($tag) => $tag->where('name', 'like', "%{$search}%"))))
             ->orderBy('sort_order', 'asc')
             ->orderBy('created_at', 'desc')
             ->orderBy('id', 'desc')
-            ->paginate(12)
+            ->paginate(20)
             ->withQueryString();
+
+        if ($request->boolean('json') || ($request->wantsJson() && ! $request->hasHeader('X-Inertia'))) {
+            return response()->json([
+                'templates' => $templates,
+            ]);
+        }
 
         return Inertia::render('admin/templates/index', [
             'templates' => $templates,
             'categories' => TemplateCategory::orderBy('name')->get(['id', 'name', 'slug']),
-            'filters' => $request->only('search', 'category'),
+            'filters' => $request->only('search', 'category', 'type'),
         ]);
     }
 
