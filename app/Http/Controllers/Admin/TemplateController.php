@@ -12,6 +12,7 @@ use App\Models\TemplateTag;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -48,7 +49,7 @@ class TemplateController extends Controller
             ->orderBy('sort_order', 'asc')
             ->orderBy('created_at', 'desc')
             ->orderBy('id', 'desc')
-            ->paginate(20)
+            ->paginate(60)
             ->withQueryString();
 
         if ($request->boolean('json') || ($request->wantsJson() && ! $request->hasHeader('X-Inertia'))) {
@@ -487,5 +488,39 @@ class TemplateController extends Controller
 
         return to_route('admin.templates.edit', $template->id)
             ->with('success', 'Template created successfully from generation! You can now adjust its details.');
+    }
+
+    /**
+     * Bulk reorder templates via drag-and-drop.
+     */
+    public function reorder(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'ordered_ids' => ['required_without:items', 'array'],
+            'ordered_ids.*' => ['integer', 'exists:templates,id'],
+            'items' => ['required_without:ordered_ids', 'array'],
+            'items.*.id' => ['required', 'integer', 'exists:templates,id'],
+            'items.*.sort_order' => ['required', 'integer', 'min:1'],
+        ]);
+
+        DB::transaction(function () use ($validated) {
+            if (! empty($validated['items'])) {
+                foreach ($validated['items'] as $item) {
+                    Template::whereKey($item['id'])->update([
+                        'sort_order' => (int) $item['sort_order'],
+                    ]);
+                }
+            } elseif (! empty($validated['ordered_ids'])) {
+                foreach (array_values($validated['ordered_ids']) as $index => $id) {
+                    Template::whereKey($id)->update([
+                        'sort_order' => $index + 1,
+                    ]);
+                }
+            }
+        });
+
+        return response()->json([
+            'message' => 'Template order updated successfully.',
+        ]);
     }
 }

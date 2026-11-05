@@ -94,6 +94,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::get('templates', [TemplateController::class, 'index'])->middleware('permission:templates.view')->name('templates.index');
     Route::get('templates/create', [TemplateController::class, 'create'])->middleware('permission:templates.manage')->name('templates.create');
     Route::post('templates', [TemplateController::class, 'store'])->middleware('permission:templates.manage')->name('templates.store');
+    Route::post('templates/reorder', [TemplateController::class, 'reorder'])->middleware('permission:templates.manage')->name('templates.reorder');
     Route::post('templates/from-generation/{generation}', [TemplateController::class, 'storeFromGeneration'])->middleware('permission:templates.manage')->name('templates.from-generation');
     Route::get('templates/{template}/edit', [TemplateController::class, 'edit'])->middleware('permission:templates.manage')->name('templates.edit');
     Route::put('templates/{template}', [TemplateController::class, 'update'])->middleware('permission:templates.manage')->name('templates.update');

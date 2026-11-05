@@ -9,7 +9,6 @@ use App\Http\Middleware\LogApiRequests;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
-use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Http\Request;
 use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
 
@@ -30,7 +29,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // API and S2S webhook routes use Bearer tokens or S2S credentials, not session cookies.
         // CSRF is not needed — skip it for all /api/*, /v1/*, /admin/ai/*, and broadcasting/auth routes.
-        $middleware->validateCsrfTokens(except: ['api/*', 'v1/*', 'admin/ai/*', 'broadcasting/auth']);
+        $middleware->validateCsrfTokens(except: ['api/*', 'v1/*', 'admin/ai/*', 'admin/templates/reorder', 'broadcasting/auth']);
 
         $middleware->alias([
             'permission' => EnsureUserHasPermission::class,

@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\AIGeneration;
+use App\Models\AIModel;
 use App\Models\AIProvider;
 use App\Models\Role;
 use App\Models\Template;
@@ -358,7 +359,7 @@ test('an admin can create and update a template with cost and discount_cost', fu
 test('a template without manual cost inherits selected AI model point cost and updates dynamically when model cost changes', function () {
     $this->actingAs($this->admin);
 
-    $faceSwapModel = \App\Models\AIModel::create([
+    $faceSwapModel = AIModel::create([
         'name' => 'Face Swap V5',
         'provider_name' => 'segmind',
         'model_name' => 'face-swap',
@@ -409,4 +410,36 @@ test('a template without manual cost inherits selected AI model point cost and u
         ->and($dynamicTemplate->effective_cost)->toBe(50)
         ->and($manualTemplate->cost)->toBe(10)
         ->and($manualTemplate->effective_cost)->toBe(10);
+});
+
+test('an admin can reorder templates via drag and drop', function () {
+    $this->actingAs($this->admin);
+
+    $t1 = Template::create([
+        'name' => 'Template One',
+        'type' => Template::TYPE_IMAGE,
+        'file_path' => 'templates/1.jpg',
+        'sort_order' => 1,
+    ]);
+    $t2 = Template::create([
+        'name' => 'Template Two',
+        'type' => Template::TYPE_IMAGE,
+        'file_path' => 'templates/2.jpg',
+        'sort_order' => 2,
+    ]);
+    $t3 = Template::create([
+        'name' => 'Template Three',
+        'type' => Template::TYPE_VIDEO,
+        'file_path' => 'templates/3.mp4',
+        'sort_order' => 3,
+    ]);
+
+    $this->postJson(route('admin.templates.reorder'), [
+        'ordered_ids' => [$t3->id, $t1->id, $t2->id],
+    ])->assertOk()
+        ->assertJson(['message' => 'Template order updated successfully.']);
+
+    expect($t3->fresh()->sort_order)->toBe(1)
+        ->and($t1->fresh()->sort_order)->toBe(2)
+        ->and($t2->fresh()->sort_order)->toBe(3);
 });
