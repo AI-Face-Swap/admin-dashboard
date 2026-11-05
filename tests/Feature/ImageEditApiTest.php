@@ -330,6 +330,7 @@ class ImageEditApiTest extends TestCase
 
         $generation = AIGeneration::latest('id')->first();
         $this->assertEquals([
+            'model' => 'p-image-edit',
             'prompt' => 'Replace the background with a futuristic neon cityscape',
             'image_urls' => ['https://example.com/source.jpg'],
             'aspect_ratio' => 'match_input_image',

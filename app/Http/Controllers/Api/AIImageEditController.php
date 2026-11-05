@@ -112,6 +112,7 @@ class AIImageEditController extends Controller
     private function buildPayload(ImageEditRequest $request, string $model): array
     {
         $payload = [
+            'model' => $model,
             'prompt' => $request->string('prompt')->toString(),
         ];
 

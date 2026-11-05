@@ -14,11 +14,164 @@ export type Generation = {
     request_id: string | null;
     cost: string | null;
     currency: string | null;
+    coins_spent?: number | null;
+    points_spent?: number | null;
     duration_ms: number | null;
+    input_metadata?: Record<string, any> | null;
     output_metadata: string[] | null;
+    error?: string | null;
     created_at: string;
     template: { id: number; name: string; slug: string } | null;
 };
+
+export type InputMediaItem = {
+    label: string;
+    url: string;
+    type: 'image' | 'video' | 'audio';
+};
+
+export function resolveGenerationModel(generation: {
+    operation: string;
+    input_metadata?: Record<string, any> | null;
+    template?: { name: string } | null;
+}): string {
+    const meta = generation.input_metadata;
+    if (meta?.model && typeof meta.model === 'string') {
+        return meta.model;
+    }
+
+    if (meta) {
+        if ('input_image_2' in meta) return 'multi-image-kontext-max';
+        if ('guidance' in meta || 'num_inference_steps' in meta)
+            return 'flux-kontext-dev';
+        if ('image_input' in meta || 'optimize_prompt' in meta)
+            return 'seedream-v5-lite-image-to-image';
+        if ('output_compression' in meta || 'moderation' in meta)
+            return 'gpt-image-1.5-edit';
+        if ('output_resolution' in meta || 'response_modalities' in meta)
+            return 'nano-banana-pro';
+        if ('style_type' in meta || 'magic_prompt_option' in meta)
+            return 'ideogram-4.5-edit';
+        if ('disable_safety_checker' in meta && 'image_urls' in meta)
+            return 'p-image-edit';
+        if ('image_url' in meta && generation.operation.includes('edit'))
+            return 'kling-3-image2image';
+    }
+
+    if (generation.operation === 'face-swap') return 'face-swap-v5';
+    if (generation.operation === 'video-face-swap') return 'video-face-swap';
+
+    return generation.template?.name || 'default';
+}
+
+export function extractInputMediaUrls(
+    meta?: Record<string, any> | null,
+): InputMediaItem[] {
+    if (!meta) return [];
+    const items: InputMediaItem[] = [];
+    const seen = new Set<string>();
+
+    const pushUrl = (
+        label: string,
+        val: unknown,
+        defaultType: 'image' | 'video' | 'audio' = 'image',
+    ) => {
+        if (typeof val !== 'string' || !val.startsWith('http')) return;
+        if (seen.has(val)) return;
+        seen.add(val);
+        const lower = val.toLowerCase();
+        const type: 'image' | 'video' | 'audio' =
+            lower.endsWith('.mp4') ||
+            lower.endsWith('.webm') ||
+            lower.endsWith('.mov')
+                ? 'video'
+                : lower.endsWith('.mp3') ||
+                    lower.endsWith('.wav') ||
+                    lower.endsWith('.m4a')
+                  ? 'audio'
+                  : defaultType;
+        items.push({ label, url: val, type });
+    };
+
+    pushUrl('Input Image', meta.input_image);
+    pushUrl('Image 1', meta.input_image_1);
+    pushUrl('Image 2', meta.input_image_2);
+    pushUrl('Image', meta.image);
+    pushUrl('Image URL', meta.image_url);
+    pushUrl('First Frame', meta.first_frame_url);
+    pushUrl('Last Frame', meta.last_frame_url);
+    pushUrl('Face Image', meta.face_image || meta.source_image);
+    pushUrl('Target Image', meta.target_image);
+    pushUrl('Mask Image', meta.mask);
+
+    if (Array.isArray(meta.image_urls)) {
+        meta.image_urls.forEach((u, i) => pushUrl(`Input #${i + 1}`, u));
+    }
+    if (Array.isArray(meta.image_input)) {
+        meta.image_input.forEach((u, i) => pushUrl(`Input #${i + 1}`, u));
+    }
+    if (Array.isArray(meta.reference_images)) {
+        meta.reference_images.forEach((u, i) =>
+            pushUrl(`Ref Image #${i + 1}`, u),
+        );
+    }
+    if (Array.isArray(meta.reference_videos)) {
+        meta.reference_videos.forEach((u, i) =>
+            pushUrl(`Ref Video #${i + 1}`, u, 'video'),
+        );
+    }
+    if (Array.isArray(meta.reference_audios)) {
+        meta.reference_audios.forEach((u, i) =>
+            pushUrl(`Ref Audio #${i + 1}`, u, 'audio'),
+        );
+    }
+
+    return items;
+}
+
+export function extractKeyInputParams(
+    meta?: Record<string, any> | null,
+): { key: string; value: string }[] {
+    if (!meta) return [];
+    const ignoredKeys = new Set([
+        'model',
+        'prompt',
+        'negative_prompt',
+        'system_prompt',
+        'input_image',
+        'input_image_1',
+        'input_image_2',
+        'image',
+        'image_url',
+        'image_urls',
+        'image_input',
+        'reference_images',
+        'reference_videos',
+        'reference_audios',
+        'first_frame_url',
+        'last_frame_url',
+        'face_image',
+        'source_image',
+        'target_image',
+        'target_video',
+        'mask',
+    ]);
+
+    const params: { key: string; value: string }[] = [];
+    for (const [k, v] of Object.entries(meta)) {
+        if (ignoredKeys.has(k) || v === null || v === undefined || v === '') {
+            continue;
+        }
+        if (typeof v === 'string' && v.startsWith('http')) {
+            continue;
+        }
+        params.push({
+            key: k.replace(/_/g, ' '),
+            value: typeof v === 'boolean' ? (v ? 'true' : 'false') : String(v),
+        });
+    }
+    return params;
+}
 
 export type GenerationResult = {
     status: string;

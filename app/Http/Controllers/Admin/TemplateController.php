@@ -303,8 +303,9 @@ class TemplateController extends Controller
 
         // Match AI model from the generation, or fallback to default model
         $aiModel = null;
-        if (! empty($generation->model)) {
-            $aiModel = AIModel::where('model_name', $generation->model)->first();
+        $modelSlug = $generation->model ?? ($input['model'] ?? null);
+        if (! empty($modelSlug)) {
+            $aiModel = AIModel::where('model_name', $modelSlug)->first();
         }
         if (! $aiModel && $generationType) {
             $aiModel = AIModel::where('generation_type_id', $generationType->id)
@@ -317,7 +318,7 @@ class TemplateController extends Controller
         $template = Template::create([
             'generation_type_id' => $generationType?->id,
             'ai_model_id' => $aiModel?->id,
-            'model' => $generation->model ?? $aiModel?->model_name,
+            'model' => $modelSlug ?? $aiModel?->model_name,
             'name' => "{$typeName} Template {$generation->id}",
             'slug' => strtolower($typeName).'-'.$generation->id, // HasAutoSlug will suffix if needed
             'description' => "Generated from {$operationLabel}",

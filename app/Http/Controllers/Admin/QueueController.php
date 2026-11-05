@@ -45,6 +45,7 @@ class QueueController extends Controller
                 $q->where('id', $search)
                     ->orWhere('client_idempotency_token', 'like', "%{$search}%")
                     ->orWhere('error', 'like', "%{$search}%")
+                    ->orWhere('input_metadata', 'like', "%{$search}%")
                     ->orWhereHas('customer', function ($cq) use ($search) {
                         $cq->where('name', 'like', "%{$search}%")
                             ->orWhere('email', 'like', "%{$search}%")
@@ -167,6 +168,16 @@ class QueueController extends Controller
                 ->whereNotNull('refunded_at')
                 ->whereDate('refunded_at', $today)
                 ->sum('points_refunded'),
+            'total_cost_today' => round((float) AIGeneration::where('status', AIGeneration::STATUS_COMPLETED)
+                ->whereDate('updated_at', $today)
+                ->whereNotNull('cost')
+                ->sum('cost'), 4),
+            'total_cost_all_time' => round((float) AIGeneration::where('status', AIGeneration::STATUS_COMPLETED)
+                ->whereNotNull('cost')
+                ->sum('cost'), 4),
+            'total_points_spent_today' => (int) AIGeneration::where('status', AIGeneration::STATUS_COMPLETED)
+                ->whereDate('updated_at', $today)
+                ->sum('coins_spent'),
             'redis_status' => $redisStatus,
             'redis_queue_size' => $redisQueueSize,
             'queue_driver' => config('queue.default', 'redis'),

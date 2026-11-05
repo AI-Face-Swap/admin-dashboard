@@ -331,7 +331,10 @@ class SegmindProvider implements AIProviderInterface
 
         $startedAt = hrtime(true);
 
-        $submit = $this->submit($endpoint, $request->payload);
+        $payload = $request->payload;
+        unset($payload['model']);
+
+        $submit = $this->submit($endpoint, $payload);
 
         $requestId = $submit['request_id'] ?? null;
         $statusUrl = $submit['status_url'] ?? null;
