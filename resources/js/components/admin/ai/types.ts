@@ -293,6 +293,14 @@ export const MODEL_GUIDE: Record<string, string> = {
         'ByteDance Seedance 2.5 — ဇာတ်ကောင်မျက်နှာနှင့် လှုပ်ရှားမှု တိကျမှန်ကန်သော မော်ဒယ် (Reference Image/Video/Audio + First/Last Frame)။',
     'kling-o1-reference-image-to-video':
         'Kling O1 Reference — ပုံပါ ဇာတ်ကောင်ကို နမူနာယူပြီး ရုပ်ရှင်ဆန်သော ဗီဒီယိုဖန်တီးပေးသည့် မော်ဒယ်။',
+    'kling-2.6-standard-motion-control':
+        'Kling 2.6 Standard Motion Control (720p) — နမူနာဗီဒီယို (Reference Video) ထဲမှ ကကွက်နှင့် လှုပ်ရှားမှုအတိုင်း ပုံပါဇာတ်ကောင်ကို မူရင်းအသံ (Keep Original Sound) အပါအဝင် တိကျစွာ လှုပ်ရှားစေသည့် မော်ဒယ်။',
+    'kling-2.6-pro-motion-control':
+        'Kling 2.6 Pro Motion Control (1080p) — 1080p Full HD အရည်အသွေးဖြင့် နမူနာဗီဒီယိုထဲမှ ကကွက်နှင့် လှုပ်ရှားမှုအတိုင်း ပုံပါဇာတ်ကောင်ကို မူရင်းအသံအပါအဝင် ကူးပြောင်းပေးသည့် မော်ဒယ်။',
+    'kling-3-motion-control-standard':
+        'Kling 3.0 Standard Motion Control (720p) — Kling 3.0 မျိုးဆက်သစ် Motion Transfer မော်ဒယ် (ပုံ ၁ ပုံ + Reference Video တွဲတင်ပြီး မူရင်းဗီဒီယိုအသံနှင့် ကကွက်အတိုင်း 720p ထုတ်ပေးသည်)။',
+    'kling-3-motion-control-pro':
+        'Kling 3.0 Pro Motion Control (1080p) — အမြင့်ဆုံး 1080p Full HD အရည်အသွေးဖြင့် Reference Video ထဲမှ အကနှင့် လှုပ်ရှားမှုအတိုင်း ပုံပါလူကို မူရင်းအသံမပျက် တစ်ထပ်တည်း ကူးပြောင်းပေးသည့် မော်ဒယ်။',
     'minimax-h3-max-reference-to-video':
         'MiniMax Hailuo H3 Max — လူပုံစံနှင့် ကုန်ပစ္စည်း (Product) ပုံစံ မပျက်ယွင်းစေဘဲ ဗီဒီယိုဖန်တီးပေးသည့် မော်ဒယ်။',
     'wan-2.2-i2v-flash':

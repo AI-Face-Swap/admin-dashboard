@@ -68,6 +68,10 @@ export function ImageToVideoTab() {
     const [duration, setDuration] = useState('5s');
     const [promptExtend, setPromptExtend] = useState(true);
     const [generateAudio, setGenerateAudio] = useState(true);
+    const [characterOrientation, setCharacterOrientation] = useState<
+        'video' | 'image'
+    >('video');
+    const [keepOriginalSound, setKeepOriginalSound] = useState(true);
     const [bitrateMode, setBitrateMode] = useState<'standard' | 'high'>(
         'standard',
     );
@@ -93,6 +97,17 @@ export function ImageToVideoTab() {
         'seedance-2.0-fast',
         'seedance-2.5',
     ].includes(model);
+
+    const isKlingMotionControlModel = [
+        'kling-2.6-standard-motion-control',
+        'kling-2.6-pro-motion-control',
+        'kling-3-motion-control-standard',
+        'kling-3-motion-control-pro',
+    ].includes(model);
+
+    const supportsReferenceVideo =
+        (isSeedanceModel && imageInputType === 'reference') ||
+        isKlingMotionControlModel;
 
     const onImageFileChange = (file: File | null) => {
         setImageFile(file);
@@ -182,7 +197,7 @@ export function ImageToVideoTab() {
     }, [generationId, polling, pollStatus]);
 
     const generate = async () => {
-        if (!prompt.trim()) {
+        if (!prompt.trim() && !isKlingMotionControlModel) {
             return;
         }
 
@@ -196,6 +211,17 @@ export function ImageToVideoTab() {
         if (imageMode === 'url' && !imageUrl.trim()) {
             setError(
                 'ကျေးဇူးပြု၍ ပုံ URL ထည့်ပေးပါ (Enter an image URL).',
+            );
+            return;
+        }
+
+        if (
+            isKlingMotionControlModel &&
+            ((refVideoSource === 'upload' && !refVideoFile) ||
+                (refVideoSource === 'url' && !refVideoUrl.trim()))
+        ) {
+            setError(
+                'Kling Motion Control အတွက် Reference Video (Upload သို့မဟုတ် URL) ထည့်ပေးရန် လိုအပ်ပါသည်။',
             );
             return;
         }
@@ -224,18 +250,25 @@ export function ImageToVideoTab() {
             }
         }
 
-        if (isSeedanceModel && imageInputType === 'reference') {
+        if (supportsReferenceVideo) {
             if (refVideoSource === 'upload' && refVideoFile) {
                 form.append('reference_video', refVideoFile);
             } else if (refVideoSource === 'url' && refVideoUrl.trim()) {
                 form.append('reference_video_url', refVideoUrl.trim());
             }
 
-            if (refAudioSource === 'upload' && refAudioFile) {
-                form.append('reference_audio', refAudioFile);
-            } else if (refAudioSource === 'url' && refAudioUrl.trim()) {
-                form.append('reference_audio_url', refAudioUrl.trim());
+            if (isSeedanceModel) {
+                if (refAudioSource === 'upload' && refAudioFile) {
+                    form.append('reference_audio', refAudioFile);
+                } else if (refAudioSource === 'url' && refAudioUrl.trim()) {
+                    form.append('reference_audio_url', refAudioUrl.trim());
+                }
             }
+        }
+
+        if (isKlingMotionControlModel) {
+            form.append('character_orientation', characterOrientation);
+            form.append('keep_original_sound', String(keepOriginalSound));
         }
 
         if (negativePrompt.trim()) {
@@ -342,6 +375,18 @@ export function ImageToVideoTab() {
                                     <SelectItem value="kling-o1-reference-image-to-video">
                                         Kling Reference I2V — ပုံပါဇာတ်ကောင်အတိုင်း ရုပ်ရှင်ဆန်သော ဗီဒီယိုထုတ်ရန်
                                     </SelectItem>
+                                    <SelectItem value="kling-2.6-standard-motion-control">
+                                        Kling 2.6 Standard Motion Control — ကကွက်/လှုပ်ရှားမှု ကူးပြောင်းရန် (720p)
+                                    </SelectItem>
+                                    <SelectItem value="kling-2.6-pro-motion-control">
+                                        Kling 2.6 Pro Motion Control — ကကွက်/လှုပ်ရှားမှု ကူးပြောင်းရန် (1080p Pro)
+                                    </SelectItem>
+                                    <SelectItem value="kling-3-motion-control-standard">
+                                        Kling 3.0 Standard Motion Control — မျိုးဆက်သစ် ကကွက်ကူးပြောင်းမှု (720p)
+                                    </SelectItem>
+                                    <SelectItem value="kling-3-motion-control-pro">
+                                        Kling 3.0 Pro Motion Control — အမြင့်ဆုံး 1080p ကကွက်ကူးပြောင်းမှု (Pro)
+                                    </SelectItem>
                                     <SelectItem value="minimax-h3-max-reference-to-video">
                                         MiniMax H3 Max I2V — လူနှင့် ကုန်ပစ္စည်းပုံစံ မပျက်ဘဲ ဗီဒီယိုထုတ်ရန်
                                     </SelectItem>
@@ -388,7 +433,9 @@ export function ImageToVideoTab() {
                     {/* Row 2: Media Inputs side-by-side */}
                     <div
                         className={`grid gap-5 ${
-                            isSeedanceModel ? 'md:grid-cols-2' : 'grid-cols-1'
+                            isSeedanceModel || isKlingMotionControlModel
+                                ? 'md:grid-cols-2'
+                                : 'grid-cols-1'
                         }`}
                     >
                         {/* Primary Image */}
@@ -564,12 +611,16 @@ export function ImageToVideoTab() {
                                 </div>
                             )}
 
-                        {isSeedanceModel && imageInputType === 'reference' && (
+                        {supportsReferenceVideo && (
                             <div className="flex flex-col justify-between gap-4 rounded-xl border border-dashed bg-muted/10 p-4">
                                 <div className="space-y-2">
                                     <div className="flex items-center justify-between">
                                         <Label className="text-sm font-semibold">
-                                            🎬 Reference Video (လှုပ်ရှားမှု နမူနာ — Optional)
+                                            🎬 Reference Video (လှုပ်ရှားမှု နမူနာ{' '}
+                                            {isKlingMotionControlModel
+                                                ? '— Required *'
+                                                : '— Optional'}
+                                            )
                                         </Label>
                                         <div className="flex gap-1.5">
                                             <Button
@@ -643,82 +694,150 @@ export function ImageToVideoTab() {
                                     )}
                                 </div>
 
-                                <div className="space-y-2">
-                                    <div className="flex items-center justify-between">
-                                        <Label className="text-sm font-semibold">
-                                            🎵 Reference Audio (အသံစည်းချက် — Optional)
-                                        </Label>
-                                        <div className="flex gap-1.5">
-                                            <Button
-                                                type="button"
-                                                size="sm"
-                                                className="h-7 px-2.5 text-xs"
-                                                variant={
-                                                    refAudioSource === 'url'
-                                                        ? 'default'
-                                                        : 'outline'
-                                                }
-                                                onClick={() =>
-                                                    setRefAudioSource('url')
-                                                }
-                                            >
-                                                URL
-                                            </Button>
-                                            <Button
-                                                type="button"
-                                                size="sm"
-                                                className="h-7 px-2.5 text-xs"
-                                                variant={
-                                                    refAudioSource === 'upload'
-                                                        ? 'default'
-                                                        : 'outline'
-                                                }
-                                                onClick={() =>
-                                                    setRefAudioSource('upload')
-                                                }
-                                            >
-                                                Upload
-                                            </Button>
+                                {isSeedanceModel && (
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <Label className="text-sm font-semibold">
+                                                🎵 Reference Audio (အသံစည်းချက် — Optional)
+                                            </Label>
+                                            <div className="flex gap-1.5">
+                                                <Button
+                                                    type="button"
+                                                    size="sm"
+                                                    className="h-7 px-2.5 text-xs"
+                                                    variant={
+                                                        refAudioSource === 'url'
+                                                            ? 'default'
+                                                            : 'outline'
+                                                    }
+                                                    onClick={() =>
+                                                        setRefAudioSource('url')
+                                                    }
+                                                >
+                                                    URL
+                                                </Button>
+                                                <Button
+                                                    type="button"
+                                                    size="sm"
+                                                    className="h-7 px-2.5 text-xs"
+                                                    variant={
+                                                        refAudioSource ===
+                                                        'upload'
+                                                            ? 'default'
+                                                            : 'outline'
+                                                    }
+                                                    onClick={() =>
+                                                        setRefAudioSource(
+                                                            'upload',
+                                                        )
+                                                    }
+                                                >
+                                                    Upload
+                                                </Button>
+                                            </div>
                                         </div>
-                                    </div>
-                                    {refAudioSource === 'url' ? (
-                                        <Input
-                                            value={refAudioUrl}
-                                            onChange={(e) =>
-                                                setRefAudioUrl(e.target.value)
-                                            }
-                                            placeholder="https://.../audio-ref.mp3 (@Audio 1)"
-                                            className="h-10 text-sm"
-                                        />
-                                    ) : (
-                                        <>
-                                            <input
-                                                ref={refAudioInputRef}
-                                                type="file"
-                                                accept="audio/mpeg,audio/mp3,audio/wav"
-                                                className="hidden"
+                                        {refAudioSource === 'url' ? (
+                                            <Input
+                                                value={refAudioUrl}
                                                 onChange={(e) =>
-                                                    setRefAudioFile(
-                                                        e.target.files?.[0] ??
-                                                            null,
+                                                    setRefAudioUrl(
+                                                        e.target.value,
                                                     )
                                                 }
+                                                placeholder="https://.../audio-ref.mp3 (@Audio 1)"
+                                                className="h-10 text-sm"
                                             />
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                className="h-10 w-full text-sm"
-                                                onClick={() =>
-                                                    refAudioInputRef.current?.click()
+                                        ) : (
+                                            <>
+                                                <input
+                                                    ref={refAudioInputRef}
+                                                    type="file"
+                                                    accept="audio/mpeg,audio/mp3,audio/wav"
+                                                    className="hidden"
+                                                    onChange={(e) =>
+                                                        setRefAudioFile(
+                                                            e.target
+                                                                .files?.[0] ??
+                                                                null,
+                                                        )
+                                                    }
+                                                />
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    className="h-10 w-full text-sm"
+                                                    onClick={() =>
+                                                        refAudioInputRef.current?.click()
+                                                    }
+                                                >
+                                                    {refAudioFile
+                                                        ? `ရွေးထားသည်: ${refAudioFile.name}`
+                                                        : 'အသံဖိုင် ရွေးချယ်ရန် (MP3/WAV)'}
+                                                </Button>
+                                            </>
+                                        )}
+                                    </div>
+                                )}
+
+                                {isKlingMotionControlModel && (
+                                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                        <div className="space-y-1.5">
+                                            <Label className="text-xs font-semibold">
+                                                Character Orientation
+                                            </Label>
+                                            <Select
+                                                value={characterOrientation}
+                                                onValueChange={(v) =>
+                                                    setCharacterOrientation(
+                                                        v as 'video' | 'image',
+                                                    )
                                                 }
                                             >
-                                                {refAudioFile
-                                                    ? `ရွေးထားသည်: ${refAudioFile.name}`
-                                                    : 'အသံဖိုင် ရွေးချယ်ရန် (MP3/WAV)'}
-                                            </Button>
-                                        </>
-                                    )}
-                                </div>
+                                                <SelectTrigger className="h-9 text-xs">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="video">
+                                                        Video (ဗီဒီယို လှုပ်ရှားမှုအတိုင်း — 30s အထိ)
+                                                    </SelectItem>
+                                                    <SelectItem value="image">
+                                                        Image (ပုံပါ အနေအထားအတိုင်း — 10s အထိ)
+                                                    </SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        <div className="space-y-1.5">
+                                            <Label className="text-xs font-semibold">
+                                                မူရင်းအသံ (Keep Original Sound)
+                                            </Label>
+                                            <Select
+                                                value={
+                                                    keepOriginalSound
+                                                        ? 'true'
+                                                        : 'false'
+                                                }
+                                                onValueChange={(v) =>
+                                                    setKeepOriginalSound(
+                                                        v === 'true',
+                                                    )
+                                                }
+                                            >
+                                                <SelectTrigger className="h-9 text-xs">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="true">
+                                                        🔊 မူရင်းဗီဒီယိုအသံ ယူမည် (True)
+                                                    </SelectItem>
+                                                    <SelectItem value="false">
+                                                        🔇 အသံမယူပါ (False)
+                                                    </SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>
@@ -1038,7 +1157,10 @@ export function ImageToVideoTab() {
 
                     <AnimatedButton
                         onClick={generate}
-                        disabled={processing || !prompt.trim()}
+                        disabled={
+                            processing ||
+                            (!prompt.trim() && !isKlingMotionControlModel)
+                        }
                         className="h-11 w-full text-sm font-semibold"
                     >
                         {processing

@@ -22,7 +22,6 @@ use RuntimeException;
 
 class AIImageToVideoController extends Controller
 {
-
     public function store(ImageToVideoRequest $request): JsonResponse
     {
         $requester = $request->user();
@@ -148,6 +147,9 @@ class AIImageToVideoController extends Controller
 
         $lastFrameUrl = $this->resolveOptionalMediaUrl($request, 'last_frame_image', 'last_frame_url', 'input-images');
         $referenceVideoUrl = $this->resolveOptionalMediaUrl($request, 'reference_video', 'reference_video_url', 'input-videos');
+        if ($referenceVideoUrl === '' && $request->filled('video_url')) {
+            $referenceVideoUrl = $request->string('video_url')->toString();
+        }
         $referenceAudioUrl = $this->resolveOptionalMediaUrl($request, 'reference_audio', 'reference_audio_url', 'input-audios');
 
         $payload = [
@@ -159,6 +161,29 @@ class AIImageToVideoController extends Controller
         ];
 
         switch ($modelName) {
+            case 'kling-2.6-standard-motion-control':
+            case 'kling-2.6-pro-motion-control':
+            case 'kling-3-motion-control-standard':
+            case 'kling-3-motion-control-pro':
+                $orientation = $request->string('character_orientation', 'video')->toString();
+                $keepOriginalSound = $request->has('keep_original_sound')
+                    ? $request->boolean('keep_original_sound')
+                    : ($request->has('generate_audio') ? $request->boolean('generate_audio') : true);
+
+                $payload['image_url'] = $imageUrl;
+                if ($referenceVideoUrl !== '') {
+                    $payload['video_url'] = $referenceVideoUrl;
+                }
+                $payload['character_orientation'] = in_array($orientation, ['video', 'image'], true)
+                    ? $orientation
+                    : 'video';
+                $payload['keep_original_sound'] = $keepOriginalSound;
+
+                if ($prompt === '' && in_array($modelName, ['kling-2.6-standard-motion-control', 'kling-2.6-pro-motion-control'], true)) {
+                    $payload['prompt'] = 'Perform the reference video motion naturally with high visual fidelity.';
+                }
+                break;
+
             case 'seedance-2.0':
             case 'seedance-2.0-fast':
             case 'seedance-2.5':

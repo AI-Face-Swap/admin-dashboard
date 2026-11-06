@@ -3742,6 +3742,13 @@
                         ],
                         "format": "uri"
                     },
+                    "video_url": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uri"
+                    },
                     "reference_audio": {
                         "type": [
                             "string",
@@ -3757,6 +3764,30 @@
                             "null"
                         ],
                         "format": "uri"
+                    },
+                    "character_orientation": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "enum": [
+                            "video",
+                            "image",
+                            null
+                        ]
+                    },
+                    "keep_original_sound": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "enum": [
+                            "true",
+                            "false",
+                            "0",
+                            "1",
+                            null
+                        ]
                     },
                     "negative_prompt": {
                         "type": [

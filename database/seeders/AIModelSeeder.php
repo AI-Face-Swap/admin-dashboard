@@ -435,6 +435,82 @@ class AIModelSeeder extends Seeder
                 'sort_order' => 8,
                 'description' => 'Fast ByteDance Seedance 2.0 multimodal video engine with omni-reference (images, videos, audio), native audio, and start/end frame control.',
             ],
+            [
+                'generation_type_slug' => 'image-to-video',
+                'provider_name' => 'segmind',
+                'model_name' => 'kling-2.6-standard-motion-control',
+                'name' => 'Kling 2.6 Standard Motion Control',
+                'coin_cost' => 20,
+                'resolution_costs' => [
+                    '720p' => 20,
+                ],
+                'duration_costs' => [
+                    '5s' => 20,
+                    '10s' => 35,
+                ],
+                'is_active' => true,
+                'is_default' => false,
+                'docs_link' => 'https://www.segmind.com/models/kling-2.6-standard-motion-control',
+                'sort_order' => 9,
+                'description' => 'Kling 2.6 Standard Motion Control — transfers full-body dance and movement from a reference video onto a character image while preserving original audio (720p).',
+            ],
+            [
+                'generation_type_slug' => 'image-to-video',
+                'provider_name' => 'segmind',
+                'model_name' => 'kling-2.6-pro-motion-control',
+                'name' => 'Kling 2.6 Pro Motion Control',
+                'coin_cost' => 30,
+                'resolution_costs' => [
+                    '1080p' => 30,
+                ],
+                'duration_costs' => [
+                    '5s' => 30,
+                    '10s' => 55,
+                ],
+                'is_active' => true,
+                'is_default' => false,
+                'docs_link' => 'https://www.segmind.com/models/kling-2.6-pro-motion-control',
+                'sort_order' => 10,
+                'description' => 'Kling 2.6 Pro Motion Control — high-definition 1080p motion transfer from a reference video onto a character image with original sound preservation.',
+            ],
+            [
+                'generation_type_slug' => 'image-to-video',
+                'provider_name' => 'segmind',
+                'model_name' => 'kling-3-motion-control-standard',
+                'name' => 'Kling 3.0 Standard Motion Control',
+                'coin_cost' => 30,
+                'resolution_costs' => [
+                    '720p' => 30,
+                ],
+                'duration_costs' => [
+                    '5s' => 30,
+                    '10s' => 55,
+                ],
+                'is_active' => true,
+                'is_default' => false,
+                'docs_link' => 'https://www.segmind.com/models/kling-3-motion-control-standard',
+                'sort_order' => 11,
+                'description' => 'Kling 3.0 Standard Motion Control (720p) — next-gen character motion transfer from a 3–30s driving video with original audio track preservation.',
+            ],
+            [
+                'generation_type_slug' => 'image-to-video',
+                'provider_name' => 'segmind',
+                'model_name' => 'kling-3-motion-control-pro',
+                'name' => 'Kling 3.0 Pro Motion Control',
+                'coin_cost' => 40,
+                'resolution_costs' => [
+                    '1080p' => 40,
+                ],
+                'duration_costs' => [
+                    '5s' => 40,
+                    '10s' => 75,
+                ],
+                'is_active' => true,
+                'is_default' => false,
+                'docs_link' => 'https://www.segmind.com/models/kling-3-motion-control-pro',
+                'sort_order' => 12,
+                'description' => 'Kling 3.0 Pro Motion Control (1080p) — flagship 1080p character motion transfer from a 3–30s reference video with original audio track preservation.',
+            ],
 
             // Face Swap
             [

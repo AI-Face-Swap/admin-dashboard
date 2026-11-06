@@ -259,6 +259,32 @@ class AITemplateGenerationController extends Controller
             $refVideos = [$template->reference_video_url];
         } elseif (! empty($params['reference_videos']) && is_array($params['reference_videos'])) {
             $refVideos = array_values(array_filter($params['reference_videos']));
+        } elseif (! empty($params['video_url']) && is_string($params['video_url'])) {
+            $refVideos = [$params['video_url']];
+        }
+
+        if (in_array($model, [
+            'kling-2.6-standard-motion-control',
+            'kling-2.6-pro-motion-control',
+            'kling-3-motion-control-standard',
+            'kling-3-motion-control-pro',
+        ], true)) {
+            $drivingVideoUrl = $refVideos[0] ?? $template->file_url;
+            $orientation = (string) ($params['character_orientation'] ?? 'video');
+            $keepSound = isset($params['keep_original_sound'])
+                ? filter_var($params['keep_original_sound'], FILTER_VALIDATE_BOOLEAN)
+                : (isset($params['generate_audio'])
+                    ? filter_var($params['generate_audio'], FILTER_VALIDATE_BOOLEAN)
+                    : true);
+
+            return array_filter([
+                'model' => $model,
+                'prompt' => $prompt,
+                'image_url' => $userImageUrl,
+                'video_url' => $drivingVideoUrl,
+                'character_orientation' => in_array($orientation, ['video', 'image'], true) ? $orientation : 'video',
+                'keep_original_sound' => $keepSound,
+            ], fn ($v) => $v !== null && $v !== '');
         }
 
         if (in_array($model, ['seedance-2.0', 'seedance-2.0-fast', 'seedance-2.5'], true)) {

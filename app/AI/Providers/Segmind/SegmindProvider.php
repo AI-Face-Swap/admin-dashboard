@@ -288,6 +288,16 @@ class SegmindProvider implements AIProviderInterface
         unset($payload['model'], $payload['image_mode'], $payload['template_id']);
 
         return match ($endpoint) {
+            'kling-2.6-standard-motion-control',
+            'kling-2.6-pro-motion-control',
+            'kling-3-motion-control-standard',
+            'kling-3-motion-control-pro' => array_intersect_key($payload, array_flip([
+                'prompt',
+                'image_url',
+                'video_url',
+                'keep_original_sound',
+                'character_orientation',
+            ])),
             'seedance-2.0', 'seedance-2.0-fast', 'seedance-2.5' => array_intersect_key($payload, array_flip([
                 'prompt',
                 'negative_prompt',
