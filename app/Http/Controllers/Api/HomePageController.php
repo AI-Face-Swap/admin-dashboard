@@ -16,24 +16,29 @@ class HomePageController extends Controller
 {
     /**
      * Get HTUT Ecosystem Project Landings from Central Auth SSO.
+     *
+     * Public endpoint — no authentication required.
+     * Returns all active HTUT Ecosystem project landing cards (logo, banner, title, description, store links, website, and benefits) sorted by ordering.
      */
     public function projectLandings(Request $request): JsonResponse
     {
-        $forceRefresh = $request->boolean('refresh');
-        $includeSelf = $request->has('include_self') ? $request->boolean('include_self') : true;
+        $forceRefresh = $request->boolean('refresh', false);
+        $includeSelf = $request->boolean('include_self', true);
 
         $landings = CentralAuthProjectLandingService::getProjectLandings($forceRefresh, $includeSelf);
 
         return response()->json([
             'status' => 'success',
             'total' => count($landings),
-            'project_landings' => $landings,
             'data' => $landings,
         ]);
     }
 
     /**
      * Get Single HTUT Ecosystem Project Landing Detail by Project Slug or Landing ID.
+     *
+     * Public endpoint — no authentication required.
+     * Pass the project slug (e.g. `vvip9`, `yoga-master`, `star-audio-book`, `htut_ai`) or numeric landing ID as `{identifier}`.
      */
     public function projectLandingDetail(string $identifier): JsonResponse
     {
@@ -48,7 +53,6 @@ class HomePageController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'project_landing' => $landing,
             'data' => $landing,
         ]);
     }

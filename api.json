@@ -641,47 +641,6 @@
                 }
             }
         },
-        "/v1/ai/face-swap": {
-            "post": {
-                "operationId": "aIFaceSwap.store",
-                "description": "Upload a face image (or provide a URL) and a target image (or template slug).\nThe AI will swap the face onto the target.\n\n**Cost:** Depends on the template (free templates cost 0 points).\n\n**How it works:**\n1. Provide `face_image` (file) OR `face_image_url` (string)\n2. Provide `template_slug` (string) OR `target_image_url` (string)\n3. Get back a completed generation with the swapped image",
-                "summary": "Swap a face onto a target image",
-                "tags": [
-                    "AIFaceSwap"
-                ],
-                "requestBody": {
-                    "content": {
-                        "multipart/form-data": {
-                            "schema": {
-                                "$ref": "#/components/schemas/FaceSwapRequest"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "integer",
-                                    "const": 200
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "$ref": "#/components/responses/ModelNotFoundException"
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/AuthenticationException"
-                    },
-                    "422": {
-                        "$ref": "#/components/responses/ValidationException"
-                    }
-                }
-            }
-        },
         "/v1/ai/generations/{generation}": {
             "get": {
                 "operationId": "aIGenerationStatus.show",
@@ -1058,19 +1017,34 @@
                 "security": []
             }
         },
-        "/v1/ai/video-face-swap": {
+        "/v1/templates/{slug}/generate": {
             "post": {
-                "operationId": "aIVideoFaceSwap.store",
-                "description": "Swaps a face in a video. This is an **async operation** \u2014 the request\nreturns immediately with a generation ID. Poll `/ai/generations/{id}`\nto check status.\n\n**Cost:** Depends on the template (video templates typically cost more).\n\n**Processing time:** 30 seconds to 5+ minutes depending on video length.",
-                "summary": "Submit a video face-swap generation (queued)",
+                "operationId": "aITemplateGeneration.store_25",
+                "description": "Automatically routes to the right AI operation, provider, and model\n(`image-to-video`, `image-editing`, `video-face-swap`, `face-swap`, or `image-generation`)\nbased on the template's configured `generation_type`, `ai_model`, `prompt`,\n`reference_video_path`, `reference_images`, and `parameters`.",
+                "summary": "Generate AI media using a template slug",
                 "tags": [
-                    "AIVideoFaceSwap"
+                    "AITemplateGeneration"
+                ],
+                "parameters": [
+                    {
+                        "name": "slug",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "default": null
+                        }
+                    }
                 ],
                 "requestBody": {
+                    "required": true,
                     "content": {
                         "multipart/form-data": {
                             "schema": {
-                                "$ref": "#/components/schemas/VideoFaceSwapRequest"
+                                "$ref": "#/components/schemas/TemplateGenerationRequest"
                             }
                         }
                     }
@@ -1081,8 +1055,48 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "integer",
-                                    "const": 202
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/v1/ai/template-generate": {
+            "post": {
+                "operationId": "aITemplateGeneration.store_26",
+                "description": "Automatically routes to the right AI operation, provider, and model\n(`image-to-video`, `image-editing`, `video-face-swap`, `face-swap`, or `image-generation`)\nbased on the template's configured `generation_type`, `ai_model`, `prompt`,\n`reference_video_path`, `reference_images`, and `parameters`.",
+                "summary": "Generate AI media using a template slug",
+                "tags": [
+                    "AITemplateGeneration"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TemplateGenerationRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
                                 }
                             }
                         }
@@ -1464,6 +1478,7 @@
         "/v1/project-landings": {
             "get": {
                 "operationId": "homePage.projectLandings",
+                "description": "Public endpoint \u2014 no authentication required.\nReturns all active HTUT Ecosystem project landing cards (logo, banner, title, description, store links, website, and benefits) sorted by ordering.",
                 "summary": "Get HTUT Ecosystem Project Landings from Central Auth SSO",
                 "tags": [
                     "HomePage"
@@ -1475,6 +1490,14 @@
                         "schema": {
                             "type": "boolean",
                             "default": false
+                        }
+                    },
+                    {
+                        "name": "include_self",
+                        "in": "query",
+                        "schema": {
+                            "type": "boolean",
+                            "default": true
                         }
                     }
                 ],
@@ -1493,25 +1516,154 @@
                                         "total": {
                                             "type": "integer"
                                         },
-                                        "project_landings": {
-                                            "type": "array",
-                                            "items": {
-                                                "type": "object",
-                                                "additionalProperties": {}
-                                            }
-                                        },
                                         "data": {
                                             "type": "array",
                                             "items": {
                                                 "type": "object",
-                                                "additionalProperties": {}
+                                                "properties": {
+                                                    "id": {
+                                                        "type": [
+                                                            "integer",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "project_id": {
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "project_slug": {
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "project_name": {
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "logo": {
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "logo_url": {
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "banner": {
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "banner_url": {
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "title": {
+                                                        "type": "string"
+                                                    },
+                                                    "description": {
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "play_store": {
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "play_store_url": {
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "app_store": {
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "app_store_url": {
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "direct_link": {
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "website": {
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "website_url": {
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "benefit": {
+                                                        "type": "array",
+                                                        "items": {
+                                                            "type": "string"
+                                                        }
+                                                    },
+                                                    "ordering": {
+                                                        "type": "integer"
+                                                    },
+                                                    "updated_at": {
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ]
+                                                    }
+                                                },
+                                                "required": [
+                                                    "id",
+                                                    "project_id",
+                                                    "project_slug",
+                                                    "project_name",
+                                                    "logo",
+                                                    "logo_url",
+                                                    "banner",
+                                                    "banner_url",
+                                                    "title",
+                                                    "description",
+                                                    "play_store",
+                                                    "play_store_url",
+                                                    "app_store",
+                                                    "app_store_url",
+                                                    "direct_link",
+                                                    "website",
+                                                    "website_url",
+                                                    "benefit",
+                                                    "ordering",
+                                                    "updated_at"
+                                                ]
                                             }
                                         }
                                     },
                                     "required": [
                                         "status",
                                         "total",
-                                        "project_landings",
                                         "data"
                                     ]
                                 }
@@ -1525,6 +1677,7 @@
         "/v1/project-landings/{identifier}": {
             "get": {
                 "operationId": "homePage.projectLandingDetail",
+                "description": "Public endpoint \u2014 no authentication required.\nPass the project slug (e.g. `vvip9`, `yoga-master`, `star-audio-book`, `htut_ai`) or numeric landing ID as `{identifier}`.",
                 "summary": "Get Single HTUT Ecosystem Project Landing Detail by Project Slug or Landing ID",
                 "tags": [
                     "HomePage"
@@ -1551,24 +1704,153 @@
                                             "type": "string",
                                             "const": "success"
                                         },
-                                        "project_landing": {
-                                            "type": [
-                                                "object",
-                                                "null"
-                                            ],
-                                            "additionalProperties": {}
-                                        },
                                         "data": {
                                             "type": [
                                                 "object",
                                                 "null"
                                             ],
-                                            "additionalProperties": {}
+                                            "properties": {
+                                                "id": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "project_id": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "project_slug": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "project_name": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "logo": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "logo_url": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "banner": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "banner_url": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "title": {
+                                                    "type": "string"
+                                                },
+                                                "description": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "play_store": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "play_store_url": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "app_store": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "app_store_url": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "direct_link": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "website": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "website_url": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "benefit": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "ordering": {
+                                                    "type": "integer"
+                                                },
+                                                "updated_at": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "id",
+                                                "project_id",
+                                                "project_slug",
+                                                "project_name",
+                                                "logo",
+                                                "logo_url",
+                                                "banner",
+                                                "banner_url",
+                                                "title",
+                                                "description",
+                                                "play_store",
+                                                "play_store_url",
+                                                "app_store",
+                                                "app_store_url",
+                                                "direct_link",
+                                                "website",
+                                                "website_url",
+                                                "benefit",
+                                                "ordering",
+                                                "updated_at"
+                                            ]
                                         }
                                     },
                                     "required": [
                                         "status",
-                                        "project_landing",
                                         "data"
                                     ]
                                 }
@@ -2867,52 +3149,6 @@
                 ],
                 "title": "AIProvider"
             },
-            "FaceSwapRequest": {
-                "type": "object",
-                "properties": {
-                    "face_image": {
-                        "type": [
-                            "string",
-                            "null"
-                        ],
-                        "format": "binary",
-                        "contentMediaType": "application/octet-stream",
-                        "description": "Maximum file size: 10240 kilobytes."
-                    },
-                    "face_image_url": {
-                        "type": [
-                            "string",
-                            "null"
-                        ],
-                        "format": "uri",
-                        "description": "10 MB",
-                        "maxLength": 2048
-                    },
-                    "template_slug": {
-                        "type": [
-                            "string",
-                            "null"
-                        ],
-                        "maxLength": 255
-                    },
-                    "target_image_url": {
-                        "type": [
-                            "string",
-                            "null"
-                        ],
-                        "format": "uri",
-                        "maxLength": 2048
-                    },
-                    "client_idempotency_token": {
-                        "type": [
-                            "string",
-                            "null"
-                        ],
-                        "maxLength": 255
-                    }
-                },
-                "title": "FaceSwapRequest"
-            },
             "HomeHero": {
                 "type": "object",
                 "properties": {
@@ -3497,7 +3733,7 @@
                         ],
                         "format": "binary",
                         "contentMediaType": "application/octet-stream",
-                        "description": "Maximum file size: 51200 kilobytes."
+                        "description": "Maximum file size: 5120000 kilobytes."
                     },
                     "reference_video_url": {
                         "type": [
@@ -3849,6 +4085,25 @@
                             "null"
                         ]
                     },
+                    "reference_video_path": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "reference_images": {
+                        "type": [
+                            "array",
+                            "null"
+                        ],
+                        "items": {}
+                    },
+                    "reference_audio_path": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
                     "model": {
                         "type": [
                             "string",
@@ -3891,6 +4146,13 @@
                             "null"
                         ]
                     },
+                    "parameters": {
+                        "type": [
+                            "array",
+                            "null"
+                        ],
+                        "items": {}
+                    },
                     "cost": {
                         "type": "integer"
                     },
@@ -3915,10 +4177,28 @@
                         "format": "date-time"
                     },
                     "file_url": {
-                        "type": "string"
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     },
                     "thumbnail_url": {
-                        "type": "string"
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "reference_video_url": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "reference_audio_url": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     },
                     "manual_cost": {
                         "type": "string"
@@ -3938,6 +4218,9 @@
                     "type",
                     "file_path",
                     "thumbnail_path",
+                    "reference_video_path",
+                    "reference_images",
+                    "reference_audio_path",
                     "model",
                     "ai_model_id",
                     "prompt",
@@ -3945,6 +4228,7 @@
                     "aspect_ratio",
                     "resolution",
                     "seed",
+                    "parameters",
                     "cost",
                     "discount_cost",
                     "is_active",
@@ -3952,6 +4236,8 @@
                     "updated_at",
                     "file_url",
                     "thumbnail_url",
+                    "reference_video_url",
+                    "reference_audio_url",
                     "manual_cost",
                     "effective_cost"
                 ],
@@ -4004,9 +4290,22 @@
                 ],
                 "title": "TemplateCategory"
             },
-            "VideoFaceSwapRequest": {
+            "TemplateGenerationRequest": {
                 "type": "object",
                 "properties": {
+                    "template_slug": {
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "image": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "binary",
+                        "contentMediaType": "application/octet-stream",
+                        "description": "Maximum file size: 20480 kilobytes."
+                    },
                     "face_image": {
                         "type": [
                             "string",
@@ -4014,9 +4313,9 @@
                         ],
                         "format": "binary",
                         "contentMediaType": "application/octet-stream",
-                        "description": "Maximum file size: 10240 kilobytes."
+                        "description": "Maximum file size: 20480 kilobytes."
                     },
-                    "face_image_url": {
+                    "image_url": {
                         "type": [
                             "string",
                             "null"
@@ -4024,14 +4323,7 @@
                         "format": "uri",
                         "maxLength": 2048
                     },
-                    "template_slug": {
-                        "type": [
-                            "string",
-                            "null"
-                        ],
-                        "maxLength": 255
-                    },
-                    "target_video_url": {
+                    "face_image_url": {
                         "type": [
                             "string",
                             "null"
@@ -4045,31 +4337,12 @@
                             "null"
                         ],
                         "maxLength": 255
-                    },
-                    "model_name": {
-                        "type": [
-                            "string",
-                            "null"
-                        ],
-                        "maxLength": 255
-                    },
-                    "face_detector_score": {
-                        "type": [
-                            "number",
-                            "null"
-                        ],
-                        "minimum": 0,
-                        "maximum": 1
-                    },
-                    "target_face_index": {
-                        "type": [
-                            "integer",
-                            "null"
-                        ],
-                        "minimum": 0
                     }
                 },
-                "title": "VideoFaceSwapRequest"
+                "required": [
+                    "template_slug"
+                ],
+                "title": "TemplateGenerationRequest"
             }
         },
         "responses": {

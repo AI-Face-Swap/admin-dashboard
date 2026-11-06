@@ -304,6 +304,24 @@ export const ENDPOINT_TEMPLATES: EndpointTemplate[] = [
         body: '',
         headers: [{ key: 'Accept', value: 'application/json' }],
     },
+    {
+        label: 'Get Project Landings',
+        group: 'public',
+        method: 'GET',
+        url: '/api/v1/project-landings',
+        bodyType: 'none',
+        body: '',
+        headers: [{ key: 'Accept', value: 'application/json' }],
+    },
+    {
+        label: 'Get Project Landing Detail',
+        group: 'public',
+        method: 'GET',
+        url: '/api/v1/project-landings/vvip9',
+        bodyType: 'none',
+        body: '',
+        headers: [{ key: 'Accept', value: 'application/json' }],
+    },
     // ── Customer ──────────────────────────────────────────────────────────
     {
         label: 'Get My Generations',

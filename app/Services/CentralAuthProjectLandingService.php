@@ -5,6 +5,7 @@ namespace App\Services;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class CentralAuthProjectLandingService
 {
@@ -15,7 +16,28 @@ class CentralAuthProjectLandingService
     /**
      * Retrieve active HTUT Ecosystem project landings from HTUT Central Auth SSO.
      *
-     * @return array<int, array<string, mixed>>
+     * @return array<int, array{
+     *   id: int|null,
+     *   project_id: string|null,
+     *   project_slug: string|null,
+     *   project_name: string|null,
+     *   logo: string|null,
+     *   logo_url: string|null,
+     *   banner: string|null,
+     *   banner_url: string|null,
+     *   title: string,
+     *   description: string|null,
+     *   play_store: string|null,
+     *   play_store_url: string|null,
+     *   app_store: string|null,
+     *   app_store_url: string|null,
+     *   direct_link: string|null,
+     *   website: string|null,
+     *   website_url: string|null,
+     *   benefit: array<int, string>,
+     *   ordering: int,
+     *   updated_at: string|null
+     * }>
      */
     public static function getProjectLandings(bool $forceRefresh = false, bool $includeSelf = true): array
     {
@@ -67,7 +89,7 @@ class CentralAuthProjectLandingService
             } else {
                 Log::warning('Central Auth project landings fetch error: '.$response->body());
             }
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Log::warning('Central Auth project landings fetch exception: '.$e->getMessage());
         }
 
@@ -77,7 +99,28 @@ class CentralAuthProjectLandingService
     /**
      * Retrieve a single project landing detail by project_id slug or landing ID.
      *
-     * @return array<string, mixed>|null
+     * @return array{
+     *   id: int|null,
+     *   project_id: string|null,
+     *   project_slug: string|null,
+     *   project_name: string|null,
+     *   logo: string|null,
+     *   logo_url: string|null,
+     *   banner: string|null,
+     *   banner_url: string|null,
+     *   title: string,
+     *   description: string|null,
+     *   play_store: string|null,
+     *   play_store_url: string|null,
+     *   app_store: string|null,
+     *   app_store_url: string|null,
+     *   direct_link: string|null,
+     *   website: string|null,
+     *   website_url: string|null,
+     *   benefit: array<int, string>,
+     *   ordering: int,
+     *   updated_at: string|null
+     * }|null
      */
     public static function getProjectLandingDetail(string $identifier): ?array
     {
@@ -110,7 +153,7 @@ class CentralAuthProjectLandingService
                     return self::normalizeLanding($landing);
                 }
             }
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Log::warning("Central Auth project landing detail [{$identifier}] fetch exception: ".$e->getMessage());
         }
 
@@ -132,7 +175,28 @@ class CentralAuthProjectLandingService
      * Normalize a single project landing array from Central Auth.
      *
      * @param  array<string, mixed>  $landing
-     * @return array<string, mixed>
+     * @return array{
+     *   id: int|null,
+     *   project_id: string|null,
+     *   project_slug: string|null,
+     *   project_name: string|null,
+     *   logo: string|null,
+     *   logo_url: string|null,
+     *   banner: string|null,
+     *   banner_url: string|null,
+     *   title: string,
+     *   description: string|null,
+     *   play_store: string|null,
+     *   play_store_url: string|null,
+     *   app_store: string|null,
+     *   app_store_url: string|null,
+     *   direct_link: string|null,
+     *   website: string|null,
+     *   website_url: string|null,
+     *   benefit: array<int, string>,
+     *   ordering: int,
+     *   updated_at: string|null
+     * }
      */
     private static function normalizeLanding(array $landing): array
     {

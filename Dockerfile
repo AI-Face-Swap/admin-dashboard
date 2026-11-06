@@ -41,8 +41,8 @@ WORKDIR /var/www/html
 
 COPY --chown=www-data:www-data . .
 
-# Host-built manifests may reference dev-only providers — force a clean rebuild.
-RUN rm -f bootstrap/cache/packages.php bootstrap/cache/services.php
+# Host-built manifests and local file cache may reference stale state — force a clean rebuild.
+RUN rm -rf bootstrap/cache/packages.php bootstrap/cache/services.php storage/framework/cache/data/*
 
 COPY --from=vendor --chown=www-data:www-data /var/www/html/vendor ./vendor
 COPY --from=assets --chown=www-data:www-data /app/public/build ./public/build
