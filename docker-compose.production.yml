@@ -2,7 +2,10 @@ name: htut-ai-prod
 
 services:
   php:
-    image: ${IMAGE_NAME:-ghcr.io/ai-face-swap/admin-dashboard}:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ${IMAGE_NAME:-htut-ai-backend}:${IMAGE_TAG:-latest}
     restart: unless-stopped
     env_file: .env.production
     volumes:
@@ -34,7 +37,7 @@ services:
         condition: service_healthy
 
   queue:
-    image: ${IMAGE_NAME:-ghcr.io/ai-face-swap/admin-dashboard}:${IMAGE_TAG:-latest}
+    image: ${IMAGE_NAME:-htut-ai-backend}:${IMAGE_TAG:-latest}
     restart: unless-stopped
     command: ['php', 'artisan', 'queue:work', '--queue=default', '--tries=1', '--timeout=660']
     env_file: .env.production
@@ -51,7 +54,7 @@ services:
         condition: service_healthy
 
   reverb:
-    image: ${IMAGE_NAME:-ghcr.io/ai-face-swap/admin-dashboard}:${IMAGE_TAG:-latest}
+    image: ${IMAGE_NAME:-htut-ai-backend}:${IMAGE_TAG:-latest}
     restart: unless-stopped
     command: ['php', 'artisan', 'reverb:start', '--host=0.0.0.0', '--port=8080']
     env_file: .env.production
@@ -70,7 +73,7 @@ services:
         condition: service_healthy
 
   scheduler:
-    image: ${IMAGE_NAME:-ghcr.io/ai-face-swap/admin-dashboard}:${IMAGE_TAG:-latest}
+    image: ${IMAGE_NAME:-htut-ai-backend}:${IMAGE_TAG:-latest}
     restart: unless-stopped
     command: ['php', 'artisan', 'schedule:work']
     env_file: .env.production

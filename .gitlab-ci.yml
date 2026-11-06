@@ -1,0 +1,32 @@
+stages:
+  - deploy
+
+deploy_to_production:
+  stage: deploy
+  tags:
+    - production
+  script:
+    - echo "==> 1. Updating HTUT AI Backend codebase..."
+    - cd /var/www/htut-ai-backend
+    - git config core.filemode false
+    - git checkout main
+    - git reset --hard HEAD
+    - git pull https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/nainghtethtun-group/htut-ai-backend.git main
+
+    - echo "==> 2. Building Docker image..."
+    - docker compose --env-file .env.production -f docker-compose.production.yml build php
+
+    - echo "==> 3. Restarting production containers (migrations run automatically on container start)..."
+    - docker compose --env-file .env.production -f docker-compose.production.yml up -d --remove-orphans
+
+    - echo "==> 4. Cleaning stale images..."
+    - docker image prune -f
+
+    - echo "==> 5. Verifying application health..."
+    - sleep 5
+    - curl --fail --silent --show-error --insecure http://localhost:8088/up
+
+    - echo "==> HTUT AI Backend production deployment completed successfully!"
+
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
