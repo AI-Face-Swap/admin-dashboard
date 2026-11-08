@@ -43,7 +43,7 @@ return [
         'chat' => (int) env('AI_CHAT_COST', 5),
     ],
 
-    'chat_model' => env('AI_CHAT_MODEL', 'qwen-flash'),
+    'chat_model' => env('AI_CHAT_MODEL', 'deepseek-chat'),
 
     'providers' => [
 

@@ -27,7 +27,7 @@ class SendChatMessageRequest extends FormRequest
             'category' => ['nullable', 'string', 'in:general,health,education'],
             'conversation_id' => ['nullable', 'integer', 'exists:chat_conversations,id'],
             'language' => ['nullable', 'string', 'in:my,en'],
-            'model' => ['nullable', 'string', 'in:qwen-flash,qwen3-vl-flash'],
+            'model' => ['nullable', 'string', 'in:deepseek-chat,deepseek-reasoner,qwen-flash,qwen3-vl-flash'],
             'image' => ['nullable', 'file', 'image', 'mimes:jpeg,png,jpg,webp', 'max:10240'],
             'image_url' => ['nullable', 'url', 'max:1000'],
         ];

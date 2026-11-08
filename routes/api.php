@@ -59,6 +59,7 @@ Route::prefix('v1')->group(function () {
     Route::get('template-categories', [TemplateCategoryController::class, 'index']);
     Route::get('point-costs', [PointCostController::class, 'index']);
     Route::get('ai-models', [AIModelApiController::class, 'index']);
+    Route::get('chat/models', [AIChatController::class, 'models']);
 
     // Home Page Dynamic Content & Ecosystem Project Landings
     Route::get('project-landings', [HomePageController::class, 'projectLandings']);

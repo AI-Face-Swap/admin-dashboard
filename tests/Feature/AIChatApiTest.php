@@ -11,6 +11,8 @@ use App\Models\ChatConversation;
 use App\Models\ChatMessage;
 use App\Models\Customer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -299,12 +301,12 @@ class AIChatApiTest extends TestCase
         $customer = Customer::factory()->create([
             'central_auth_uuid' => 'test-uuid-sse-customer',
         ]);
-        \Illuminate\Support\Facades\Cache::put('customer_points_test-uuid-sse-customer', 100, 30);
+        Cache::put('customer_points_test-uuid-sse-customer', 100, 30);
 
         Sanctum::actingAs($customer);
 
         Http::fake([
-            '*/v1/qwen-flash' => Http::response([
+            '*/v1/deepseek-chat' => Http::response([
                 'id' => 'chatcmpl-stream-test',
                 'choices' => [
                     [
@@ -370,7 +372,7 @@ class AIChatApiTest extends TestCase
         $customer = Customer::factory()->create([
             'central_auth_uuid' => 'test-uuid-vision-customer',
         ]);
-        \Illuminate\Support\Facades\Cache::put('customer_points_test-uuid-vision-customer', 100, 30);
+        Cache::put('customer_points_test-uuid-vision-customer', 100, 30);
 
         Sanctum::actingAs($customer);
 
@@ -415,7 +417,7 @@ class AIChatApiTest extends TestCase
         $response->assertJsonPath('user_message.image_url', 'https://example.com/invoice.jpg');
         $response->assertJsonPath('assistant_message.content', 'This is a receipt image analysis.');
 
-        Http::assertSent(function (\Illuminate\Http\Client\Request $request) {
+        Http::assertSent(function (Request $request) {
             return str_contains($request->url(), 'qwen3-vl-flash')
                 && $request['image'] === 'https://example.com/invoice.jpg';
         });
@@ -425,5 +427,95 @@ class AIChatApiTest extends TestCase
             'image_url' => 'https://example.com/invoice.jpg',
         ]);
     }
-}
 
+    public function test_category_default_models_and_explicit_model_override(): void
+    {
+        $customer = Customer::factory()->create([
+            'central_auth_uuid' => 'test-uuid-routing-customer',
+        ]);
+        Cache::put('customer_points_test-uuid-routing-customer', 100, 30);
+
+        Sanctum::actingAs($customer);
+
+        Http::fake([
+            'https://api.segmind.com/v1/*' => Http::response([
+                'id' => 'chatcmpl-routing',
+                'choices' => [
+                    [
+                        'message' => [
+                            'content' => json_encode([
+                                'content' => 'Routed response.',
+                                'structured' => ['sections' => [], 'checklist' => []],
+                            ]),
+                        ],
+                    ],
+                ],
+                'usage' => ['total_tokens' => 100, 'prompt_tokens' => 50, 'completion_tokens' => 50],
+            ], 200),
+            '*/api/v1/s2s/points/deduct' => Http::response([
+                'success' => true,
+                'points' => 95,
+                'deducted' => 5,
+            ], 200),
+            '*/api/v1/s2s/points/*' => Http::response([
+                'success' => true,
+                'points' => 100,
+            ], 200),
+        ]);
+
+        // 1. general -> deepseek-chat
+        $this->postJson('/api/v1/chat/send', [
+            'prompt' => 'General question',
+            'category' => 'general',
+        ])->assertStatus(200);
+
+        Http::assertSent(fn (Request $req) => str_ends_with($req->url(), '/v1/deepseek-chat'));
+
+        // 2. health -> deepseek-reasoner
+        $this->postJson('/api/v1/chat/send', [
+            'prompt' => 'Health question',
+            'category' => 'health',
+        ])->assertStatus(200);
+
+        Http::assertSent(fn (Request $req) => str_ends_with($req->url(), '/v1/deepseek-reasoner'));
+
+        // 3. education -> deepseek-reasoner
+        $this->postJson('/api/v1/chat/send', [
+            'prompt' => 'Education question',
+            'category' => 'education',
+        ])->assertStatus(200);
+
+        // 4. explicit override -> qwen-flash
+        $this->postJson('/api/v1/chat/send', [
+            'prompt' => 'Explicit Qwen question',
+            'category' => 'general',
+            'model' => 'qwen-flash',
+        ])->assertStatus(200);
+
+        Http::assertSent(fn (Request $req) => str_ends_with($req->url(), '/v1/qwen-flash'));
+    }
+
+    public function test_chat_models_api_returns_all_available_chat_models_and_defaults(): void
+    {
+        $response = $this->getJson('/api/v1/chat/models');
+
+        $response->assertStatus(200)
+            ->assertJsonPath('category_defaults.general', 'deepseek-chat')
+            ->assertJsonPath('category_defaults.health', 'deepseek-reasoner')
+            ->assertJsonPath('category_defaults.education', 'deepseek-reasoner')
+            ->assertJsonCount(4, 'data');
+
+        $modelNames = array_column($response->json('data'), 'model_name');
+        $this->assertEquals([
+            'deepseek-chat',
+            'deepseek-reasoner',
+            'qwen-flash',
+            'qwen3-vl-flash',
+        ], $modelNames);
+
+        // Also verify /api/v1/ai-models?type=chat works via seeded DB records
+        $aiModelsResponse = $this->getJson('/api/v1/ai-models?type=chat');
+        $aiModelsResponse->assertStatus(200)
+            ->assertJsonCount(4, 'data');
+    }
+}

@@ -37,6 +37,9 @@ RUN npm run build
 # ── Stage 3: Production runtime ──────────────────────────────────────────
 FROM serversideup/php:8.4-fpm-nginx
 
+ENV NGINX_FASTCGI_BUFFERING="off" \
+    NGINX_FASTCGI_READ_TIMEOUT="300s"
+
 WORKDIR /var/www/html
 
 COPY --chown=www-data:www-data . .

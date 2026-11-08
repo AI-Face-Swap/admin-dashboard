@@ -12,9 +12,11 @@ use App\Models\Customer;
 use App\Models\Setting;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AIChatController extends Controller
 {
@@ -36,6 +38,21 @@ class AIChatController extends Controller
         return response()->json([
             'conversations' => $conversations,
             'categories' => ChatSkillFactory::all(),
+            'category_defaults' => AIChatService::CATEGORY_DEFAULT_MODELS,
+        ]);
+    }
+
+    /**
+     * List all available AI chat models and category-based default model mappings.
+     */
+    public function models(AIChatService $chatService): JsonResponse
+    {
+        $info = $chatService->availableModels();
+
+        return response()->json([
+            'data' => $info['models'],
+            'models' => $info['models'],
+            'category_defaults' => $info['category_defaults'],
         ]);
     }
 
@@ -61,7 +78,7 @@ class AIChatController extends Controller
     /**
      * Send a question to HTUT AI, invoke Segmind with the selected skill, and deduct points.
      */
-    public function send(SendChatMessageRequest $request, AIChatService $chatService): JsonResponse|\Symfony\Component\HttpFoundation\StreamedResponse
+    public function send(SendChatMessageRequest $request, AIChatService $chatService): JsonResponse|StreamedResponse
     {
         /** @var Customer|null $customer */
         $customer = $request->user('sanctum') ?? $request->user();
@@ -99,7 +116,7 @@ class AIChatController extends Controller
             if (! in_array($disk, array_keys(config('filesystems.disks', [])))) {
                 $disk = 'public';
             }
-            /** @var \Illuminate\Http\UploadedFile $imageFile */
+            /** @var UploadedFile $imageFile */
             $imageFile = $request->file('image');
             $filename = Str::uuid().'.'.$imageFile->getClientOriginalExtension();
             $path = $imageFile->storeAs('chat/images', $filename, $disk);
@@ -108,10 +125,8 @@ class AIChatController extends Controller
             $imageUrl = $request->input('image_url');
         }
 
-        // Auto-select multimodal vision model if image is provided and no specific model requested
-        if ($imageUrl && (! $model || $model === AIChatService::DEFAULT_MODEL)) {
-            $model = AIChatService::MODEL_QWEN3_VL_FLASH;
-        }
+        // Resolve model based on category, explicit request, or attached image
+        $model = $chatService->resolveModel($category, $model, $imageUrl);
 
         // Authenticated Customer mode with DB persistence and Point deduction
         if ($conversationId) {
@@ -170,6 +185,9 @@ class AIChatController extends Controller
                 $userMessage,
                 $pointCost
             ) {
+                @ini_set('zlib.output_compression', '0');
+                @ini_set('implicit_flush', '1');
+
                 if (ob_get_level() > 0) {
                     @ob_flush();
                 }
@@ -180,6 +198,9 @@ class AIChatController extends Controller
                     'conversation_id' => $conversation->id,
                     'user_message' => $this->formatMessage($userMessage),
                 ])."\n\n";
+                if (ob_get_level() > 0) {
+                    @ob_flush();
+                }
                 flush();
 
                 try {
@@ -195,6 +216,9 @@ class AIChatController extends Controller
                                 'type' => 'chunk',
                                 'content' => $chunk,
                             ])."\n\n";
+                            if (ob_get_level() > 0) {
+                                @ob_flush();
+                            }
                             flush();
                         },
                         imageUrl: $imageUrl,
@@ -231,18 +255,29 @@ class AIChatController extends Controller
                         'points_deducted' => $pointCost,
                         'points_remaining' => $customer->fresh()->points,
                     ])."\n\n";
+                    if (ob_get_level() > 0) {
+                        @ob_flush();
+                    }
+                    flush();
+
                     echo "data: [DONE]\n\n";
+                    if (ob_get_level() > 0) {
+                        @ob_flush();
+                    }
                     flush();
                 } catch (\Throwable $e) {
                     echo 'data: '.json_encode([
                         'type' => 'error',
                         'message' => $e->getMessage(),
                     ])."\n\n";
+                    if (ob_get_level() > 0) {
+                        @ob_flush();
+                    }
                     flush();
                 }
             }, 200, [
                 'Content-Type' => 'text/event-stream',
-                'Cache-Control' => 'no-cache, no-store, must-revalidate',
+                'Cache-Control' => 'no-cache, no-store, no-transform, must-revalidate',
                 'Connection' => 'keep-alive',
                 'X-Accel-Buffering' => 'no',
             ]);

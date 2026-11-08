@@ -49,6 +49,12 @@ class GenerationTypeSeeder extends Seeder
                 'description' => 'Edit, restyle, or modify images using AI models.',
                 'sort_order' => 6,
             ],
+            [
+                'name' => 'AI Chat',
+                'slug' => 'chat',
+                'description' => 'Conversational AI and reasoning models for general, healthcare, and education chat.',
+                'sort_order' => 7,
+            ],
         ];
 
         foreach ($types as $type) {
