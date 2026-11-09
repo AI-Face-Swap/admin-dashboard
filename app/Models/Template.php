@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Storage;
  * @property string $name
  * @property string|null $description
  * @property string $type
+ * @property bool $is_commercial
  * @property string|null $file_path
  * @property string|null $thumbnail_path
  * @property string|null $reference_video_path
@@ -50,6 +51,7 @@ use Illuminate\Support\Facades\Storage;
     'name',
     'description',
     'type',
+    'is_commercial',
     'file_path',
     'thumbnail_path',
     'reference_video_path',
@@ -257,6 +259,7 @@ class Template extends Model
         return [
             'cost' => 'integer',
             'discount_cost' => 'integer',
+            'is_commercial' => 'boolean',
             'is_active' => 'boolean',
             'reference_images' => 'array',
             'parameters' => 'array',

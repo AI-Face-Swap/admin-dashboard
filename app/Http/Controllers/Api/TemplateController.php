@@ -13,14 +13,15 @@ class TemplateController extends Controller
      * List active templates with optional filters.
      *
      * Public endpoint — no authentication required.
-     * Supports: search, category slug, type (image/video), pagination.
+     * Supports: search, category slug, type (image/video/commercial), is_commercial, pagination.
      */
     public function index(Request $request): JsonResponse
     {
         $validated = $request->validate([
             'search' => ['nullable', 'string', 'max:255'],
             'category' => ['nullable', 'string', 'max:255'],
-            'type' => ['nullable', 'string', 'in:image,video'],
+            'type' => ['nullable', 'string', 'in:image,video,commercial'],
+            'is_commercial' => ['nullable', 'boolean'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:50'],
         ]);
 
@@ -39,7 +40,15 @@ class TemplateController extends Controller
                     ->orWhereHas('tags', fn ($tag) => $tag->where('name', 'like', "%{$search}%"))))
             ->when($validated['category'] ?? null, fn ($query, $slug) => $query
                 ->whereHas('category', fn ($cat) => $cat->where('slug', $slug)))
-            ->when($validated['type'] ?? null, fn ($query, $type) => $query->where('type', $type))
+            ->when($validated['type'] ?? null, function ($query, $type) {
+                if ($type === 'commercial') {
+                    $query->where('is_commercial', true);
+                } else {
+                    $query->where('type', $type);
+                }
+            })
+            ->when($request->has('is_commercial') && $validated['is_commercial'] !== null, fn ($query) => $query
+                ->where('is_commercial', $request->boolean('is_commercial')))
             ->orderBy('sort_order', 'asc')
             ->orderBy('created_at', 'desc')
             ->orderBy('id', 'desc')

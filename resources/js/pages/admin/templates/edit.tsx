@@ -59,6 +59,7 @@ type Template = {
     slug: string;
     description: string | null;
     type: 'image' | 'video';
+    is_commercial?: boolean;
     file_path: string;
     file_url?: string | null;
     thumbnail_path: string | null;
@@ -168,6 +169,9 @@ export default function Edit({
     const [aiModelId, setAiModelId] = useState<string>(
         template.ai_model_id ? String(template.ai_model_id) : '',
     );
+    const [isCommercial, setIsCommercial] = useState(
+        Boolean(template.is_commercial),
+    );
     const [isActive, setIsActive] = useState(template.is_active);
     const [selectedTags, setSelectedTags] = useState<number[]>(
         template.tags.map((t) => t.id),
@@ -260,6 +264,7 @@ export default function Edit({
                 category_id: categoryId || undefined,
                 generation_type_id: generationTypeId || undefined,
                 type,
+                is_commercial: isCommercial,
                 cost: hasManualCost ? parseInt(cost, 10) : null,
                 discount_cost: numDiscount,
                 file,
@@ -780,6 +785,27 @@ export default function Edit({
                                             })}
                                         </div>
                                     )}
+                                </div>
+
+                                <div className="flex items-center justify-between rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
+                                    <div>
+                                        <Label
+                                            htmlFor="is-commercial"
+                                            className="font-medium"
+                                        >
+                                            Commercial Template
+                                        </Label>
+                                        <p className="text-xs text-muted-foreground">
+                                            Show this template under the
+                                            Commercial tab (supports both Image
+                                            & Video).
+                                        </p>
+                                    </div>
+                                    <Switch
+                                        id="is-commercial"
+                                        checked={isCommercial}
+                                        onCheckedChange={setIsCommercial}
+                                    />
                                 </div>
 
                                 <div className="flex items-center justify-between rounded-xl border border-border bg-muted/20 p-4">

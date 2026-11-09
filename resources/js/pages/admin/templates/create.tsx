@@ -95,6 +95,7 @@ export default function Create({
     const [discountCost, setDiscountCost] = useState('0');
     const [model, setModel] = useState('');
     const [aiModelId, setAiModelId] = useState<string>('');
+    const [isCommercial, setIsCommercial] = useState(false);
     const [isActive, setIsActive] = useState(true);
     const [selectedTags, setSelectedTags] = useState<number[]>([]);
     const [errors, setErrors] = useState<Record<string, string>>({});
@@ -183,6 +184,7 @@ export default function Create({
                 category_id: categoryId || undefined,
                 generation_type_id: generationTypeId || undefined,
                 type,
+                is_commercial: isCommercial,
                 cost: hasManualCost ? parseInt(cost, 10) : null,
                 discount_cost: numDiscount,
                 file,
@@ -664,6 +666,27 @@ export default function Create({
                                             })}
                                         </div>
                                     )}
+                                </div>
+
+                                <div className="flex items-center justify-between rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
+                                    <div>
+                                        <Label
+                                            htmlFor="is-commercial"
+                                            className="font-medium"
+                                        >
+                                            Commercial Template
+                                        </Label>
+                                        <p className="text-xs text-muted-foreground">
+                                            Show this template under the
+                                            Commercial tab (supports both Image
+                                            & Video).
+                                        </p>
+                                    </div>
+                                    <Switch
+                                        id="is-commercial"
+                                        checked={isCommercial}
+                                        onCheckedChange={setIsCommercial}
+                                    />
                                 </div>
 
                                 <div className="flex items-center justify-between rounded-xl border border-border bg-muted/20 p-4">

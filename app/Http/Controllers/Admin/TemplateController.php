@@ -39,6 +39,7 @@ class TemplateController extends Controller
                 'generationType:id,name,slug',
             ])
             ->when($request->category, fn ($query, $category) => $query->where('category_id', $category))
+            ->when($request->type === 'commercial', fn ($query) => $query->where('is_commercial', true))
             ->when($request->type && in_array($request->type, [Template::TYPE_IMAGE, Template::TYPE_VIDEO], true), fn ($query) => $query->where('type', $request->type))
             ->when($request->search, fn ($query, $search) => $query
                 ->where(fn ($q) => $q
@@ -92,6 +93,7 @@ class TemplateController extends Controller
             'generation_type_id' => ['nullable', 'integer', 'exists:generation_types,id'],
             'ai_model_id' => ['nullable', 'integer', 'exists:ai_models,id'],
             'type' => ['required', Rule::in([Template::TYPE_IMAGE, Template::TYPE_VIDEO])],
+            'is_commercial' => ['sometimes', 'boolean'],
             'file' => ['required', 'file', 'max:51200'], // 50 MB
             'thumbnail' => ['nullable', 'image', 'max:5120'],
             'reference_video' => ['nullable', 'file', 'max:51200'],
@@ -152,6 +154,7 @@ class TemplateController extends Controller
             'generation_type_id' => $validated['generation_type_id'] ?? null,
             'ai_model_id' => $validated['ai_model_id'] ?? null,
             'type' => $validated['type'],
+            'is_commercial' => $request->boolean('is_commercial', false),
             'cost' => $manualCost,
             'discount_cost' => $validated['discount_cost'] ?? 0,
             'file_path' => $filePath,
@@ -207,6 +210,7 @@ class TemplateController extends Controller
             'generation_type_id' => ['nullable', 'integer', 'exists:generation_types,id'],
             'ai_model_id' => ['nullable', 'integer', 'exists:ai_models,id'],
             'type' => ['required', Rule::in([Template::TYPE_IMAGE, Template::TYPE_VIDEO])],
+            'is_commercial' => ['sometimes', 'boolean'],
             'file' => ['nullable', 'file', 'max:51200'],
             'thumbnail' => ['nullable', 'image', 'max:5120'],
             'reference_video' => ['nullable', 'file', 'max:51200'],
@@ -254,6 +258,9 @@ class TemplateController extends Controller
             'generation_type_id' => $validated['generation_type_id'] ?? null,
             'ai_model_id' => $validated['ai_model_id'] ?? null,
             'type' => $validated['type'],
+            'is_commercial' => $request->has('is_commercial')
+                ? $request->boolean('is_commercial')
+                : ($template->is_commercial ?? false),
             'cost' => $manualCost,
             'discount_cost' => $validated['discount_cost'] ?? $template->discount_cost ?? 0,
             'model' => $modelName,

@@ -144,6 +144,12 @@ export function TemplateCard({
                             Video
                         </span>
                     )}
+
+                    {template.is_commercial && (
+                        <span className="inline-flex items-center gap-1 rounded-full border border-amber-400/50 bg-amber-500/85 px-2.5 py-0.5 text-[11px] font-bold text-black backdrop-blur-md">
+                            Commercial
+                        </span>
+                    )}
                 </div>
 
                 {/* Top-Right Point Cost Pill */}

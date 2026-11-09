@@ -10,6 +10,7 @@ export type TemplateItem = {
     slug: string;
     description?: string | null;
     type: 'image' | 'video';
+    is_commercial?: boolean;
     file_url: string;
     thumbnail_url: string | null;
     model?: string | null;

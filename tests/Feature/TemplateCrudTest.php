@@ -443,3 +443,60 @@ test('an admin can reorder templates via drag and drop', function () {
         ->and($t1->fresh()->sort_order)->toBe(2)
         ->and($t2->fresh()->sort_order)->toBe(3);
 });
+
+test('templates support commercial flag across both image and video types and filter via public API', function () {
+    $this->actingAs($this->admin);
+
+    $cat1 = TemplateCategory::create(['name' => 'Cosmetics', 'is_active' => true]);
+    $cat2 = TemplateCategory::create(['name' => 'Sports', 'is_active' => true]);
+
+    // 1. Upload a Commercial Image template via Admin
+    $this->post(route('admin.templates.store'), [
+        'name' => 'Perfume Poster Ad',
+        'category_id' => $cat1->id,
+        'type' => Template::TYPE_IMAGE,
+        'is_commercial' => true,
+        'file' => UploadedFile::fake()->image('perfume.jpg', 600, 800),
+    ])->assertRedirect(route('admin.templates.index'));
+
+    // 2. Create a Commercial Video template & a regular Image template
+    $commercialVideo = Template::create([
+        'name' => 'Shoe Promo Video',
+        'category_id' => $cat2->id,
+        'type' => Template::TYPE_VIDEO,
+        'is_commercial' => true,
+        'is_active' => true,
+        'file_path' => 'templates/shoe.mp4',
+    ]);
+
+    $regularImage = Template::create([
+        'name' => 'Casual Portrait',
+        'category_id' => $cat2->id,
+        'type' => Template::TYPE_IMAGE,
+        'is_commercial' => false,
+        'is_active' => true,
+        'file_path' => 'templates/portrait.jpg',
+    ]);
+
+    // 3. Public API: ?type=commercial returns both Commercial Image and Commercial Video
+    $commercialRes = $this->getJson('/api/v1/templates?type=commercial')->assertOk();
+    $commercialNames = collect($commercialRes->json('data'))->pluck('name')->all();
+    expect($commercialNames)->toContain('Perfume Poster Ad', 'Shoe Promo Video')
+        ->and($commercialNames)->not->toContain('Casual Portrait');
+
+    // 4. Public API: ?type=image returns image templates (including commercial image)
+    $imageRes = $this->getJson('/api/v1/templates?type=image')->assertOk();
+    $imageNames = collect($imageRes->json('data'))->pluck('name')->all();
+    expect($imageNames)->toContain('Perfume Poster Ad', 'Casual Portrait')
+        ->and($imageNames)->not->toContain('Shoe Promo Video');
+
+    // 5. Public API: ?type=video returns video templates (including commercial video)
+    $videoRes = $this->getJson('/api/v1/templates?type=video')->assertOk();
+    $videoNames = collect($videoRes->json('data'))->pluck('name')->all();
+    expect($videoNames)->toContain('Shoe Promo Video')
+        ->and($videoNames)->not->toContain('Perfume Poster Ad', 'Casual Portrait');
+
+    // 6. All active categories are always returned
+    $catsRes = $this->getJson('/api/v1/template-categories')->assertOk();
+    expect(collect($catsRes->json())->pluck('name')->all())->toContain('Cosmetics', 'Sports');
+});

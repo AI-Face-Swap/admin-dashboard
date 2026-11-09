@@ -451,6 +451,13 @@ export default function Index({ templates, categories, filters }: Props) {
                                         label: 'Videos',
                                         icon: <Film className="h-3.5 w-3.5" />,
                                     },
+                                    {
+                                        id: 'commercial',
+                                        label: 'Commercial',
+                                        icon: (
+                                            <Sparkles className="h-3.5 w-3.5" />
+                                        ),
+                                    },
                                 ].map((tab) => (
                                     <button
                                         key={tab.id}
