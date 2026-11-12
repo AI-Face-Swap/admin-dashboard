@@ -402,9 +402,9 @@ class ImageToVideoApiTest extends TestCase
                 'second_image_url' => 'https://example.com/man.jpg',
                 'prompt' => 'Change the woman in pink to @Element1 and change the man in black to @Element2.',
                 'mode' => 'std',
-                'duration' => '15s',
+                'duration' => 10,
                 'aspect_ratio' => '9:16',
-                'keep_audio' => 'true',
+                'keep_audio' => true,
             ])
             ->assertStatus(202);
 
@@ -414,12 +414,18 @@ class ImageToVideoApiTest extends TestCase
         $this->assertSame('kling-o3-video2video-edit', $metaO3['model']);
         $this->assertSame('https://example.com/kitchen-skit.mp4', $metaO3['video_url']);
         $this->assertSame('std', $metaO3['mode']);
-        $this->assertSame('15', $metaO3['duration']);
+        $this->assertSame('10', $metaO3['duration']);
         $this->assertSame('9:16', $metaO3['aspect_ratio']);
         $this->assertTrue($metaO3['keep_audio']);
         $this->assertSame([
-            ['frontal_image_url' => 'https://example.com/woman.jpg'],
-            ['frontal_image_url' => 'https://example.com/man.jpg'],
+            [
+                'frontal_image_url' => 'https://example.com/woman.jpg',
+                'reference_image_urls' => ['https://example.com/woman.jpg'],
+            ],
+            [
+                'frontal_image_url' => 'https://example.com/man.jpg',
+                'reference_image_urls' => ['https://example.com/man.jpg'],
+            ],
         ], $metaO3['elements']);
 
         // 2. kling-4-video-edit with 2 reference images (@Image1 & @Image2)

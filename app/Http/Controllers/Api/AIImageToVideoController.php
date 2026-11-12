@@ -200,9 +200,15 @@ class AIImageToVideoController extends Controller
                     if ($usesImageTagOnly) {
                         $payload['image_urls'] = array_slice($allCharacterImages, 0, 4);
                     } else {
-                        $elementsSlice = array_slice($allCharacterImages, 0, 10);
+                        // Kling O3 V2V Edit caps elements+images at 4 when using a video,
+                        // and KlingV3ImageElementInput requires both frontal_image_url and
+                        // at least 1 URL in reference_image_urls per element.
+                        $elementsSlice = array_slice($allCharacterImages, 0, 4);
                         $payload['elements'] = array_map(
-                            static fn (string $url): array => ['frontal_image_url' => $url],
+                            static fn (string $url): array => [
+                                'frontal_image_url' => $url,
+                                'reference_image_urls' => [$url],
+                            ],
                             $elementsSlice,
                         );
                         foreach ($elementsSlice as $idx => $_url) {
@@ -211,6 +217,23 @@ class AIImageToVideoController extends Controller
                                 $payload['prompt'] = rtrim($payload['prompt'])." @Element{$num}";
                             }
                         }
+                    }
+                } elseif (is_array($request->input('elements')) && ! empty($request->input('elements'))) {
+                    $normalizedElements = [];
+                    foreach (array_slice($request->input('elements'), 0, 4) as $el) {
+                        if (! is_array($el) || empty($el['frontal_image_url']) || ! is_string($el['frontal_image_url'])) {
+                            continue;
+                        }
+                        $refUrls = ! empty($el['reference_image_urls']) && is_array($el['reference_image_urls'])
+                            ? array_values(array_filter($el['reference_image_urls'], 'is_string'))
+                            : [];
+                        $normalizedElements[] = [
+                            'frontal_image_url' => $el['frontal_image_url'],
+                            'reference_image_urls' => ! empty($refUrls) ? array_slice($refUrls, 0, 3) : [$el['frontal_image_url']],
+                        ];
+                    }
+                    if (! empty($normalizedElements)) {
+                        $payload['elements'] = $normalizedElements;
                     }
                 }
                 break;

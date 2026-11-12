@@ -758,6 +758,13 @@ export function ImageToVideoTab() {
                                             </Button>
                                         </>
                                     )}
+                                    {isKlingVideoEditModel && (
+                                        <p className="text-[11px] leading-relaxed text-muted-foreground">
+                                            {model === 'kling-o3-video2video-edit'
+                                                ? '💡 Kling O3 Video Edit သည် 3–10 စက္ကန့် မူရင်းဗီဒီယို (အနံ ≥ 720px) အတွက် ဖြစ်ပါသည်။ 10 စက္ကန့်ထက်ရှည်သော (15s–30s) ဗီဒီယိုဆိုလျှင် Kling 4.0 Video Edit ကို ရွေးချယ်ပါ။'
+                                                : '💡 Kling 4.0 Video Edit သည် 3–30 စက္ကန့် မူရင်းဗီဒီယိုအရှည်များ (အနံ ≥ 720px) ကို အပြည့်လက်ခံပါသည်။'}
+                                        </p>
+                                    )}
                                 </div>
 
                                 {isSeedanceModel && (

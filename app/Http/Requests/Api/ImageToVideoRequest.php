@@ -11,6 +11,32 @@ class ImageToVideoRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $normalized = [];
+
+        foreach ([
+            'keep_original_sound',
+            'keep_audio',
+            'prompt_extend',
+            'generate_audio',
+            'auto_resize',
+            'watermark',
+        ] as $boolField) {
+            if ($this->has($boolField) && is_bool($this->input($boolField))) {
+                $normalized[$boolField] = $this->input($boolField) ? 'true' : 'false';
+            }
+        }
+
+        if ($this->has('duration') && (is_int($this->input('duration')) || is_float($this->input('duration')))) {
+            $normalized['duration'] = (string) $this->input('duration');
+        }
+
+        if (! empty($normalized)) {
+            $this->merge($normalized);
+        }
+    }
+
     /**
      * Get the validation rules that apply to the request.
      *
@@ -42,6 +68,10 @@ class ImageToVideoRequest extends FormRequest
             'second_image_url' => ['nullable', 'url'],
             'reference_images' => ['nullable', 'array', 'max:10'],
             'reference_images.*' => ['string', 'url'],
+            'elements' => ['nullable', 'array', 'max:4'],
+            'elements.*.frontal_image_url' => ['required_with:elements', 'string', 'url'],
+            'elements.*.reference_image_urls' => ['nullable', 'array', 'max:3'],
+            'elements.*.reference_image_urls.*' => ['string', 'url'],
             'image_mode' => ['nullable', 'string', 'in:reference,reference_images,first_frame_url'],
             'last_frame_image' => ['nullable', 'file', 'image', 'max:10240'],
             'last_frame_url' => ['nullable', 'url'],

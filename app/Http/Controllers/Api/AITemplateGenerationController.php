@@ -273,10 +273,21 @@ class AITemplateGenerationController extends Controller
                     : true);
             $finalPrompt = $prompt;
             $elements = [];
+            $imageUrls = [];
             if ($userImageUrl) {
-                $elements[] = ['frontal_image_url' => $userImageUrl];
-                if (! preg_match('/@Element\s*1\b/i', $finalPrompt)) {
-                    $finalPrompt = rtrim($finalPrompt).' @Element1';
+                $usesImageTagOnly = preg_match('/@Image\s*\d+\b/i', $finalPrompt)
+                    && ! preg_match('/@Element\s*\d+\b/i', $finalPrompt);
+
+                if ($usesImageTagOnly) {
+                    $imageUrls[] = $userImageUrl;
+                } else {
+                    $elements[] = [
+                        'frontal_image_url' => $userImageUrl,
+                        'reference_image_urls' => [$userImageUrl],
+                    ];
+                    if (! preg_match('/@Element\s*1\b/i', $finalPrompt)) {
+                        $finalPrompt = rtrim($finalPrompt).' @Element1';
+                    }
                 }
             }
 
@@ -288,6 +299,7 @@ class AITemplateGenerationController extends Controller
                 'duration' => (string) max(3, min(15, $durationInt)),
                 'aspect_ratio' => in_array($aspectRatio, ['16:9', '9:16', '1:1'], true) ? $aspectRatio : '9:16',
                 'keep_audio' => $keepAudio,
+                'image_urls' => ! empty($imageUrls) ? $imageUrls : null,
                 'elements' => ! empty($elements) ? $elements : null,
             ], fn ($v) => $v !== null && $v !== '');
         }
