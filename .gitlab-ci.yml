@@ -24,8 +24,21 @@ deploy_to_production:
     - docker image prune -f
 
     - echo "==> 5. Verifying application health..."
-    - sleep 5
-    - curl --fail --silent --show-error --insecure http://localhost:8088/up
+    - |
+      for attempt in $(seq 1 30); do
+        if curl --fail --silent --insecure --max-time 5 http://localhost:8088/up >/dev/null 2>&1; then
+          echo "Health check passed on attempt ${attempt}!"
+          break
+        fi
+        if [ "$attempt" -eq 30 ]; then
+          echo "ERROR: Application health check failed after 90s."
+          docker compose --env-file .env.production -f docker-compose.production.yml ps
+          docker compose --env-file .env.production -f docker-compose.production.yml logs --tail=50 php
+          exit 1
+        fi
+        echo "Waiting for container startup and migrations (attempt ${attempt}/30)..."
+        sleep 3
+      done
 
     - echo "==> HTUT AI Backend production deployment completed successfully!"
 
