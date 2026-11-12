@@ -455,4 +455,45 @@ class ImageToVideoApiTest extends TestCase
             'https://example.com/man.jpg',
         ], $metaK4['reference_images']);
     }
+
+    public function test_seedance_supports_multiple_ordered_reference_images(): void
+    {
+        Queue::fake();
+        Storage::fake('spaces');
+
+        $admin = User::factory()->create([
+            'email_verified_at' => now(),
+        ]);
+        $admin->roles()->attach(Role::where('slug', 'super-admin')->firstOrFail());
+
+        $res = $this->actingAs($admin, 'web')->post('/admin/ai/image-to-video', [
+            'model' => 'seedance-2.0',
+            'image_mode' => 'reference',
+            'image' => UploadedFile::fake()->image('char1.jpg', 800, 1000),
+            'extra_image_urls' => [
+                0 => 'https://example.com/ref-2-style.jpg',
+                2 => 'https://example.com/ref-4-bg.jpg',
+            ],
+            'extra_image_files' => [
+                1 => UploadedFile::fake()->image('char3.jpg', 800, 1000),
+                3 => UploadedFile::fake()->image('prop5.jpg', 800, 1000),
+            ],
+            'prompt' => 'Cinematic shot of @Image 1 talking to @Image 3 inside @Image 4.',
+            'duration' => '5s',
+            'resolution' => '720p',
+            'aspect_ratio' => '16:9',
+        ]);
+
+        $res->assertStatus(202)
+            ->assertJsonPath('status', 'queued');
+
+        $gen = AIGeneration::findOrFail($res->json('generation.id'));
+        $meta = $gen->input_metadata;
+
+        $this->assertCount(5, $meta['reference_images']);
+        $this->assertSame('https://example.com/ref-2-style.jpg', $meta['reference_images'][1]);
+        $this->assertSame('https://example.com/ref-4-bg.jpg', $meta['reference_images'][3]);
+        $this->assertStringContainsString('@Image 2', $meta['prompt']);
+        $this->assertStringContainsString('@Image 5', $meta['prompt']);
+    }
 }

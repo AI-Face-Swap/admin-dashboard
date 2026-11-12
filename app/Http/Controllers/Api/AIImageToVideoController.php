@@ -150,11 +150,13 @@ class AIImageToVideoController extends Controller
         $durationInt = $rawDuration !== '' ? (int) preg_replace('/\D+/', '', $rawDuration) : null;
 
         $secondImageUrl = $this->resolveOptionalMediaUrl($request, 'second_image', 'second_image_url', 'input-images');
+        $orderedExtraUrls = $this->resolveExtraOrderedImageUrls($request);
         $extraRefImages = is_array($request->input('reference_images'))
             ? array_values(array_filter($request->input('reference_images'), 'is_string'))
             : [];
         $allCharacterImages = array_values(array_unique(array_filter(array_merge(
             [$imageUrl, $secondImageUrl],
+            $orderedExtraUrls,
             $extraRefImages,
         ))));
 
@@ -162,6 +164,9 @@ class AIImageToVideoController extends Controller
         $referenceVideoUrl = $this->resolveOptionalMediaUrl($request, 'reference_video', 'reference_video_url', 'input-videos');
         if ($referenceVideoUrl === '' && $request->filled('video_url')) {
             $referenceVideoUrl = $request->string('video_url')->toString();
+        }
+        if ($referenceVideoUrl === '' && is_array($request->input('reference_videos')) && ! empty($request->input('reference_videos')[0])) {
+            $referenceVideoUrl = (string) $request->input('reference_videos')[0];
         }
         $referenceAudioUrl = $this->resolveOptionalMediaUrl($request, 'reference_audio', 'reference_audio_url', 'input-audios');
 
@@ -290,9 +295,13 @@ class AIImageToVideoController extends Controller
                         $payload['last_frame_url'] = $lastFrameUrl;
                     }
                 } else {
-                    $payload['reference_images'] = [$imageUrl];
-                    if (! preg_match('/@?Image\s*1\b/i', $payload['prompt'])) {
-                        $payload['prompt'] = rtrim($payload['prompt']).' @Image 1';
+                    $seedanceImages = array_slice($allCharacterImages, 0, 9);
+                    $payload['reference_images'] = $seedanceImages;
+                    foreach ($seedanceImages as $idx => $_url) {
+                        $num = $idx + 1;
+                        if (! preg_match("/@?Image\s*{$num}\b/i", $payload['prompt'])) {
+                            $payload['prompt'] = rtrim($payload['prompt'])." @Image {$num}";
+                        }
                     }
                     if ($referenceVideoUrl !== '') {
                         $payload['reference_videos'] = [$referenceVideoUrl];
@@ -433,7 +442,58 @@ class AIImageToVideoController extends Controller
             return Storage::disk('spaces')->url($path);
         }
 
-        return $request->string('image_url')->toString();
+        $directUrl = $request->string('image_url')->toString();
+        if ($directUrl !== '') {
+            return $directUrl;
+        }
+
+        $refImages = $request->input('reference_images');
+        if (is_array($refImages) && ! empty($refImages[0]) && is_string($refImages[0])) {
+            return $refImages[0];
+        }
+
+        return '';
+    }
+
+    /**
+     * Resolve indexed extra reference image uploads and URLs while preserving slot order.
+     *
+     * @return list<string>
+     */
+    private function resolveExtraOrderedImageUrls(ImageToVideoRequest $request): array
+    {
+        $files = $request->file('extra_image_files', []);
+        $urls = $request->input('extra_image_urls', []);
+
+        if (! is_array($files)) {
+            $files = [];
+        }
+        if (! is_array($urls)) {
+            $urls = [];
+        }
+
+        $indices = array_values(array_unique(array_merge(array_keys($files), array_keys($urls))));
+        sort($indices, SORT_NUMERIC);
+
+        $resolved = [];
+        foreach (array_slice($indices, 0, 8) as $slot) {
+            if (isset($files[$slot]) && $files[$slot] instanceof UploadedFile) {
+                $file = $files[$slot];
+                $path = $file->storeAs(
+                    'input-images',
+                    Str::uuid().'.'.$file->getClientOriginalExtension(),
+                    'spaces',
+                );
+                if ($path === false) {
+                    throw new RuntimeException('Failed to store extra reference image.');
+                }
+                $resolved[] = Storage::disk('spaces')->url($path);
+            } elseif (isset($urls[$slot]) && is_string($urls[$slot]) && trim($urls[$slot]) !== '') {
+                $resolved[] = trim($urls[$slot]);
+            }
+        }
+
+        return $resolved;
     }
 
     /**

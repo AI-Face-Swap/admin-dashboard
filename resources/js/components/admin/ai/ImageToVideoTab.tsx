@@ -3,7 +3,9 @@ import {
     ChevronDown,
     ChevronUp,
     Image as ImageIcon,
+    Plus,
     SlidersHorizontal,
+    Trash2,
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AnimatedButton } from '@/components/animated/AnimatedButton';
@@ -29,6 +31,14 @@ import {
     type GenerationResult,
 } from './types';
 
+interface ExtraRefImageItem {
+    id: string;
+    source: 'upload' | 'url';
+    file: File | null;
+    preview: string | null;
+    url: string;
+}
+
 export function ImageToVideoTab() {
     const [prompt, setPrompt] = useState('');
     const [negativePrompt, setNegativePrompt] = useState('');
@@ -39,6 +49,11 @@ export function ImageToVideoTab() {
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [imageUrl, setImageUrl] = useState('');
+
+    // Additional Reference Images (@Image 2 .. @Image 9) for Seedance multi-reference mode
+    const [extraRefImages, setExtraRefImages] = useState<ExtraRefImageItem[]>(
+        [],
+    );
 
     // Optional Second Character Image (for 2-person swaps on Kling O3 / Kling 4.0 Video Edit)
     const [secondImageSource, setSecondImageSource] = useState<
@@ -99,6 +114,7 @@ export function ImageToVideoTab() {
     const [generationId, setGenerationId] = useState<number | null>(null);
     const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const extraFilesInputRef = useRef<HTMLInputElement>(null);
     const secondImageInputRef = useRef<HTMLInputElement>(null);
     const lastFrameInputRef = useRef<HTMLInputElement>(null);
     const refVideoInputRef = useRef<HTMLInputElement>(null);
@@ -140,6 +156,61 @@ export function ImageToVideoTab() {
     const onLastFrameFileChange = (file: File | null) => {
         setLastFrameFile(file);
         setLastFramePreview(file ? URL.createObjectURL(file) : null);
+    };
+
+    const onExtraFilesSelected = (fileList: FileList | null) => {
+        if (!fileList || fileList.length === 0) {
+            return;
+        }
+        const incoming = Array.from(fileList);
+        setExtraRefImages((prev) => {
+            const remainingSlots = Math.max(0, 8 - prev.length);
+            const toAdd: ExtraRefImageItem[] = incoming
+                .slice(0, remainingSlots)
+                .map((file) => ({
+                    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+                    source: 'upload',
+                    file,
+                    preview: URL.createObjectURL(file),
+                    url: '',
+                }));
+            return [...prev, ...toAdd];
+        });
+    };
+
+    const addExtraRefUrlRow = () => {
+        setExtraRefImages((prev) => {
+            if (prev.length >= 8) {
+                return prev;
+            }
+            return [
+                ...prev,
+                {
+                    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+                    source: 'url',
+                    file: null,
+                    preview: null,
+                    url: '',
+                },
+            ];
+        });
+    };
+
+    const updateExtraRefUrl = (id: string, url: string) => {
+        setExtraRefImages((prev) =>
+            prev.map((item) => (item.id === id ? { ...item, url } : item)),
+        );
+    };
+
+    const removeExtraRefImage = (id: string) => {
+        setExtraRefImages((prev) => prev.filter((item) => item.id !== id));
+    };
+
+    const insertTagIntoPrompt = (tag: string) => {
+        setPrompt((prev) => {
+            const trimmed = prev.trimEnd();
+            return trimmed ? `${trimmed} ${tag} ` : `${tag} `;
+        });
     };
 
     const pollStatus = useCallback(async (id: number) => {
@@ -279,6 +350,19 @@ export function ImageToVideoTab() {
                 form.append('mode', klingEditMode);
                 form.append('keep_audio', String(keepOriginalSound));
             }
+        }
+
+        if (isSeedanceModel && imageInputType === 'reference') {
+            let slot = 0;
+            extraRefImages.forEach((item) => {
+                if (item.source === 'upload' && item.file) {
+                    form.append(`extra_image_files[${slot}]`, item.file);
+                    slot += 1;
+                } else if (item.source === 'url' && item.url.trim()) {
+                    form.append(`extra_image_urls[${slot}]`, item.url.trim());
+                    slot += 1;
+                }
+            });
         }
 
         if (isSeedanceModel && imageInputType === 'first_frame_url') {
@@ -506,7 +590,9 @@ export function ImageToVideoTab() {
                                             ? '၃။ ဇာတ်ကောင် (၁) ပုံ (@Element1 — Optional)'
                                             : '၃။ ဇာတ်ကောင် (၁) ပုံ (@Image1 — Optional)'
                                         : imageInputType === 'reference'
-                                          ? '၃။ Reference Image (အဓိက နမူနာပုံ) *'
+                                          ? isSeedanceModel
+                                              ? '၃။ Reference Image 1 (@Image 1 — အဓိကပုံ) *'
+                                              : '၃။ Reference Image (အဓိက နမူနာပုံ) *'
                                           : '၃။ First Frame (အစပုံ) *'}
                                 </Label>
                                 <div className="flex gap-1.5">
@@ -583,6 +669,152 @@ export function ImageToVideoTab() {
                                     placeholder="https://example.com/input-image.jpg"
                                     className="h-10 text-sm"
                                 />
+                            )}
+
+                            {isSeedanceModel && imageInputType === 'reference' && (
+                                <div className="space-y-2.5 border-t pt-3">
+                                    <div className="flex flex-wrap items-center justify-between gap-2">
+                                        <Label className="text-xs font-semibold">
+                                            🖼️ ထပ်ဆောင်း Reference ပုံများ ({extraRefImages.length}/8 — စုစုပေါင်း ၉ ပုံအထိ)
+                                        </Label>
+                                        <div className="flex gap-1.5">
+                                            <input
+                                                ref={extraFilesInputRef}
+                                                type="file"
+                                                accept="image/*"
+                                                multiple
+                                                className="hidden"
+                                                onChange={(e) => {
+                                                    onExtraFilesSelected(
+                                                        e.target.files,
+                                                    );
+                                                    e.target.value = '';
+                                                }}
+                                            />
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                variant="outline"
+                                                disabled={
+                                                    extraRefImages.length >= 8
+                                                }
+                                                className="h-7 gap-1 px-2.5 text-xs"
+                                                onClick={() =>
+                                                    extraFilesInputRef.current?.click()
+                                                }
+                                            >
+                                                <Plus className="h-3.5 w-3.5" />
+                                                ပုံတင်ရန်
+                                            </Button>
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                variant="outline"
+                                                disabled={
+                                                    extraRefImages.length >= 8
+                                                }
+                                                className="h-7 gap-1 px-2.5 text-xs"
+                                                onClick={addExtraRefUrlRow}
+                                            >
+                                                <Plus className="h-3.5 w-3.5" />
+                                                URL
+                                            </Button>
+                                        </div>
+                                    </div>
+
+                                    {extraRefImages.length > 0 && (
+                                        <div className="space-y-2">
+                                            {extraRefImages.map((item, idx) => {
+                                                const tagLabel = `@Image ${idx + 2}`;
+                                                return (
+                                                    <div
+                                                        key={item.id}
+                                                        className="flex items-center gap-2 rounded-lg border bg-background/70 p-2"
+                                                    >
+                                                        <Badge
+                                                            variant="secondary"
+                                                            className="shrink-0 cursor-pointer font-mono text-[11px] hover:bg-primary/20"
+                                                            onClick={() =>
+                                                                insertTagIntoPrompt(
+                                                                    tagLabel,
+                                                                )
+                                                            }
+                                                            title="Prompt ထဲသို့ ထည့်ရန် နှိပ်ပါ"
+                                                        >
+                                                            {tagLabel}
+                                                        </Badge>
+
+                                                        {item.source ===
+                                                        'upload' ? (
+                                                            <div className="flex min-w-0 flex-1 items-center gap-2">
+                                                                {item.preview && (
+                                                                    <img
+                                                                        src={
+                                                                            item.preview
+                                                                        }
+                                                                        alt={
+                                                                            tagLabel
+                                                                        }
+                                                                        className="h-9 w-9 shrink-0 rounded border object-cover"
+                                                                    />
+                                                                )}
+                                                                <span className="truncate text-xs text-foreground">
+                                                                    {item.file
+                                                                        ?.name ??
+                                                                        'Uploaded image'}
+                                                                </span>
+                                                            </div>
+                                                        ) : (
+                                                            <Input
+                                                                value={item.url}
+                                                                onChange={(e) =>
+                                                                    updateExtraRefUrl(
+                                                                        item.id,
+                                                                        e.target
+                                                                            .value,
+                                                                    )
+                                                                }
+                                                                placeholder={`https://example.com/image-${idx + 2}.jpg`}
+                                                                className="h-8 flex-1 text-xs"
+                                                            />
+                                                        )}
+
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="h-7 w-7 shrink-0 p-0 text-muted-foreground hover:text-destructive"
+                                                            onClick={() =>
+                                                                removeExtraRefImage(
+                                                                    item.id,
+                                                                )
+                                                            }
+                                                            title="ဖယ်ရှားရန်"
+                                                        >
+                                                            <Trash2 className="h-3.5 w-3.5" />
+                                                        </Button>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+
+                                    <p className="text-[11px] leading-relaxed text-muted-foreground">
+                                        💡 Prompt ထဲတွင်{' '}
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                insertTagIntoPrompt('@Image 1')
+                                            }
+                                            className="font-mono font-medium text-primary underline-offset-2 hover:underline"
+                                        >
+                                            @Image 1
+                                        </button>
+                                        , <span className="font-mono">@Image 2</span>,{' '}
+                                        <span className="font-mono">@Image 3</span>{' '}
+                                        ဟု ရည်ညွှန်းရေးနိုင်သည် (Tag ပေါ်နှိပ်၍လည်း Prompt ထဲ တန်းထည့်နိုင်ပါသည်)။
+                                    </p>
+                                </div>
                             )}
                         </div>
 
