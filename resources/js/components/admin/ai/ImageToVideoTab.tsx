@@ -50,20 +50,10 @@ export function ImageToVideoTab() {
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [imageUrl, setImageUrl] = useState('');
 
-    // Additional Reference Images (@Image 2 .. @Image 9) for Seedance multi-reference mode
+    // Additional Reference Images / Character Elements for multi-image models (Seedance, Kling O3, Kling 4.0)
     const [extraRefImages, setExtraRefImages] = useState<ExtraRefImageItem[]>(
         [],
     );
-
-    // Optional Second Character Image (for 2-person swaps on Kling O3 / Kling 4.0 Video Edit)
-    const [secondImageSource, setSecondImageSource] = useState<
-        'upload' | 'url'
-    >('upload');
-    const [secondImageFile, setSecondImageFile] = useState<File | null>(null);
-    const [secondImagePreview, setSecondImagePreview] = useState<string | null>(
-        null,
-    );
-    const [secondImageUrl, setSecondImageUrl] = useState('');
     const [klingEditMode, setKlingEditMode] = useState<'std' | 'pro'>('std');
 
     // Optional Last Frame (for first_frame_url mode on Seedance)
@@ -115,7 +105,6 @@ export function ImageToVideoTab() {
     const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const extraFilesInputRef = useRef<HTMLInputElement>(null);
-    const secondImageInputRef = useRef<HTMLInputElement>(null);
     const lastFrameInputRef = useRef<HTMLInputElement>(null);
     const refVideoInputRef = useRef<HTMLInputElement>(null);
     const refAudioInputRef = useRef<HTMLInputElement>(null);
@@ -143,14 +132,30 @@ export function ImageToVideoTab() {
         isKlingMotionControlModel ||
         isKlingVideoEditModel;
 
+    const supportsMultiRefImages =
+        (isSeedanceModel && imageInputType === 'reference') ||
+        isKlingVideoEditModel;
+
+    const maxExtraImages =
+        model === 'kling-o3-video2video-edit'
+            ? 3
+            : model === 'kling-4-video-edit'
+              ? 9
+              : 8;
+
+    const formatRefTag = (num: number): string => {
+        if (model === 'kling-o3-video2video-edit') {
+            return `@Element${num}`;
+        }
+        if (model === 'kling-4-video-edit') {
+            return `@Image${num}`;
+        }
+        return `@Image ${num}`;
+    };
+
     const onImageFileChange = (file: File | null) => {
         setImageFile(file);
         setImagePreview(file ? URL.createObjectURL(file) : null);
-    };
-
-    const onSecondImageFileChange = (file: File | null) => {
-        setSecondImageFile(file);
-        setSecondImagePreview(file ? URL.createObjectURL(file) : null);
     };
 
     const onLastFrameFileChange = (file: File | null) => {
@@ -164,7 +169,7 @@ export function ImageToVideoTab() {
         }
         const incoming = Array.from(fileList);
         setExtraRefImages((prev) => {
-            const remainingSlots = Math.max(0, 8 - prev.length);
+            const remainingSlots = Math.max(0, maxExtraImages - prev.length);
             const toAdd: ExtraRefImageItem[] = incoming
                 .slice(0, remainingSlots)
                 .map((file) => ({
@@ -180,7 +185,7 @@ export function ImageToVideoTab() {
 
     const addExtraRefUrlRow = () => {
         setExtraRefImages((prev) => {
-            if (prev.length >= 8) {
+            if (prev.length >= maxExtraImages) {
                 return prev;
             }
             return [
@@ -340,21 +345,14 @@ export function ImageToVideoTab() {
             form.append('image_url', imageUrl.trim());
         }
 
-        if (isKlingVideoEditModel) {
-            if (secondImageSource === 'upload' && secondImageFile) {
-                form.append('second_image', secondImageFile);
-            } else if (secondImageSource === 'url' && secondImageUrl.trim()) {
-                form.append('second_image_url', secondImageUrl.trim());
-            }
-            if (model === 'kling-o3-video2video-edit') {
-                form.append('mode', klingEditMode);
-                form.append('keep_audio', String(keepOriginalSound));
-            }
+        if (model === 'kling-o3-video2video-edit') {
+            form.append('mode', klingEditMode);
+            form.append('keep_audio', String(keepOriginalSound));
         }
 
-        if (isSeedanceModel && imageInputType === 'reference') {
+        if (supportsMultiRefImages) {
             let slot = 0;
-            extraRefImages.forEach((item) => {
+            extraRefImages.slice(0, maxExtraImages).forEach((item) => {
                 if (item.source === 'upload' && item.file) {
                     form.append(`extra_image_files[${slot}]`, item.file);
                     slot += 1;
@@ -671,11 +669,14 @@ export function ImageToVideoTab() {
                                 />
                             )}
 
-                            {isSeedanceModel && imageInputType === 'reference' && (
+                            {supportsMultiRefImages && (
                                 <div className="space-y-2.5 border-t pt-3">
                                     <div className="flex flex-wrap items-center justify-between gap-2">
                                         <Label className="text-xs font-semibold">
-                                            🖼️ ထပ်ဆောင်း Reference ပုံများ ({extraRefImages.length}/8 — စုစုပေါင်း ၉ ပုံအထိ)
+                                            🖼️{' '}
+                                            {isKlingVideoEditModel
+                                                ? `ထပ်ဆောင်း ဇာတ်ကောင်ပုံများ (${Math.min(extraRefImages.length, maxExtraImages)}/${maxExtraImages} — စုစုပေါင်း ${maxExtraImages + 1} ပုံအထိ)`
+                                                : `ထပ်ဆောင်း Reference ပုံများ (${Math.min(extraRefImages.length, maxExtraImages)}/${maxExtraImages} — စုစုပေါင်း ${maxExtraImages + 1} ပုံအထိ)`}
                                         </Label>
                                         <div className="flex gap-1.5">
                                             <input
@@ -696,7 +697,8 @@ export function ImageToVideoTab() {
                                                 size="sm"
                                                 variant="outline"
                                                 disabled={
-                                                    extraRefImages.length >= 8
+                                                    extraRefImages.length >=
+                                                    maxExtraImages
                                                 }
                                                 className="h-7 gap-1 px-2.5 text-xs"
                                                 onClick={() =>
@@ -711,7 +713,8 @@ export function ImageToVideoTab() {
                                                 size="sm"
                                                 variant="outline"
                                                 disabled={
-                                                    extraRefImages.length >= 8
+                                                    extraRefImages.length >=
+                                                    maxExtraImages
                                                 }
                                                 className="h-7 gap-1 px-2.5 text-xs"
                                                 onClick={addExtraRefUrlRow}
@@ -722,80 +725,89 @@ export function ImageToVideoTab() {
                                         </div>
                                     </div>
 
-                                    {extraRefImages.length > 0 && (
+                                    {extraRefImages.slice(0, maxExtraImages).length > 0 && (
                                         <div className="space-y-2">
-                                            {extraRefImages.map((item, idx) => {
-                                                const tagLabel = `@Image ${idx + 2}`;
-                                                return (
-                                                    <div
-                                                        key={item.id}
-                                                        className="flex items-center gap-2 rounded-lg border bg-background/70 p-2"
-                                                    >
-                                                        <Badge
-                                                            variant="secondary"
-                                                            className="shrink-0 cursor-pointer font-mono text-[11px] hover:bg-primary/20"
-                                                            onClick={() =>
-                                                                insertTagIntoPrompt(
-                                                                    tagLabel,
-                                                                )
-                                                            }
-                                                            title="Prompt ထဲသို့ ထည့်ရန် နှိပ်ပါ"
+                                            {extraRefImages
+                                                .slice(0, maxExtraImages)
+                                                .map((item, idx) => {
+                                                    const tagLabel = formatRefTag(
+                                                        idx + 2,
+                                                    );
+                                                    return (
+                                                        <div
+                                                            key={item.id}
+                                                            className="flex items-center gap-2 rounded-lg border bg-background/70 p-2"
                                                         >
-                                                            {tagLabel}
-                                                        </Badge>
-
-                                                        {item.source ===
-                                                        'upload' ? (
-                                                            <div className="flex min-w-0 flex-1 items-center gap-2">
-                                                                {item.preview && (
-                                                                    <img
-                                                                        src={
-                                                                            item.preview
-                                                                        }
-                                                                        alt={
-                                                                            tagLabel
-                                                                        }
-                                                                        className="h-9 w-9 shrink-0 rounded border object-cover"
-                                                                    />
-                                                                )}
-                                                                <span className="truncate text-xs text-foreground">
-                                                                    {item.file
-                                                                        ?.name ??
-                                                                        'Uploaded image'}
-                                                                </span>
-                                                            </div>
-                                                        ) : (
-                                                            <Input
-                                                                value={item.url}
-                                                                onChange={(e) =>
-                                                                    updateExtraRefUrl(
-                                                                        item.id,
-                                                                        e.target
-                                                                            .value,
+                                                            <Badge
+                                                                variant="secondary"
+                                                                className="shrink-0 cursor-pointer font-mono text-[11px] hover:bg-primary/20"
+                                                                onClick={() =>
+                                                                    insertTagIntoPrompt(
+                                                                        tagLabel,
                                                                     )
                                                                 }
-                                                                placeholder={`https://example.com/image-${idx + 2}.jpg`}
-                                                                className="h-8 flex-1 text-xs"
-                                                            />
-                                                        )}
+                                                                title="Prompt ထဲသို့ ထည့်ရန် နှိပ်ပါ"
+                                                            >
+                                                                {tagLabel}
+                                                            </Badge>
 
-                                                        <Button
-                                                            type="button"
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            className="h-7 w-7 shrink-0 p-0 text-muted-foreground hover:text-destructive"
-                                                            onClick={() =>
-                                                                removeExtraRefImage(
-                                                                    item.id,
-                                                                )
-                                                            }
-                                                            title="ဖယ်ရှားရန်"
-                                                        >
-                                                            <Trash2 className="h-3.5 w-3.5" />
-                                                        </Button>
-                                                    </div>
-                                                );
-                                            })}
+                                                            {item.source ===
+                                                            'upload' ? (
+                                                                <div className="flex min-w-0 flex-1 items-center gap-2">
+                                                                    {item.preview && (
+                                                                        <img
+                                                                            src={
+                                                                                item.preview
+                                                                            }
+                                                                            alt={
+                                                                                tagLabel
+                                                                            }
+                                                                            className="h-9 w-9 shrink-0 rounded border object-cover"
+                                                                        />
+                                                                    )}
+                                                                    <span className="truncate text-xs text-foreground">
+                                                                        {item.file
+                                                                            ?.name ??
+                                                                            'Uploaded image'}
+                                                                    </span>
+                                                                </div>
+                                                            ) : (
+                                                                <Input
+                                                                    value={
+                                                                        item.url
+                                                                    }
+                                                                    onChange={(
+                                                                        e,
+                                                                    ) =>
+                                                                        updateExtraRefUrl(
+                                                                            item.id,
+                                                                            e
+                                                                                .target
+                                                                                .value,
+                                                                        )
+                                                                    }
+                                                                    placeholder={`https://example.com/image-${idx + 2}.jpg`}
+                                                                    className="h-8 flex-1 text-xs"
+                                                                />
+                                                            )}
+
+                                                            <Button
+                                                                type="button"
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                className="h-7 w-7 shrink-0 p-0 text-muted-foreground hover:text-destructive"
+                                                                onClick={() =>
+                                                                    removeExtraRefImage(
+                                                                        item.id,
+                                                                    )
+                                                                }
+                                                                title="ဖယ်ရှားရန်"
+                                                            >
+                                                                <Trash2 className="h-3.5 w-3.5" />
+                                                            </Button>
+                                                        </div>
+                                                    );
+                                                })}
                                         </div>
                                     )}
 
@@ -804,14 +816,22 @@ export function ImageToVideoTab() {
                                         <button
                                             type="button"
                                             onClick={() =>
-                                                insertTagIntoPrompt('@Image 1')
+                                                insertTagIntoPrompt(
+                                                    formatRefTag(1),
+                                                )
                                             }
                                             className="font-mono font-medium text-primary underline-offset-2 hover:underline"
                                         >
-                                            @Image 1
+                                            {formatRefTag(1)}
                                         </button>
-                                        , <span className="font-mono">@Image 2</span>,{' '}
-                                        <span className="font-mono">@Image 3</span>{' '}
+                                        ,{' '}
+                                        <span className="font-mono">
+                                            {formatRefTag(2)}
+                                        </span>
+                                        ,{' '}
+                                        <span className="font-mono">
+                                            {formatRefTag(3)}
+                                        </span>{' '}
                                         ဟု ရည်ညွှန်းရေးနိုင်သည် (Tag ပေါ်နှိပ်၍လည်း Prompt ထဲ တန်းထည့်နိုင်ပါသည်)။
                                     </p>
                                 </div>
@@ -1084,161 +1104,63 @@ export function ImageToVideoTab() {
                                     </div>
                                 )}
 
-                                {isKlingVideoEditModel && (
-                                    <div className="space-y-3 border-t pt-3">
-                                        <div className="flex items-center justify-between">
+                                {model === 'kling-o3-video2video-edit' && (
+                                    <div className="grid grid-cols-1 gap-3 border-t pt-3 sm:grid-cols-2">
+                                        <div className="space-y-1.5">
                                             <Label className="text-xs font-semibold">
-                                                👥{' '}
-                                                {model ===
-                                                'kling-o3-video2video-edit'
-                                                    ? 'ဇာတ်ကောင် (၂) ပုံ (@Element2 — Optional)'
-                                                    : 'ဇာတ်ကောင် (၂) ပုံ (@Image2 — Optional)'}
+                                                Quality Mode
                                             </Label>
-                                            <div className="flex gap-1.5">
-                                                <Button
-                                                    type="button"
-                                                    size="sm"
-                                                    className="h-7 px-2.5 text-xs"
-                                                    variant={
-                                                        secondImageSource ===
-                                                        'upload'
-                                                            ? 'default'
-                                                            : 'outline'
-                                                    }
-                                                    onClick={() =>
-                                                        setSecondImageSource(
-                                                            'upload',
-                                                        )
-                                                    }
-                                                >
-                                                    Upload
-                                                </Button>
-                                                <Button
-                                                    type="button"
-                                                    size="sm"
-                                                    className="h-7 px-2.5 text-xs"
-                                                    variant={
-                                                        secondImageSource ===
-                                                        'url'
-                                                            ? 'default'
-                                                            : 'outline'
-                                                    }
-                                                    onClick={() =>
-                                                        setSecondImageSource(
-                                                            'url',
-                                                        )
-                                                    }
-                                                >
-                                                    URL
-                                                </Button>
-                                            </div>
-                                        </div>
-
-                                        {secondImageSource === 'upload' ? (
-                                            <>
-                                                <input
-                                                    ref={secondImageInputRef}
-                                                    type="file"
-                                                    accept="image/*"
-                                                    className="hidden"
-                                                    onChange={(e) =>
-                                                        onSecondImageFileChange(
-                                                            e.target
-                                                                .files?.[0] ??
-                                                                null,
-                                                        )
-                                                    }
-                                                />
-                                                <Button
-                                                    type="button"
-                                                    variant="outline"
-                                                    className="h-10 w-full text-xs"
-                                                    onClick={() =>
-                                                        secondImageInputRef.current?.click()
-                                                    }
-                                                >
-                                                    {secondImageFile
-                                                        ? `ရွေးထားသည်: ${secondImageFile.name}`
-                                                        : secondImagePreview
-                                                          ? 'ဒုတိယ ဇာတ်ကောင်ပုံ ပြောင်းရန်'
-                                                          : 'ဒုတိယ ဇာတ်ကောင်ပုံ တင်ရန် (လူ ၂ ယောက်လဲလျှင်)'}
-                                                </Button>
-                                            </>
-                                        ) : (
-                                            <Input
-                                                value={secondImageUrl}
-                                                onChange={(e) =>
-                                                    setSecondImageUrl(
-                                                        e.target.value,
+                                            <Select
+                                                value={klingEditMode}
+                                                onValueChange={(v) =>
+                                                    setKlingEditMode(
+                                                        v as 'std' | 'pro',
                                                     )
                                                 }
-                                                placeholder="https://example.com/character-2.jpg (Optional)"
-                                                className="h-9 text-xs"
-                                            />
-                                        )}
+                                            >
+                                                <SelectTrigger className="h-9 text-xs">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="std">
+                                                        Standard (မြန်ဆန်ပြီး စရိတ်သက်သာသည်)
+                                                    </SelectItem>
+                                                    <SelectItem value="pro">
+                                                        Pro (အကြည်ဆုံးနှင့် အငြိမ်ဆုံး)
+                                                    </SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
 
-                                        {model ===
-                                            'kling-o3-video2video-edit' && (
-                                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                                <div className="space-y-1.5">
-                                                    <Label className="text-xs font-semibold">
-                                                        Quality Mode
-                                                    </Label>
-                                                    <Select
-                                                        value={klingEditMode}
-                                                        onValueChange={(v) =>
-                                                            setKlingEditMode(
-                                                                v as
-                                                                    | 'std'
-                                                                    | 'pro',
-                                                            )
-                                                        }
-                                                    >
-                                                        <SelectTrigger className="h-9 text-xs">
-                                                            <SelectValue />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            <SelectItem value="std">
-                                                                Standard (မြန်ဆန်ပြီး စရိတ်သက်သာသည်)
-                                                            </SelectItem>
-                                                            <SelectItem value="pro">
-                                                                Pro (အကြည်ဆုံးနှင့် အငြိမ်ဆုံး)
-                                                            </SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
-                                                </div>
-
-                                                <div className="space-y-1.5">
-                                                    <Label className="text-xs font-semibold">
-                                                        မူရင်းအသံ (Keep Audio)
-                                                    </Label>
-                                                    <Select
-                                                        value={
-                                                            keepOriginalSound
-                                                                ? 'true'
-                                                                : 'false'
-                                                        }
-                                                        onValueChange={(v) =>
-                                                            setKeepOriginalSound(
-                                                                v === 'true',
-                                                            )
-                                                        }
-                                                    >
-                                                        <SelectTrigger className="h-9 text-xs">
-                                                            <SelectValue />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            <SelectItem value="true">
-                                                                🔊 မူရင်းဗီဒီယိုအသံ ယူမည် (True)
-                                                            </SelectItem>
-                                                            <SelectItem value="false">
-                                                                🔇 အသံမယူပါ (False)
-                                                            </SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
-                                                </div>
-                                            </div>
-                                        )}
+                                        <div className="space-y-1.5">
+                                            <Label className="text-xs font-semibold">
+                                                မူရင်းအသံ (Keep Audio)
+                                            </Label>
+                                            <Select
+                                                value={
+                                                    keepOriginalSound
+                                                        ? 'true'
+                                                        : 'false'
+                                                }
+                                                onValueChange={(v) =>
+                                                    setKeepOriginalSound(
+                                                        v === 'true',
+                                                    )
+                                                }
+                                            >
+                                                <SelectTrigger className="h-9 text-xs">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="true">
+                                                        🔊 မူရင်းဗီဒီယိုအသံ ယူမည် (True)
+                                                    </SelectItem>
+                                                    <SelectItem value="false">
+                                                        🔇 အသံမယူပါ (False)
+                                                    </SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
                                     </div>
                                 )}
 

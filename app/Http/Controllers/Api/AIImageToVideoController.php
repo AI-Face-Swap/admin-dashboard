@@ -476,7 +476,7 @@ class AIImageToVideoController extends Controller
         sort($indices, SORT_NUMERIC);
 
         $resolved = [];
-        foreach (array_slice($indices, 0, 8) as $slot) {
+        foreach (array_slice($indices, 0, 9) as $slot) {
             if (isset($files[$slot]) && $files[$slot] instanceof UploadedFile) {
                 $file = $files[$slot];
                 $path = $file->storeAs(
