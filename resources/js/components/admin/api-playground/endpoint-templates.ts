@@ -130,6 +130,30 @@ export const ENDPOINT_TEMPLATES: EndpointTemplate[] = [
         ],
     },
     {
+        label: 'Video Edit - Kling O3 Character Swap (URL)',
+        group: 'ai',
+        method: 'POST',
+        url: '/api/v1/ai/image-to-video',
+        bodyType: 'json',
+        body: '{\n  "model": "kling-o3-video2video-edit",\n  "video_url": "https://segmind-resources.s3.amazonaws.com/input/kling-o3-video2video-edit-source-video.mp4",\n  "image_url": "https://example.com/character-1.jpg",\n  "second_image_url": "https://example.com/character-2.jpg",\n  "prompt": "Change the woman on the left to @Element1 and change the man on the right to @Element2. Keep the kitchen background, actions, and camera framing intact.",\n  "mode": "std",\n  "duration": "5",\n  "aspect_ratio": "9:16",\n  "keep_audio": true\n}',
+        headers: [
+            { key: 'Content-Type', value: 'application/json' },
+            { key: 'Accept', value: 'application/json' },
+        ],
+    },
+    {
+        label: 'Video Edit - Kling 4.0 Video Edit (URL)',
+        group: 'ai',
+        method: 'POST',
+        url: '/api/v1/ai/image-to-video',
+        bodyType: 'json',
+        body: '{\n  "model": "kling-4-video-edit",\n  "video_url": "https://segmind-resources.s3.amazonaws.com/input/kling-4-video-edit-source-e880568e.mp4",\n  "image_url": "https://example.com/character-1.jpg",\n  "second_image_url": "https://example.com/character-2.jpg",\n  "prompt": "Change the woman on the left to @Image1 and change the man on the right to @Image2. Keep all props, pouring actions, and camera framing identical to the source.",\n  "duration": "5",\n  "resolution": "720p",\n  "aspect_ratio": "adaptive"\n}',
+        headers: [
+            { key: 'Content-Type', value: 'application/json' },
+            { key: 'Accept', value: 'application/json' },
+        ],
+    },
+    {
         label: 'Motion Control - Kling 3.0 Standard (URL)',
         group: 'ai',
         method: 'POST',

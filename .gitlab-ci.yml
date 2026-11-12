@@ -11,6 +11,7 @@ deploy_to_production:
     - git config core.filemode false
     - git checkout main
     - git reset --hard HEAD
+    - git clean -fd
     - git pull https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/nainghtethtun-group/htut-ai-backend.git main
 
     - echo "==> 2. Building Docker image..."

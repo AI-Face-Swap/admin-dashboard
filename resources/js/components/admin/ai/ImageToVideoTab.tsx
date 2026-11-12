@@ -40,6 +40,17 @@ export function ImageToVideoTab() {
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [imageUrl, setImageUrl] = useState('');
 
+    // Optional Second Character Image (for 2-person swaps on Kling O3 / Kling 4.0 Video Edit)
+    const [secondImageSource, setSecondImageSource] = useState<
+        'upload' | 'url'
+    >('upload');
+    const [secondImageFile, setSecondImageFile] = useState<File | null>(null);
+    const [secondImagePreview, setSecondImagePreview] = useState<string | null>(
+        null,
+    );
+    const [secondImageUrl, setSecondImageUrl] = useState('');
+    const [klingEditMode, setKlingEditMode] = useState<'std' | 'pro'>('std');
+
     // Optional Last Frame (for first_frame_url mode on Seedance)
     const [lastFrameSource, setLastFrameSource] = useState<'upload' | 'url'>(
         'upload',
@@ -88,6 +99,7 @@ export function ImageToVideoTab() {
     const [generationId, setGenerationId] = useState<number | null>(null);
     const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const secondImageInputRef = useRef<HTMLInputElement>(null);
     const lastFrameInputRef = useRef<HTMLInputElement>(null);
     const refVideoInputRef = useRef<HTMLInputElement>(null);
     const refAudioInputRef = useRef<HTMLInputElement>(null);
@@ -105,13 +117,24 @@ export function ImageToVideoTab() {
         'kling-3-motion-control-pro',
     ].includes(model);
 
+    const isKlingVideoEditModel = [
+        'kling-o3-video2video-edit',
+        'kling-4-video-edit',
+    ].includes(model);
+
     const supportsReferenceVideo =
         (isSeedanceModel && imageInputType === 'reference') ||
-        isKlingMotionControlModel;
+        isKlingMotionControlModel ||
+        isKlingVideoEditModel;
 
     const onImageFileChange = (file: File | null) => {
         setImageFile(file);
         setImagePreview(file ? URL.createObjectURL(file) : null);
+    };
+
+    const onSecondImageFileChange = (file: File | null) => {
+        setSecondImageFile(file);
+        setSecondImagePreview(file ? URL.createObjectURL(file) : null);
     };
 
     const onLastFrameFileChange = (file: File | null) => {
@@ -201,27 +224,31 @@ export function ImageToVideoTab() {
             return;
         }
 
-        if (imageMode === 'upload' && !imageFile) {
-            setError(
-                'ကျေးဇူးပြု၍ ပုံတစ်ပုံ အရင်တင်ပေးပါ (Upload an image first).',
-            );
-            return;
-        }
+        if (!isKlingVideoEditModel) {
+            if (imageMode === 'upload' && !imageFile) {
+                setError(
+                    'ကျေးဇူးပြု၍ ပုံတစ်ပုံ အရင်တင်ပေးပါ (Upload an image first).',
+                );
+                return;
+            }
 
-        if (imageMode === 'url' && !imageUrl.trim()) {
-            setError(
-                'ကျေးဇူးပြု၍ ပုံ URL ထည့်ပေးပါ (Enter an image URL).',
-            );
-            return;
+            if (imageMode === 'url' && !imageUrl.trim()) {
+                setError(
+                    'ကျေးဇူးပြု၍ ပုံ URL ထည့်ပေးပါ (Enter an image URL).',
+                );
+                return;
+            }
         }
 
         if (
-            isKlingMotionControlModel &&
+            (isKlingMotionControlModel || isKlingVideoEditModel) &&
             ((refVideoSource === 'upload' && !refVideoFile) ||
                 (refVideoSource === 'url' && !refVideoUrl.trim()))
         ) {
             setError(
-                'Kling Motion Control အတွက် Reference Video (Upload သို့မဟုတ် URL) ထည့်ပေးရန် လိုအပ်ပါသည်။',
+                isKlingVideoEditModel
+                    ? 'Kling Video Edit အတွက် မူရင်းဗီဒီယို (Upload သို့မဟုတ် URL) ထည့်ပေးရန် လိုအပ်ပါသည်။'
+                    : 'Kling Motion Control အတွက် Reference Video (Upload သို့မဟုတ် URL) ထည့်ပေးရန် လိုအပ်ပါသည်။',
             );
             return;
         }
@@ -238,8 +265,20 @@ export function ImageToVideoTab() {
 
         if (imageMode === 'upload' && imageFile) {
             form.append('image', imageFile);
-        } else {
+        } else if (imageMode === 'url' && imageUrl.trim()) {
             form.append('image_url', imageUrl.trim());
+        }
+
+        if (isKlingVideoEditModel) {
+            if (secondImageSource === 'upload' && secondImageFile) {
+                form.append('second_image', secondImageFile);
+            } else if (secondImageSource === 'url' && secondImageUrl.trim()) {
+                form.append('second_image_url', secondImageUrl.trim());
+            }
+            if (model === 'kling-o3-video2video-edit') {
+                form.append('mode', klingEditMode);
+                form.append('keep_audio', String(keepOriginalSound));
+            }
         }
 
         if (isSeedanceModel && imageInputType === 'first_frame_url') {
@@ -358,11 +397,29 @@ export function ImageToVideoTab() {
                             <Label className="text-sm font-semibold">
                                 ၁။ AI Video Model
                             </Label>
-                            <Select value={model} onValueChange={setModel}>
+                            <Select
+                                value={model}
+                                onValueChange={(v) => {
+                                    setModel(v);
+                                    if (v === 'kling-o3-video2video-edit') {
+                                        setRefVideoSource('upload');
+                                        setAspectRatio('9:16');
+                                    } else if (v === 'kling-4-video-edit') {
+                                        setRefVideoSource('upload');
+                                        setAspectRatio('adaptive');
+                                    }
+                                }}
+                            >
                                 <SelectTrigger className="h-10 text-sm">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
+                                    <SelectItem value="kling-o3-video2video-edit">
+                                        Kling O3 Video-to-Video Edit — ဗီဒီယိုထဲက လူကို တိုက်ရိုက်လဲရန် (@Element1/@Element2)
+                                    </SelectItem>
+                                    <SelectItem value="kling-4-video-edit">
+                                        Kling 4.0 Video Edit — Kling 4.0 ဗီဒီယိုတိုက်ရိုက်ပြုပြင်ရန် (@Image1/@Image2)
+                                    </SelectItem>
                                     <SelectItem value="seedance-2.0-fast">
                                         Seedance 2.0 Fast — မြန်ဆန်ပြီး ပုံ/ဗီဒီယို/အသံ အစုံသုံးနိုင်သည် (အကြံပြုချက်)
                                     </SelectItem>
@@ -433,7 +490,9 @@ export function ImageToVideoTab() {
                     {/* Row 2: Media Inputs side-by-side */}
                     <div
                         className={`grid gap-5 ${
-                            isSeedanceModel || isKlingMotionControlModel
+                            isSeedanceModel ||
+                            isKlingMotionControlModel ||
+                            isKlingVideoEditModel
                                 ? 'md:grid-cols-2'
                                 : 'grid-cols-1'
                         }`}
@@ -442,9 +501,13 @@ export function ImageToVideoTab() {
                         <div className="space-y-3 rounded-xl border bg-muted/10 p-4">
                             <div className="flex items-center justify-between">
                                 <Label className="text-sm font-semibold">
-                                    {imageInputType === 'reference'
-                                        ? '၃။ Reference Image (အဓိက နမူနာပုံ) *'
-                                        : '၃။ First Frame (အစပုံ) *'}
+                                    {isKlingVideoEditModel
+                                        ? model === 'kling-o3-video2video-edit'
+                                            ? '၃။ ဇာတ်ကောင် (၁) ပုံ (@Element1 — Optional)'
+                                            : '၃။ ဇာတ်ကောင် (၁) ပုံ (@Image1 — Optional)'
+                                        : imageInputType === 'reference'
+                                          ? '၃။ Reference Image (အဓိက နမူနာပုံ) *'
+                                          : '၃။ First Frame (အစပုံ) *'}
                                 </Label>
                                 <div className="flex gap-1.5">
                                     <Button
@@ -616,11 +679,14 @@ export function ImageToVideoTab() {
                                 <div className="space-y-2">
                                     <div className="flex items-center justify-between">
                                         <Label className="text-sm font-semibold">
-                                            🎬 Reference Video (လှုပ်ရှားမှု နမူနာ{' '}
-                                            {isKlingMotionControlModel
-                                                ? '— Required *'
-                                                : '— Optional'}
-                                            )
+                                            🎬{' '}
+                                            {isKlingVideoEditModel
+                                                ? 'Source Video (ပြင်ဆင်မည့် မူရင်းဗီဒီယို — Required *)'
+                                                : `Reference Video (လှုပ်ရှားမှု နမူနာ ${
+                                                      isKlingMotionControlModel
+                                                          ? '— Required *'
+                                                          : '— Optional'
+                                                  })`}
                                         </Label>
                                         <div className="flex gap-1.5">
                                             <Button
@@ -779,6 +845,164 @@ export function ImageToVideoTab() {
                                     </div>
                                 )}
 
+                                {isKlingVideoEditModel && (
+                                    <div className="space-y-3 border-t pt-3">
+                                        <div className="flex items-center justify-between">
+                                            <Label className="text-xs font-semibold">
+                                                👥{' '}
+                                                {model ===
+                                                'kling-o3-video2video-edit'
+                                                    ? 'ဇာတ်ကောင် (၂) ပုံ (@Element2 — Optional)'
+                                                    : 'ဇာတ်ကောင် (၂) ပုံ (@Image2 — Optional)'}
+                                            </Label>
+                                            <div className="flex gap-1.5">
+                                                <Button
+                                                    type="button"
+                                                    size="sm"
+                                                    className="h-7 px-2.5 text-xs"
+                                                    variant={
+                                                        secondImageSource ===
+                                                        'upload'
+                                                            ? 'default'
+                                                            : 'outline'
+                                                    }
+                                                    onClick={() =>
+                                                        setSecondImageSource(
+                                                            'upload',
+                                                        )
+                                                    }
+                                                >
+                                                    Upload
+                                                </Button>
+                                                <Button
+                                                    type="button"
+                                                    size="sm"
+                                                    className="h-7 px-2.5 text-xs"
+                                                    variant={
+                                                        secondImageSource ===
+                                                        'url'
+                                                            ? 'default'
+                                                            : 'outline'
+                                                    }
+                                                    onClick={() =>
+                                                        setSecondImageSource(
+                                                            'url',
+                                                        )
+                                                    }
+                                                >
+                                                    URL
+                                                </Button>
+                                            </div>
+                                        </div>
+
+                                        {secondImageSource === 'upload' ? (
+                                            <>
+                                                <input
+                                                    ref={secondImageInputRef}
+                                                    type="file"
+                                                    accept="image/*"
+                                                    className="hidden"
+                                                    onChange={(e) =>
+                                                        onSecondImageFileChange(
+                                                            e.target
+                                                                .files?.[0] ??
+                                                                null,
+                                                        )
+                                                    }
+                                                />
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    className="h-10 w-full text-xs"
+                                                    onClick={() =>
+                                                        secondImageInputRef.current?.click()
+                                                    }
+                                                >
+                                                    {secondImageFile
+                                                        ? `ရွေးထားသည်: ${secondImageFile.name}`
+                                                        : secondImagePreview
+                                                          ? 'ဒုတိယ ဇာတ်ကောင်ပုံ ပြောင်းရန်'
+                                                          : 'ဒုတိယ ဇာတ်ကောင်ပုံ တင်ရန် (လူ ၂ ယောက်လဲလျှင်)'}
+                                                </Button>
+                                            </>
+                                        ) : (
+                                            <Input
+                                                value={secondImageUrl}
+                                                onChange={(e) =>
+                                                    setSecondImageUrl(
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                placeholder="https://example.com/character-2.jpg (Optional)"
+                                                className="h-9 text-xs"
+                                            />
+                                        )}
+
+                                        {model ===
+                                            'kling-o3-video2video-edit' && (
+                                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                                <div className="space-y-1.5">
+                                                    <Label className="text-xs font-semibold">
+                                                        Quality Mode
+                                                    </Label>
+                                                    <Select
+                                                        value={klingEditMode}
+                                                        onValueChange={(v) =>
+                                                            setKlingEditMode(
+                                                                v as
+                                                                    | 'std'
+                                                                    | 'pro',
+                                                            )
+                                                        }
+                                                    >
+                                                        <SelectTrigger className="h-9 text-xs">
+                                                            <SelectValue />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="std">
+                                                                Standard (မြန်ဆန်ပြီး စရိတ်သက်သာသည်)
+                                                            </SelectItem>
+                                                            <SelectItem value="pro">
+                                                                Pro (အကြည်ဆုံးနှင့် အငြိမ်ဆုံး)
+                                                            </SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+
+                                                <div className="space-y-1.5">
+                                                    <Label className="text-xs font-semibold">
+                                                        မူရင်းအသံ (Keep Audio)
+                                                    </Label>
+                                                    <Select
+                                                        value={
+                                                            keepOriginalSound
+                                                                ? 'true'
+                                                                : 'false'
+                                                        }
+                                                        onValueChange={(v) =>
+                                                            setKeepOriginalSound(
+                                                                v === 'true',
+                                                            )
+                                                        }
+                                                    >
+                                                        <SelectTrigger className="h-9 text-xs">
+                                                            <SelectValue />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="true">
+                                                                🔊 မူရင်းဗီဒီယိုအသံ ယူမည် (True)
+                                                            </SelectItem>
+                                                            <SelectItem value="false">
+                                                                🔇 အသံမယူပါ (False)
+                                                            </SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
                                 {isKlingMotionControlModel && (
                                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                         <div className="space-y-1.5">
@@ -866,7 +1090,13 @@ export function ImageToVideoTab() {
                             value={prompt}
                             onChange={(e) => setPrompt(e.target.value)}
                             rows={3}
-                            placeholder="ဥပမာ - ပုံထဲက ဇာတ်ကောင်က ရှေးဟောင်းဘုရားကျောင်းဝင်းထဲမှာ ကွန်ဖူးကစားနေပုံ၊ ရုပ်ရှင်အလင်းအမှောင်..."
+                            placeholder={
+                                model === 'kling-o3-video2video-edit'
+                                    ? 'ဥပမာ - Change the woman in pink on the left to @Element1 and change the man in black on the right to @Element2. Keep the kitchen background, black mug, coffee powder, milk pouring action, and camera framing intact.'
+                                    : model === 'kling-4-video-edit'
+                                      ? 'ဥပမာ - Change the woman in pink on the left to @Image1 and change the man in black on the right to @Image2. Keep the kitchen background, black mug, coffee powder, milk pouring action, and locked camera framing exactly as in the source.'
+                                      : 'ဥပမာ - ပုံထဲက ဇာတ်ကောင်က ရှေးဟောင်းဘုရားကျောင်းဝင်းထဲမှာ ကွန်ဖူးကစားနေပုံ၊ ရုပ်ရှင်အလင်းအမှောင်...'
+                            }
                             className="flex min-h-[100px] w-full rounded-lg border border-input bg-background px-3.5 py-2.5 text-sm leading-relaxed ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
                         />
                     </div>

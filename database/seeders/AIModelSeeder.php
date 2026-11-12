@@ -511,6 +511,48 @@ class AIModelSeeder extends Seeder
                 'sort_order' => 12,
                 'description' => 'Kling 3.0 Pro Motion Control (1080p) — flagship 1080p character motion transfer from a 3–30s reference video with original audio track preservation.',
             ],
+            [
+                'generation_type_slug' => 'image-to-video',
+                'provider_name' => 'segmind',
+                'model_name' => 'kling-o3-video2video-edit',
+                'name' => 'Kling O3 Video-to-Video Edit',
+                'coin_cost' => 45,
+                'resolution_costs' => [
+                    '720p' => 45,
+                    '1080p' => 65,
+                ],
+                'duration_costs' => [
+                    '5s' => 45,
+                    '10s' => 85,
+                    '15s' => 125,
+                ],
+                'is_active' => true,
+                'is_default' => false,
+                'docs_link' => 'https://www.segmind.com/models/kling-o3-video2video-edit',
+                'sort_order' => 13,
+                'description' => 'Kling O3 Video-to-Video Edit — direct character replacement (@Element1/@Element2) and scene editing on 3–15s videos while preserving original motion, interactions, and audio.',
+            ],
+            [
+                'generation_type_slug' => 'image-to-video',
+                'provider_name' => 'segmind',
+                'model_name' => 'kling-4-video-edit',
+                'name' => 'Kling 4.0 Video Edit',
+                'coin_cost' => 50,
+                'resolution_costs' => [
+                    '720p' => 50,
+                    '1080p' => 75,
+                ],
+                'duration_costs' => [
+                    '5s' => 50,
+                    '10s' => 95,
+                    '15s' => 140,
+                ],
+                'is_active' => true,
+                'is_default' => false,
+                'docs_link' => 'https://www.segmind.com/models/kling-4-video-edit',
+                'sort_order' => 14,
+                'description' => 'Kling 4.0 Video Edit — flagship in-place video editor supporting multi-character/object swaps (@Image1/@Image2) across 3–30s clips at 720p/1080p.',
+            ],
 
             // Face Swap
             [

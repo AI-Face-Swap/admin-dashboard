@@ -115,6 +115,18 @@ export function extractInputMediaUrls(
     pushUrl('Face Image', meta.face_image || meta.source_image);
     pushUrl('Target Image', meta.target_image);
     pushUrl('Mask Image', meta.mask);
+    pushUrl('Source Video', meta.video || meta.video_url, 'video');
+
+    if (Array.isArray(meta.elements)) {
+        meta.elements.forEach((el, i) => {
+            if (el && typeof el === 'object' && 'frontal_image_url' in el) {
+                pushUrl(
+                    `Element #${i + 1}`,
+                    (el as { frontal_image_url?: unknown }).frontal_image_url,
+                );
+            }
+        });
+    }
 
     if (Array.isArray(meta.image_urls)) {
         meta.image_urls.forEach((u, i) => pushUrl(`Input #${i + 1}`, u));
@@ -166,6 +178,9 @@ export function extractKeyInputParams(
         'source_image',
         'target_image',
         'target_video',
+        'video',
+        'video_url',
+        'elements',
         'mask',
     ]);
 
@@ -301,6 +316,10 @@ export const MODEL_GUIDE: Record<string, string> = {
         'Kling 3.0 Standard Motion Control (720p) — Kling 3.0 မျိုးဆက်သစ် Motion Transfer မော်ဒယ် (ပုံ ၁ ပုံ + Reference Video တွဲတင်ပြီး မူရင်းဗီဒီယိုအသံနှင့် ကကွက်အတိုင်း 720p ထုတ်ပေးသည်)။',
     'kling-3-motion-control-pro':
         'Kling 3.0 Pro Motion Control (1080p) — အမြင့်ဆုံး 1080p Full HD အရည်အသွေးဖြင့် Reference Video ထဲမှ အကနှင့် လှုပ်ရှားမှုအတိုင်း ပုံပါလူကို မူရင်းအသံမပျက် တစ်ထပ်တည်း ကူးပြောင်းပေးသည့် မော်ဒယ်။',
+    'kling-o3-video2video-edit':
+        'Kling O3 Video-to-Video Edit — မူရင်းဗီဒီယို + အစားထိုးချင်သော ဇာတ်ကောင်ပုံ (@Element1, @Element2) တိုက်ရိုက်တင်ပြီး နောက်ခံ၊ လှုပ်ရှားမှု၊ ပစ္စည်းကိုင်တွယ်မှုနှင့် မူရင်းအသံ မပျက်ဘဲ ဗီဒီယိုထဲက လူကို တစ်ဆင့်တည်း တိုက်ရိုက်လဲပေးသည့် မော်ဒယ် (3s–15s)။',
+    'kling-4-video-edit':
+        'Kling 4.0 Video Edit — နောက်ဆုံးပေါ် Kling 4.0 ဗီဒီယိုပြုပြင်ရေး မော်ဒယ် (မူရင်းဗီဒီယို + @Image1, @Image2 ပုံများတွဲပြီး လူ/အရာဝတ္ထု/ရာသီဥတု တိုက်ရိုက်ပြောင်းလဲနိုင်သည်၊ 3s–30s / 720p–1080p)။',
     'minimax-h3-max-reference-to-video':
         'MiniMax Hailuo H3 Max — လူပုံစံနှင့် ကုန်ပစ္စည်း (Product) ပုံစံ မပျက်ယွင်းစေဘဲ ဗီဒီယိုဖန်တီးပေးသည့် မော်ဒယ်။',
     'wan-2.2-i2v-flash':

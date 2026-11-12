@@ -25,24 +25,49 @@ class ImageToVideoRequest extends FormRequest
             'kling-3-motion-control-standard',
             'kling-3-motion-control-pro',
         ], true);
+        $isKlingVideoEdit = in_array($model, [
+            'kling-o3-video2video-edit',
+            'kling-4-video-edit',
+        ], true);
+
+        $aspectRatios = $model === 'kling-4-video-edit'
+            ? 'in:1:1,9:16,16:9,4:3,3:4,21:9,adaptive'
+            : 'in:1:1,9:16,16:9,4:3,3:4,adaptive';
 
         return [
             'prompt' => [$isKlingMotionControl ? 'nullable' : 'required', 'string', 'max:5000'],
-            'image' => ['required_without:image_url', 'file', 'image', 'max:10240'],
-            'image_url' => ['required_without:image', 'url'],
+            'image' => [$isKlingVideoEdit ? 'nullable' : 'required_without:image_url', 'file', 'image', 'max:10240'],
+            'image_url' => [$isKlingVideoEdit ? 'nullable' : 'required_without:image', 'url'],
+            'second_image' => ['nullable', 'file', 'image', 'max:10240'],
+            'second_image_url' => ['nullable', 'url'],
+            'reference_images' => ['nullable', 'array', 'max:10'],
+            'reference_images.*' => ['string', 'url'],
             'image_mode' => ['nullable', 'string', 'in:reference,reference_images,first_frame_url'],
             'last_frame_image' => ['nullable', 'file', 'image', 'max:10240'],
             'last_frame_url' => ['nullable', 'url'],
-            'reference_video' => ['nullable', 'file', 'mimetypes:video/mp4,video/quicktime,video/webm', 'max:5120000'],
-            'reference_video_url' => ['nullable', 'url'],
-            'video_url' => ['nullable', 'url'],
+            'reference_video' => [
+                $isKlingVideoEdit ? 'required_without_all:reference_video_url,video_url' : 'nullable',
+                'file',
+                'mimetypes:video/mp4,video/quicktime,video/webm',
+                'max:5120000',
+            ],
+            'reference_video_url' => [
+                $isKlingVideoEdit ? 'required_without_all:reference_video,video_url' : 'nullable',
+                'url',
+            ],
+            'video_url' => [
+                $isKlingVideoEdit ? 'required_without_all:reference_video,reference_video_url' : 'nullable',
+                'url',
+            ],
             'reference_audio' => ['nullable', 'file', 'mimetypes:audio/mpeg,audio/mp3,audio/wav,audio/x-wav,audio/ogg', 'max:20480'],
             'reference_audio_url' => ['nullable', 'url'],
             'character_orientation' => ['nullable', 'string', 'in:video,image'],
             'keep_original_sound' => ['nullable', 'string', 'in:true,false,0,1'],
+            'keep_audio' => ['nullable', 'string', 'in:true,false,0,1'],
+            'mode' => ['nullable', 'string', 'in:std,pro'],
             'negative_prompt' => ['nullable', 'string', 'max:2000'],
             'model' => ['nullable', 'string', 'max:255'],
-            'aspect_ratio' => ['nullable', 'string', 'in:1:1,9:16,16:9,4:3,3:4,adaptive'],
+            'aspect_ratio' => ['nullable', 'string', $aspectRatios],
             'resolution' => ['nullable', 'string', 'in:480p,720p,1080p'],
             'duration' => ['nullable', 'string', 'max:50'],
             'prompt_extend' => ['nullable', 'string', 'in:true,false,0,1'],

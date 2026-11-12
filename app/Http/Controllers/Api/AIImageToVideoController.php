@@ -37,8 +37,12 @@ class AIImageToVideoController extends Controller
                 $cost = (int) $aiModel->resolution_costs[$resolution];
             }
             $durKey = $request->string('duration')->toString();
+            $durDigits = preg_replace('/\D+/', '', $durKey);
+            $durWithSuffix = $durDigits !== '' ? "{$durDigits}s" : '';
             if (! empty($durKey) && ! empty($aiModel->duration_costs[$durKey])) {
                 $cost = (int) $aiModel->duration_costs[$durKey];
+            } elseif ($durWithSuffix !== '' && ! empty($aiModel->duration_costs[$durWithSuffix])) {
+                $cost = (int) $aiModel->duration_costs[$durWithSuffix];
             }
             $templateCost = $cost;
         } else {
@@ -145,6 +149,15 @@ class AIImageToVideoController extends Controller
         $rawDuration = $request->string('duration')->toString();
         $durationInt = $rawDuration !== '' ? (int) preg_replace('/\D+/', '', $rawDuration) : null;
 
+        $secondImageUrl = $this->resolveOptionalMediaUrl($request, 'second_image', 'second_image_url', 'input-images');
+        $extraRefImages = is_array($request->input('reference_images'))
+            ? array_values(array_filter($request->input('reference_images'), 'is_string'))
+            : [];
+        $allCharacterImages = array_values(array_unique(array_filter(array_merge(
+            [$imageUrl, $secondImageUrl],
+            $extraRefImages,
+        ))));
+
         $lastFrameUrl = $this->resolveOptionalMediaUrl($request, 'last_frame_image', 'last_frame_url', 'input-images');
         $referenceVideoUrl = $this->resolveOptionalMediaUrl($request, 'reference_video', 'reference_video_url', 'input-videos');
         if ($referenceVideoUrl === '' && $request->filled('video_url')) {
@@ -161,6 +174,67 @@ class AIImageToVideoController extends Controller
         ];
 
         switch ($modelName) {
+            case 'kling-o3-video2video-edit':
+                $mode = $request->filled('mode')
+                    ? strtolower($request->string('mode')->toString())
+                    : (strtolower($resolution) === '1080p' ? 'pro' : 'std');
+                $keepAudio = $request->has('keep_audio')
+                    ? $request->boolean('keep_audio')
+                    : ($request->has('keep_original_sound')
+                        ? $request->boolean('keep_original_sound')
+                        : true);
+                $durClamped = $durationInt ? max(3, min(15, $durationInt)) : 5;
+
+                $payload['video_url'] = $referenceVideoUrl;
+                $payload['mode'] = in_array($mode, ['std', 'pro'], true) ? $mode : 'pro';
+                $payload['duration'] = (string) $durClamped;
+                $payload['aspect_ratio'] = in_array($aspectRatio, ['16:9', '9:16', '1:1'], true)
+                    ? $aspectRatio
+                    : '9:16';
+                $payload['keep_audio'] = $keepAudio;
+
+                if (! empty($allCharacterImages)) {
+                    $usesImageTagOnly = preg_match('/@Image\s*\d+\b/i', $payload['prompt'])
+                        && ! preg_match('/@Element\s*\d+\b/i', $payload['prompt']);
+
+                    if ($usesImageTagOnly) {
+                        $payload['image_urls'] = array_slice($allCharacterImages, 0, 4);
+                    } else {
+                        $elementsSlice = array_slice($allCharacterImages, 0, 10);
+                        $payload['elements'] = array_map(
+                            static fn (string $url): array => ['frontal_image_url' => $url],
+                            $elementsSlice,
+                        );
+                        foreach ($elementsSlice as $idx => $_url) {
+                            $num = $idx + 1;
+                            if (! preg_match("/@Element\s*{$num}\b/i", $payload['prompt'])) {
+                                $payload['prompt'] = rtrim($payload['prompt'])." @Element{$num}";
+                            }
+                        }
+                    }
+                }
+                break;
+
+            case 'kling-4-video-edit':
+                $payload['video'] = $referenceVideoUrl;
+                $payload['duration'] = $durationInt ? max(3, min(30, $durationInt)) : 5;
+                $payload['resolution'] = strtolower($resolution) === '1080p' ? '1080p' : '720p';
+                $payload['aspect_ratio'] = in_array($aspectRatio, ['adaptive', '16:9', '9:16', '1:1', '21:9'], true)
+                    ? $aspectRatio
+                    : 'adaptive';
+
+                if (! empty($allCharacterImages)) {
+                    $imagesSlice = array_slice($allCharacterImages, 0, 10);
+                    $payload['reference_images'] = $imagesSlice;
+                    foreach ($imagesSlice as $idx => $_url) {
+                        $num = $idx + 1;
+                        if (! preg_match("/@Image\s*{$num}\b/i", $payload['prompt'])) {
+                            $payload['prompt'] = rtrim($payload['prompt'])." @Image{$num}";
+                        }
+                    }
+                }
+                break;
+
             case 'kling-2.6-standard-motion-control':
             case 'kling-2.6-pro-motion-control':
             case 'kling-3-motion-control-standard':

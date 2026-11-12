@@ -263,6 +263,53 @@ class AITemplateGenerationController extends Controller
             $refVideos = [$params['video_url']];
         }
 
+        if ($model === 'kling-o3-video2video-edit') {
+            $sourceVideoUrl = $refVideos[0] ?? $template->file_url;
+            $mode = strtolower((string) ($params['mode'] ?? ($resolution === '1080p' ? 'pro' : 'std')));
+            $keepAudio = isset($params['keep_audio'])
+                ? filter_var($params['keep_audio'], FILTER_VALIDATE_BOOLEAN)
+                : (isset($params['keep_original_sound'])
+                    ? filter_var($params['keep_original_sound'], FILTER_VALIDATE_BOOLEAN)
+                    : true);
+            $finalPrompt = $prompt;
+            $elements = [];
+            if ($userImageUrl) {
+                $elements[] = ['frontal_image_url' => $userImageUrl];
+                if (! preg_match('/@Element\s*1\b/i', $finalPrompt)) {
+                    $finalPrompt = rtrim($finalPrompt).' @Element1';
+                }
+            }
+
+            return array_filter([
+                'model' => $model,
+                'prompt' => $finalPrompt,
+                'video_url' => $sourceVideoUrl,
+                'mode' => in_array($mode, ['std', 'pro'], true) ? $mode : 'pro',
+                'duration' => (string) max(3, min(15, $durationInt)),
+                'aspect_ratio' => in_array($aspectRatio, ['16:9', '9:16', '1:1'], true) ? $aspectRatio : '9:16',
+                'keep_audio' => $keepAudio,
+                'elements' => ! empty($elements) ? $elements : null,
+            ], fn ($v) => $v !== null && $v !== '');
+        }
+
+        if ($model === 'kling-4-video-edit') {
+            $sourceVideoUrl = $refVideos[0] ?? $template->file_url;
+            $finalPrompt = $prompt;
+            if ($userImageUrl && ! preg_match('/@Image\s*1\b/i', $finalPrompt)) {
+                $finalPrompt = rtrim($finalPrompt).' @Image1';
+            }
+
+            return array_filter([
+                'model' => $model,
+                'video' => $sourceVideoUrl,
+                'prompt' => $finalPrompt,
+                'reference_images' => ! empty($refImages) ? $refImages : null,
+                'duration' => max(3, min(30, $durationInt)),
+                'resolution' => strtolower($resolution) === '1080p' ? '1080p' : '720p',
+                'aspect_ratio' => in_array($aspectRatio, ['adaptive', '16:9', '9:16', '1:1', '21:9'], true) ? $aspectRatio : 'adaptive',
+            ], fn ($v) => $v !== null && $v !== '');
+        }
+
         if (in_array($model, [
             'kling-2.6-standard-motion-control',
             'kling-2.6-pro-motion-control',

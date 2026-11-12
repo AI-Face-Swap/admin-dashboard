@@ -385,4 +385,68 @@ class ImageToVideoApiTest extends TestCase
             $this->assertTrue($meta['keep_original_sound']);
         }
     }
+
+    public function test_kling_video_edit_models_build_valid_multi_character_payloads(): void
+    {
+        Queue::fake();
+
+        $customer = Customer::factory()->create(['points' => 500, 'coins' => 500]);
+        Cache::put("customer_points_{$customer->central_auth_uuid}", 500, 30);
+
+        // 1. kling-o3-video2video-edit with 2 character elements (@Element1 & @Element2)
+        $resO3 = $this->actingAs($customer, 'sanctum')
+            ->postJson('/api/v1/ai/image-to-video', [
+                'model' => 'kling-o3-video2video-edit',
+                'video_url' => 'https://example.com/kitchen-skit.mp4',
+                'image_url' => 'https://example.com/woman.jpg',
+                'second_image_url' => 'https://example.com/man.jpg',
+                'prompt' => 'Change the woman in pink to @Element1 and change the man in black to @Element2.',
+                'mode' => 'std',
+                'duration' => '15s',
+                'aspect_ratio' => '9:16',
+                'keep_audio' => 'true',
+            ])
+            ->assertStatus(202);
+
+        $genO3 = AIGeneration::findOrFail($resO3->json('generation.id'));
+        $metaO3 = $genO3->input_metadata;
+
+        $this->assertSame('kling-o3-video2video-edit', $metaO3['model']);
+        $this->assertSame('https://example.com/kitchen-skit.mp4', $metaO3['video_url']);
+        $this->assertSame('std', $metaO3['mode']);
+        $this->assertSame('15', $metaO3['duration']);
+        $this->assertSame('9:16', $metaO3['aspect_ratio']);
+        $this->assertTrue($metaO3['keep_audio']);
+        $this->assertSame([
+            ['frontal_image_url' => 'https://example.com/woman.jpg'],
+            ['frontal_image_url' => 'https://example.com/man.jpg'],
+        ], $metaO3['elements']);
+
+        // 2. kling-4-video-edit with 2 reference images (@Image1 & @Image2)
+        $resK4 = $this->actingAs($customer, 'sanctum')
+            ->postJson('/api/v1/ai/image-to-video', [
+                'model' => 'kling-4-video-edit',
+                'video_url' => 'https://example.com/kitchen-skit.mp4',
+                'image_url' => 'https://example.com/woman.jpg',
+                'second_image_url' => 'https://example.com/man.jpg',
+                'prompt' => 'Change the woman in pink to @Image1 and change the man in black to @Image2.',
+                'duration' => '15s',
+                'resolution' => '720p',
+                'aspect_ratio' => 'adaptive',
+            ])
+            ->assertStatus(202);
+
+        $genK4 = AIGeneration::findOrFail($resK4->json('generation.id'));
+        $metaK4 = $genK4->input_metadata;
+
+        $this->assertSame('kling-4-video-edit', $metaK4['model']);
+        $this->assertSame('https://example.com/kitchen-skit.mp4', $metaK4['video']);
+        $this->assertSame(15, $metaK4['duration']);
+        $this->assertSame('720p', $metaK4['resolution']);
+        $this->assertSame('adaptive', $metaK4['aspect_ratio']);
+        $this->assertSame([
+            'https://example.com/woman.jpg',
+            'https://example.com/man.jpg',
+        ], $metaK4['reference_images']);
+    }
 }
