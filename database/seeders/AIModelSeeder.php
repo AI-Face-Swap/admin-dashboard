@@ -744,7 +744,8 @@ class AIModelSeeder extends Seeder
 
             $item['generation_type_id'] = $genTypes[$genTypeSlug]->id ?? null;
 
-            AIModel::updateOrCreate(
+            // Skip existing models so server-customized costs/points and settings are preserved.
+            AIModel::firstOrCreate(
                 [
                     'provider_name' => $item['provider_name'],
                     'model_name' => $item['model_name'],
