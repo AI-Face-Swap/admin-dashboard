@@ -13,6 +13,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { ModelInfoButton } from './ModelInfoButton';
 import { ResultPopupModal } from './ResultPopupModal';
 import {
     csrfToken,
@@ -179,9 +180,16 @@ export function ImageGenerationTab() {
 
                     <div className="grid gap-4 md:grid-cols-3">
                         <div className="space-y-2">
-                            <Label className="text-sm font-semibold">
-                                Model ရွေးချယ်ရန်
-                            </Label>
+                            <div className="flex items-center justify-between gap-2">
+                                <Label className="text-sm font-semibold">
+                                    Model ရွေးချယ်ရန်
+                                </Label>
+                                <ModelInfoButton
+                                    model={model}
+                                    category="image-generation"
+                                    onSelectModel={setModel}
+                                />
+                            </div>
                             <Select value={model} onValueChange={setModel}>
                                 <SelectTrigger className="h-10 text-sm">
                                     <SelectValue />

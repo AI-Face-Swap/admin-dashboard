@@ -22,6 +22,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { ModelInfoButton } from './ModelInfoButton';
 import { ResultPopupModal } from './ResultPopupModal';
 import {
     csrfToken,
@@ -115,6 +116,10 @@ export function ImageToVideoTab() {
         'seedance-2.5',
     ].includes(model);
 
+    const isGeminiOmniRefModel = model === 'gemini-omni-1.2-flash-reference-to-video';
+    const isGeminiOmniI2VModel = model === 'gemini-omni-1.2-flash-image-to-video';
+    const isVeoModel = ['veo-3.1', 'veo-3.1-fast'].includes(model);
+
     const isKlingMotionControlModel = [
         'kling-2.6-standard-motion-control',
         'kling-2.6-pro-motion-control',
@@ -129,17 +134,24 @@ export function ImageToVideoTab() {
 
     const supportsReferenceVideo =
         (isSeedanceModel && imageInputType === 'reference') ||
+        isGeminiOmniRefModel ||
         isKlingMotionControlModel ||
         isKlingVideoEditModel;
 
     const supportsMultiRefImages =
         (isSeedanceModel && imageInputType === 'reference') ||
+        isGeminiOmniRefModel ||
         isKlingVideoEditModel;
+
+    const supportsLastFrame =
+        (isSeedanceModel && imageInputType === 'first_frame_url') ||
+        isGeminiOmniI2VModel ||
+        isVeoModel;
 
     const maxExtraImages =
         model === 'kling-o3-video2video-edit'
             ? 3
-            : model === 'kling-4-video-edit'
+            : model === 'kling-4-video-edit' || isGeminiOmniRefModel
               ? 9
               : 8;
 
@@ -149,6 +161,9 @@ export function ImageToVideoTab() {
         }
         if (model === 'kling-4-video-edit') {
             return `@Image${num}`;
+        }
+        if (isGeminiOmniRefModel) {
+            return `<IMAGE_REF_${num - 1}>`;
         }
         return `@Image ${num}`;
     };
@@ -363,7 +378,7 @@ export function ImageToVideoTab() {
             });
         }
 
-        if (isSeedanceModel && imageInputType === 'first_frame_url') {
+        if (supportsLastFrame) {
             if (lastFrameSource === 'upload' && lastFrameFile) {
                 form.append('last_frame_image', lastFrameFile);
             } else if (lastFrameSource === 'url' && lastFrameUrl.trim()) {
@@ -476,9 +491,16 @@ export function ImageToVideoTab() {
                     {/* Row 1: AI Model + Image Mode side-by-side */}
                     <div className="grid gap-5 md:grid-cols-2">
                         <div className="space-y-2">
-                            <Label className="text-sm font-semibold">
-                                ၁။ AI Video Model
-                            </Label>
+                            <div className="flex items-center justify-between gap-2">
+                                <Label className="text-sm font-semibold">
+                                    ၁။ AI Video Model
+                                </Label>
+                                <ModelInfoButton
+                                    model={model}
+                                    category="image-to-video"
+                                    onSelectModel={setModel}
+                                />
+                            </div>
                             <Select
                                 value={model}
                                 onValueChange={(v) => {
@@ -501,6 +523,18 @@ export function ImageToVideoTab() {
                                     </SelectItem>
                                     <SelectItem value="kling-4-video-edit">
                                         Kling 4.0 Video Edit — Kling 4.0 ဗီဒီယိုတိုက်ရိုက်ပြုပြင်ရန် (@Image1/@Image2)
+                                    </SelectItem>
+                                    <SelectItem value="gemini-omni-1.2-flash-image-to-video">
+                                        Gemini Omni 1.2 Flash I2V — ပုံ+စာသား ကြော်ငြာဗီဒီယို (First/Last Frame, 3-15s)
+                                    </SelectItem>
+                                    <SelectItem value="gemini-omni-1.2-flash-reference-to-video">
+                                        Gemini Omni 1.2 Flash Reference — Multi-Reference ပုံ/ဗီဒီယို + စာသား (3-15s)
+                                    </SelectItem>
+                                    <SelectItem value="veo-3.1-fast">
+                                        Google Veo 3.1 Fast — Real Cinematic ဗီဒီယို + Native Audio (4s-8s)
+                                    </SelectItem>
+                                    <SelectItem value="veo-3.1">
+                                        Google Veo 3.1 — Flagship Photorealistic Cinema + Audio (4s-8s)
                                     </SelectItem>
                                     <SelectItem value="seedance-2.0-fast">
                                         Seedance 2.0 Fast — မြန်ဆန်ပြီး ပုံ/ဗီဒီယို/အသံ အစုံသုံးနိုင်သည် (အကြံပြုချက်)
@@ -838,9 +872,8 @@ export function ImageToVideoTab() {
                             )}
                         </div>
 
-                        {/* Secondary Media Box for Seedance: Last Frame OR Reference Video/Audio */}
-                        {isSeedanceModel &&
-                            imageInputType === 'first_frame_url' && (
+                        {/* Secondary Media Box for Seedance / Gemini Omni I2V / Veo: Last Frame */}
+                        {supportsLastFrame && (
                                 <div className="space-y-3 rounded-xl border border-dashed bg-muted/10 p-4">
                                     <div className="flex items-center justify-between">
                                         <Label className="text-sm font-semibold">

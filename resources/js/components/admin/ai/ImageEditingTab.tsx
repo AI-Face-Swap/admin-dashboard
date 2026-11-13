@@ -15,6 +15,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { ModelInfoButton } from './ModelInfoButton';
 import { ResultPopupModal } from './ResultPopupModal';
 import {
     csrfToken,
@@ -407,9 +408,18 @@ export function ImageEditingTab() {
 
                     {/* Step 1: Model Switcher with concise Burmese descriptions next to each model name */}
                     <div className="space-y-2">
-                        <Label className="text-sm font-semibold">
-                            ၁။ AI Image Editing Model ရွေးချယ်ရန်
-                        </Label>
+                        <div className="flex items-center justify-between gap-2">
+                            <Label className="text-sm font-semibold">
+                                ၁။ AI Image Editing Model ရွေးချယ်ရန်
+                            </Label>
+                            <ModelInfoButton
+                                model={model}
+                                category="image-editing"
+                                onSelectModel={(slug) =>
+                                    setModel(slug as EditModel)
+                                }
+                            />
+                        </div>
                         <Select
                             value={model}
                             onValueChange={(val: EditModel) => {

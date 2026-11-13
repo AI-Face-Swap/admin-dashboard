@@ -103,7 +103,7 @@ class ImageToVideoApiTest extends TestCase
             ->postJson('/api/v1/ai/image-to-video', [
                 'prompt' => 'Test',
                 'image_url' => 'https://example.com/image.jpg',
-                'resolution' => '4k', // invalid
+                'resolution' => '8k', // invalid
                 'aspect_ratio' => '21:9', // invalid
             ]);
 
@@ -495,5 +495,96 @@ class ImageToVideoApiTest extends TestCase
         $this->assertSame('https://example.com/ref-4-bg.jpg', $meta['reference_images'][3]);
         $this->assertStringContainsString('@Image 2', $meta['prompt']);
         $this->assertStringContainsString('@Image 5', $meta['prompt']);
+    }
+
+    public function test_gemini_omni_i2v_and_ref2v_build_expected_payloads(): void
+    {
+        Queue::fake();
+        Storage::fake('spaces');
+
+        $admin = User::factory()->create([
+            'email_verified_at' => now(),
+        ]);
+        $admin->roles()->attach(Role::where('slug', 'super-admin')->firstOrFail());
+
+        // 1. gemini-omni-1.2-flash-image-to-video with first & last frame
+        $resI2v = $this->actingAs($admin, 'web')->post('/admin/ai/image-to-video', [
+            'model' => 'gemini-omni-1.2-flash-image-to-video',
+            'image_url' => 'https://example.com/first.jpg',
+            'last_frame_url' => 'https://example.com/last.jpg',
+            'prompt' => 'Smooth camera push-in to the portrait.',
+            'duration' => '12s', // should cap at 10s when last_frame_image is present
+            'resolution' => '1080p',
+            'aspect_ratio' => '9:16',
+        ]);
+
+        $resI2v->assertStatus(202)->assertJsonPath('status', 'queued');
+        $metaI2v = AIGeneration::findOrFail($resI2v->json('generation.id'))->input_metadata;
+        $this->assertSame('https://example.com/first.jpg', $metaI2v['first_frame_image']);
+        $this->assertSame('https://example.com/last.jpg', $metaI2v['last_frame_image']);
+        $this->assertSame(10, $metaI2v['duration']);
+        $this->assertSame('1080p', $metaI2v['resolution']);
+        $this->assertSame('9:16', $metaI2v['aspect_ratio']);
+
+        // 2. gemini-omni-1.2-flash-reference-to-video with multi-ref images and reference video
+        $resRef = $this->actingAs($admin, 'web')->post('/admin/ai/image-to-video', [
+            'model' => 'gemini-omni-1.2-flash-reference-to-video',
+            'image_url' => 'https://example.com/ref0.jpg',
+            'extra_image_urls' => [
+                0 => 'https://example.com/ref1.jpg',
+            ],
+            'reference_videos' => ['https://example.com/motion.mp4'],
+            'prompt' => '<IMAGE_REF_0> walking with <IMAGE_REF_1> in rain.',
+            'duration' => '8s',
+            'resolution' => '4k',
+            'aspect_ratio' => '16:9',
+        ]);
+
+        $resRef->assertStatus(202)->assertJsonPath('status', 'queued');
+        $metaRef = AIGeneration::findOrFail($resRef->json('generation.id'))->input_metadata;
+        $this->assertSame([
+            'https://example.com/ref0.jpg',
+            'https://example.com/ref1.jpg',
+        ], $metaRef['reference_images']);
+        $this->assertSame(['https://example.com/motion.mp4'], $metaRef['reference_videos']);
+        $this->assertSame(8, $metaRef['duration']);
+        $this->assertSame('4k', $metaRef['resolution']);
+        $this->assertSame('16:9', $metaRef['aspect_ratio']);
+    }
+
+    public function test_veo_3_1_and_fast_build_expected_payloads(): void
+    {
+        Queue::fake();
+        Storage::fake('spaces');
+
+        $admin = User::factory()->create([
+            'email_verified_at' => now(),
+        ]);
+        $admin->roles()->attach(Role::where('slug', 'super-admin')->firstOrFail());
+
+        foreach (['veo-3.1-fast', 'veo-3.1'] as $veoModel) {
+            $res = $this->actingAs($admin, 'web')->post('/admin/ai/image-to-video', [
+                'model' => $veoModel,
+                'image_url' => 'https://example.com/start.jpg',
+                'last_frame_url' => 'https://example.com/end.jpg',
+                'prompt' => 'Cinematic drone reveal over misty mountains.',
+                'negative_prompt' => 'blurry, distorted',
+                'duration' => '6s',
+                'resolution' => '1080p',
+                'aspect_ratio' => '16:9',
+                'generate_audio' => 'false',
+            ]);
+
+            $res->assertStatus(202)->assertJsonPath('status', 'queued');
+            $meta = AIGeneration::findOrFail($res->json('generation.id'))->input_metadata;
+
+            $this->assertSame('https://example.com/start.jpg', $meta['image']);
+            $this->assertSame('https://example.com/end.jpg', $meta['last_frame']);
+            $this->assertSame('blurry, distorted', $meta['negative_prompt']);
+            $this->assertSame(6, $meta['duration']);
+            $this->assertSame('1080p', $meta['resolution']);
+            $this->assertSame('16:9', $meta['aspect_ratio']);
+            $this->assertFalse($meta['generate_audio']);
+        }
     }
 }

@@ -104,7 +104,7 @@ class ImageToVideoRequest extends FormRequest
             'negative_prompt' => ['nullable', 'string', 'max:2000'],
             'model' => ['nullable', 'string', 'max:255'],
             'aspect_ratio' => ['nullable', 'string', $aspectRatios],
-            'resolution' => ['nullable', 'string', 'in:480p,720p,1080p'],
+            'resolution' => ['nullable', 'string', 'in:360p,480p,720p,1080p,4k'],
             'duration' => ['nullable', 'string', 'max:50'],
             'prompt_extend' => ['nullable', 'string', 'in:true,false,0,1'],
             'generate_audio' => ['nullable', 'string', 'in:true,false,0,1'],

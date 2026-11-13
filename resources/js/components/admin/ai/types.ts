@@ -300,6 +300,14 @@ export const DURATION_DESCRIPTIONS: Record<string, string> = {
 };
 
 export const MODEL_GUIDE: Record<string, string> = {
+    'gemini-omni-1.2-flash-image-to-video':
+        'Google Gemini Omni 1.2 Flash I2V — Start/End Frame မှ 3s–15s ဗီဒီယိုကို Native Audio နှင့် စာလုံးမပျက် On-Screen Text ပါ ထုတ်ပေးသည် (Product/Promo များအတွက် အကောင်းဆုံး)။',
+    'gemini-omni-1.2-flash-reference-to-video':
+        'Google Gemini Omni 1.2 Flash Reference — Reference ပုံ (၁၀) ပုံ + Reference Video (၃) ခုအထိ (<IMAGE_REF_0>, <IMAGE_REF_1>) တွဲပြီး Brand/Product ကြော်ငြာဗီဒီယို ထုတ်ပေးသည်။',
+    'veo-3.1-fast':
+        'Google Veo 3.1 Fast — တကယ့် Camera ရိုက်ချက်ကဲ့သို့ Photorealistic လူ/သဘာဝ ဗီဒီယို (4s/6s/8s) ကို Native Audio နှင့် မြန်မြန်ဆန်ဆန် ထုတ်ပေးသည်။',
+    'veo-3.1':
+        'Google Veo 3.1 — Google Flagship Photorealistic Cinematic ဗီဒီယို + Synchronized Audio (4s/6s/8s) နှင့် First/Last Frame Transition ပါဝင်သည်။',
     'seedance-2.0-fast':
         'ByteDance Seedance 2.0 Fast — မြန်ဆန်ပြီး Reference Image/Video/Audio နှင့် First/Last Frame အားလုံး သုံးနိုင်သည် (အကြံပြုချက်)။',
     'seedance-2.0':

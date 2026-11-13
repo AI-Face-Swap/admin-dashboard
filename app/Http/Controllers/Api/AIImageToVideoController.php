@@ -372,6 +372,54 @@ class AIImageToVideoController extends Controller
                 $payload['duration'] = ($durationInt && in_array($durationInt, [5, 10], true)) ? $durationInt : 5;
                 break;
 
+            case 'gemini-omni-1.2-flash-image-to-video':
+                $payload['first_frame_image'] = $imageUrl;
+                if ($lastFrameUrl !== '') {
+                    $payload['last_frame_image'] = $lastFrameUrl;
+                }
+                $omniRes = strtolower($resolution);
+                $payload['resolution'] = in_array($omniRes, ['360p', '720p', '1080p', '4k'], true)
+                    ? $omniRes
+                    : '720p';
+                $payload['aspect_ratio'] = in_array($aspectRatio, ['16:9', '9:16'], true) ? $aspectRatio : '16:9';
+                $maxOmniDur = $lastFrameUrl !== '' ? 10 : 15;
+                $payload['duration'] = $durationInt ? max(3, min($maxOmniDur, $durationInt)) : 5;
+                break;
+
+            case 'gemini-omni-1.2-flash-reference-to-video':
+                $omniImages = array_slice($allCharacterImages, 0, 10);
+                if (! empty($omniImages)) {
+                    $payload['reference_images'] = $omniImages;
+                    foreach ($omniImages as $idx => $_url) {
+                        $tag = "<IMAGE_REF_{$idx}>";
+                        if (! str_contains($payload['prompt'], $tag)) {
+                            $payload['prompt'] = rtrim($payload['prompt'])." {$tag}";
+                        }
+                    }
+                }
+                if ($referenceVideoUrl !== '') {
+                    $payload['reference_videos'] = [$referenceVideoUrl];
+                }
+                $omniRes = strtolower($resolution);
+                $payload['resolution'] = in_array($omniRes, ['360p', '720p', '1080p', '4k'], true)
+                    ? $omniRes
+                    : '720p';
+                $payload['aspect_ratio'] = in_array($aspectRatio, ['16:9', '9:16'], true) ? $aspectRatio : '16:9';
+                $payload['duration'] = $durationInt ? max(3, min(15, $durationInt)) : 5;
+                break;
+
+            case 'veo-3.1':
+            case 'veo-3.1-fast':
+                $payload['image'] = $imageUrl;
+                if ($lastFrameUrl !== '') {
+                    $payload['last_frame'] = $lastFrameUrl;
+                }
+                $payload['resolution'] = strtolower($resolution) === '1080p' ? '1080p' : '720p';
+                $payload['aspect_ratio'] = in_array($aspectRatio, ['16:9', '9:16'], true) ? $aspectRatio : '16:9';
+                $payload['duration'] = ($durationInt && in_array($durationInt, [4, 6, 8], true)) ? $durationInt : 8;
+                $payload['generate_audio'] = $request->has('generate_audio') ? $request->boolean('generate_audio') : true;
+                break;
+
             case 'ltx-2.5-pro':
                 if ($imageMode === 'first_frame_url') {
                     $payload['first_frame_url'] = $imageUrl;

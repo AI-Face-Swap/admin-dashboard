@@ -405,6 +405,56 @@ class AITemplateGenerationController extends Controller
             ];
         }
 
+        if ($model === 'gemini-omni-1.2-flash-image-to-video') {
+            $omniRes = strtolower($resolution);
+            $lastFrameUrl = ! empty($params['last_frame_url']) ? (string) $params['last_frame_url'] : null;
+
+            return array_filter([
+                'model' => $model,
+                'prompt' => $prompt,
+                'first_frame_image' => $userImageUrl,
+                'last_frame_image' => $lastFrameUrl,
+                'resolution' => in_array($omniRes, ['360p', '720p', '1080p', '4k'], true) ? $omniRes : '720p',
+                'aspect_ratio' => in_array($aspectRatio, ['16:9', '9:16'], true) ? $aspectRatio : '16:9',
+                'duration' => max(3, min($lastFrameUrl ? 10 : 15, $durationInt)),
+                'seed' => $seed,
+            ], fn ($v) => $v !== null && $v !== '');
+        }
+
+        if ($model === 'gemini-omni-1.2-flash-reference-to-video') {
+            $omniRes = strtolower($resolution);
+
+            return array_filter([
+                'model' => $model,
+                'prompt' => $prompt,
+                'reference_images' => ! empty($refImages) ? array_slice($refImages, 0, 10) : null,
+                'reference_videos' => ! empty($refVideos) ? array_slice($refVideos, 0, 3) : null,
+                'resolution' => in_array($omniRes, ['360p', '720p', '1080p', '4k'], true) ? $omniRes : '720p',
+                'aspect_ratio' => in_array($aspectRatio, ['16:9', '9:16'], true) ? $aspectRatio : '16:9',
+                'duration' => max(3, min(15, $durationInt)),
+                'seed' => $seed,
+            ], fn ($v) => $v !== null && $v !== '');
+        }
+
+        if (in_array($model, ['veo-3.1', 'veo-3.1-fast'], true)) {
+            $veoDur = in_array($durationInt, [4, 6, 8], true) ? $durationInt : 8;
+
+            return array_filter([
+                'model' => $model,
+                'prompt' => $prompt,
+                'image' => $userImageUrl,
+                'last_frame' => ! empty($params['last_frame_url']) ? (string) $params['last_frame_url'] : null,
+                'negative_prompt' => $negativePrompt ?: null,
+                'resolution' => strtolower($resolution) === '1080p' ? '1080p' : '720p',
+                'aspect_ratio' => in_array($aspectRatio, ['16:9', '9:16'], true) ? $aspectRatio : '16:9',
+                'duration' => $veoDur,
+                'generate_audio' => isset($params['generate_audio'])
+                    ? filter_var($params['generate_audio'], FILTER_VALIDATE_BOOLEAN)
+                    : true,
+                'seed' => $seed >= 0 ? $seed : null,
+            ], fn ($v) => $v !== null && $v !== '');
+        }
+
         if ($model === 'minimax-h3-max-reference-to-video') {
             return [
                 'model' => $model,

@@ -15,6 +15,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { ModelInfoButton } from './ModelInfoButton';
 import { ResultPopupModal } from './ResultPopupModal';
 import { csrfToken, type GenerationResult, type Template } from './types';
 
@@ -350,11 +351,24 @@ export function TemplateGenerationTab({
                                             {(selectedTemplate.ai_model
                                                 ?.model_name ||
                                                 selectedTemplate.model) && (
-                                                <Badge className="bg-primary/15 text-primary hover:bg-primary/20">
-                                                    {selectedTemplate.ai_model
-                                                        ?.model_name ??
-                                                        selectedTemplate.model}
-                                                </Badge>
+                                                <>
+                                                    <Badge className="bg-primary/15 text-primary hover:bg-primary/20">
+                                                        {selectedTemplate
+                                                            .ai_model
+                                                            ?.model_name ??
+                                                            selectedTemplate.model}
+                                                    </Badge>
+                                                    <ModelInfoButton
+                                                        compact
+                                                        model={
+                                                            selectedTemplate
+                                                                .ai_model
+                                                                ?.model_name ??
+                                                            selectedTemplate.model ??
+                                                            ''
+                                                        }
+                                                    />
+                                                </>
                                             )}
                                         </div>
                                         <p className="text-muted-foreground">
