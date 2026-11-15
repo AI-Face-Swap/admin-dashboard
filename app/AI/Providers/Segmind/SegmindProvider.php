@@ -35,7 +35,7 @@ class SegmindProvider implements AIProviderInterface
 
     public const DEFAULT_POLL_INTERVAL_SECONDS = 1;
 
-    public const DEFAULT_POLL_TIMEOUT_SECONDS = 600;
+    public const DEFAULT_POLL_TIMEOUT_SECONDS = 5400;
 
     /**
      * @param  array<string, string>  $operations  Operation -> endpoint slug map (e.g. ['face-swap' => 'faceswap-v5'])
@@ -472,9 +472,25 @@ class SegmindProvider implements AIProviderInterface
     {
         $timeout = $timeoutSeconds ?? $this->pollTimeoutSeconds;
         $deadline = microtime(true) + $timeout;
+        $consecutiveErrors = 0;
 
         while (true) {
-            $body = $this->getStatus($requestId, $statusUrl);
+            try {
+                $body = $this->getStatus($requestId, $statusUrl);
+                $consecutiveErrors = 0;
+            } catch (AIGenerationFailedException $e) {
+                throw $e;
+            } catch (\Throwable $e) {
+                $consecutiveErrors++;
+                if ($consecutiveErrors >= 5 || microtime(true) >= $deadline) {
+                    throw $e;
+                }
+
+                sleep($this->pollIntervalSeconds);
+
+                continue;
+            }
+
             $status = strtoupper((string) ($body['status'] ?? ''));
 
             if ($status === 'COMPLETED') {

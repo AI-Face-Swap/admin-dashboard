@@ -43,6 +43,7 @@ class AIProviderFactory
                 operations: $provider->config['operations'] ?? [],
                 apiKey: (string) config('ai.providers.segmind.api_key'),
                 storageDisk: (string) config('ai.providers.segmind.storage_disk', 'spaces'),
+                pollTimeoutSeconds: (int) config('ai.providers.segmind.poll_timeout_seconds', SegmindProvider::DEFAULT_POLL_TIMEOUT_SECONDS),
             ),
             default => throw new UnknownProviderException("Unknown AI provider: {$provider->slug}"),
         };

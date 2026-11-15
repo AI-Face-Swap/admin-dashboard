@@ -39,7 +39,7 @@ services:
   queue:
     image: ${IMAGE_NAME:-htut-ai-backend}:${IMAGE_TAG:-latest}
     restart: unless-stopped
-    command: ['php', 'artisan', 'queue:work', '--queue=default', '--tries=1', '--timeout=660']
+    command: ['php', 'artisan', 'queue:work', '--queue=default', '--tries=1', '--timeout=5700']
     env_file: .env.production
     healthcheck:
       test: ['CMD-SHELL', 'pgrep -f "queue:work" >/dev/null || exit 1']

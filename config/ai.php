@@ -50,6 +50,7 @@ return [
         'segmind' => [
             'api_key' => env('SEGMIND_API_KEY'),
             'storage_disk' => env('AI_STORAGE_DISK', 'spaces'),
+            'poll_timeout_seconds' => (int) env('SEGMIND_POLL_TIMEOUT_SECONDS', 5400),
         ],
 
     ],
