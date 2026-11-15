@@ -144,8 +144,8 @@ class SegmindProvider implements AIProviderInterface
             );
         }
 
-        // Video generation takes 5+ minutes — use a longer poll timeout.
-        $this->pollUntilTerminal($requestId, $statusUrl, timeoutSeconds: 600);
+        // Video generation takes 5+ minutes — use the configured poll timeout.
+        $this->pollUntilTerminal($requestId, $statusUrl);
 
         $result = $this->fetchResult($requestId, $responseUrl);
 
@@ -249,8 +249,8 @@ class SegmindProvider implements AIProviderInterface
             );
         }
 
-        // Video generation takes longer — use extended poll timeout.
-        $this->pollUntilTerminal($requestId, $statusUrl, timeoutSeconds: 600);
+        // Video generation takes longer — use the configured poll timeout.
+        $this->pollUntilTerminal($requestId, $statusUrl);
 
         $result = $this->fetchResult($requestId, $responseUrl);
 
