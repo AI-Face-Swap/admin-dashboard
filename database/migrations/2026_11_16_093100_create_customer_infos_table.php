@@ -23,6 +23,7 @@ return new class extends Migration
             $table->string('mahabote')->nullable();
             $table->string('myanmar_birthday')->nullable();
             $table->string('nakhat')->nullable();
+            $table->string('san_yat_natkhat')->nullable();
             $table->timestamps();
         });
     }

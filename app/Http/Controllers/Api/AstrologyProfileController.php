@@ -84,6 +84,7 @@ class AstrologyProfileController extends Controller
             'zodiac' => $astroDetail->zodiac ?? null,
             'mahabote' => $astroDetail->mahabote ?? null,
             'nakhat' => $astroDetail->nakhat ?? null,
+            'san_yat_natkhat' => $astroDetail->san_yat_natkhat ?? null,
             'myanmar_birthday' => $myanmarBirthday,
         ];
 
@@ -103,6 +104,7 @@ class AstrologyProfileController extends Controller
         $dob = $info->birthday ? Carbon::parse($info->birthday)->format('Y-m-d') : null;
         $myanmarBirthday = $info->myanmar_birthday;
         $nakhat = $info->nakhat;
+        $sanYatNatkhat = $info->san_yat_natkhat;
         $day = $info->day;
         $zodiac = $info->zodiac;
         $mahabote = $info->mahabote;
@@ -114,6 +116,7 @@ class AstrologyProfileController extends Controller
             if ($calInfo) {
                 $myanmarBirthday = $calInfo->formatted->year_my.', '.$calInfo->formatted->month_my.' '.$calInfo->formatted->day_my.' '.$calInfo->formatted->date_my;
                 $nakhat = $calInfo->detail->nakhat ?? $nakhat;
+                $sanYatNatkhat = $calInfo->detail->san_yat_natkhat ?? $sanYatNatkhat;
                 $day = $calInfo->formatted->weekday_my ?? $day;
                 $zodiac = $calInfo->detail->zodiac ?? $zodiac;
                 $mahabote = $calInfo->detail->mahabote ?? $mahabote;
@@ -121,6 +124,7 @@ class AstrologyProfileController extends Controller
                 if (
                     $info->myanmar_birthday !== $myanmarBirthday ||
                     $info->nakhat !== $nakhat ||
+                    $info->san_yat_natkhat !== $sanYatNatkhat ||
                     $info->day !== $day ||
                     $info->zodiac !== $zodiac ||
                     $info->mahabote !== $mahabote
@@ -128,6 +132,7 @@ class AstrologyProfileController extends Controller
                     $info->update([
                         'myanmar_birthday' => $myanmarBirthday,
                         'nakhat' => $nakhat,
+                        'san_yat_natkhat' => $sanYatNatkhat,
                         'day' => $day,
                         'zodiac' => $zodiac,
                         'mahabote' => $mahabote,
@@ -152,6 +157,7 @@ class AstrologyProfileController extends Controller
                     'zodiac' => $zodiac,
                     'mahabote' => $mahabote,
                     'nakhat' => $nakhat,
+                    'san_yat_natkhat' => $sanYatNatkhat,
                 ],
             ],
         ];

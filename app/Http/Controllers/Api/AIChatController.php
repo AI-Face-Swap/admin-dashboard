@@ -175,7 +175,7 @@ class AIChatController extends Controller
         if ($category === 'astrology' && $customer->info && $customer->info->birthday) {
             $info = $customer->info;
             $dobStr = $info->birthday->format('Y-m-d');
-            $astroContext = "[User Astrology Profile: Name={$info->name}, Gender={$info->gender}, Birthday={$dobStr}, Myanmar Birthday={$info->myanmar_birthday}, Day={$info->day}, Zodiac={$info->zodiac}, Mahabote={$info->mahabote}, Nakhat={$info->nakhat}]\n";
+            $astroContext = "[User Astrology Profile: Name={$info->name}, Gender={$info->gender}, Birthday={$dobStr}, Myanmar Birthday={$info->myanmar_birthday}, Day={$info->day}, Zodiac={$info->zodiac}, Mahabote={$info->mahabote}, Nakhat={$info->nakhat}, San-Yand-Nakhat={$info->san_yat_natkhat}]\n";
             $promptForAi = $astroContext.$prompt;
         }
 

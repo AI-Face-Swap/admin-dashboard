@@ -36,6 +36,7 @@ class CalendarSeeder extends Seeder
                         'zodiac' => $calInfo->detail->zodiac ?? null,
                         'mahabote' => $calInfo->detail->mahabote ?? null,
                         'nakhat' => $calInfo->detail->nakhat ?? null,
+                        'san_yat_natkhat' => $calInfo->detail->san_yat_natkhat ?? null,
                         'myanmar_birthday' => $calInfo->formatted->year_my.', '.$calInfo->formatted->month_my.' '.$calInfo->formatted->day_my.' '.$calInfo->formatted->date_my,
                     ]);
                 }

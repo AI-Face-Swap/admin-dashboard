@@ -18,6 +18,7 @@ class CustomerInfo extends Model
         'day',
         'myanmar_birthday',
         'nakhat',
+        'san_yat_natkhat',
     ];
 
     public function casts(): array

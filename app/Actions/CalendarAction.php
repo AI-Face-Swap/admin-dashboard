@@ -112,6 +112,13 @@ class CalendarAction
 
             $dayEnInt = (int) $value->my_cal_day_en;
             $yearEnInt = (int) $value->my_cal_year_en;
+            $zodiac = $this->zodiac(date: $value->per_date->format('Y-m-d'));
+            $sanYatNatkhat = $this->sanYatNatkhat(
+                birthMonth: (string) $value->my_cal_month_my,
+                tithiType: (string) $value->my_cal_type_of_day_my,
+                tithiDay: $dayEnInt,
+                zodiacSign: $zodiac,
+            );
 
             $detail = [
                 'holiday' => $value->specialDay()->typeOf('holiday')->select('name')->first()?->name,
@@ -133,7 +140,8 @@ class CalendarAction
                 'nagahle' => $this->nagahle(month: $my_month),
                 'mahabote' => $this->mahabote(year: $yearEnInt, weekday: $weekday),
                 'nakhat' => $this->natkhat(year: $yearEnInt),
-                'zodiac' => $this->zodiac(date: $value->per_date->format('Y-m-d')),
+                'san_yat_natkhat' => $sanYatNatkhat['name'] ?? null,
+                'zodiac' => $zodiac,
             ];
 
             $datum[] = [
@@ -454,6 +462,131 @@ class CalendarAction
             2 => 'လူနက္ခတ်',
             default => 'ဘီလူးနက္ခတ်'
         };
+    }
+
+    /**
+     * Calculate San-Yand-Nakhat (စန်းယှဉ်နက္ခတ် - Moon Mansion / Lunar Nakshatra).
+     *
+     * @return array{number: int, name: string}|null
+     */
+    public function sanYatNatkhat(string $birthMonth, string $tithiType, int $tithiDay, string $zodiacSign): ?array
+    {
+        // Step 1: Count Months (month_count: 0 to 11 starting from Kason)
+        $monthCounts = [
+            'ကဆုန်' => 0,
+            'နယုန်' => 1,
+            'ဝါဆို' => 2,
+            'ပဝါဆို' => 2,
+            'ဒုဝါဆို' => 2,
+            'ဝါခေါင်' => 3,
+            'တော်သလင်း' => 4,
+            'သီတင်းကျွတ်' => 5,
+            'တန်ဆောင်မုန်း' => 6,
+            'တန်ဆောင်းမုန်း' => 6,
+            'နတ်တော်' => 7,
+            'ပြာသို' => 8,
+            'တပို့တွဲ' => 9,
+            'တပေါင်း' => 10,
+            'တန်ခူး' => 11,
+            'နှောင်းတန်ခူး' => 11,
+            'ဦးတန်ခူး' => 11,
+        ];
+
+        $birthMonthKey = trim($birthMonth);
+        if (! array_key_exists($birthMonthKey, $monthCounts)) {
+            return null;
+        }
+        $monthCount = $monthCounts[$birthMonthKey];
+
+        // Step 2: Multiply by 2
+        $step2Val = $monthCount * 2;
+
+        // Step 3: Calculate & Add Tithi Value
+        $normalizedDay = $tithiDay > 15 ? ($tithiDay - 15) : $tithiDay;
+        $normalizedDay = max(1, min(15, $normalizedDay));
+
+        $tithiTypeKey = trim($tithiType);
+        if (in_array($tithiTypeKey, ['လဆန်း', 'လပြည့်'], true)) {
+            $tithiValue = $normalizedDay;
+        } elseif (in_array($tithiTypeKey, ['လဆုတ်', 'လကွယ်'], true)) {
+            $tithiValue = $normalizedDay + 15;
+        } else {
+            return null;
+        }
+
+        $step3Sum = $step2Val + $tithiValue;
+
+        // Step 4: Modulo 27
+        $remainder = $step3Sum % 27;
+
+        // Step 5: Apply Zodiac Modifier (သုဒ္ဓိပြုခြင်း)
+        $zodiacModifiers = [
+            'မိဿ' => -1,
+            'ပြိဿ' => -1,
+            'မေထုန်' => -1,
+            'ကရကဋ်' => 0,
+            'သိဟ်' => 0,
+            'ကန်' => 0,
+            'တူ' => 1,
+            'ဗြိစ္ဆာ' => 1,
+            'ဓနု' => 1,
+            'မကာရ' => 2,
+            'ကုံ' => 2,
+            'ကုမ်' => 2,
+            'မိန်' => 2,
+        ];
+
+        $zodiacKey = (string) preg_replace('/ရာသီ.*$/u', '', trim($zodiacSign));
+        if (! array_key_exists($zodiacKey, $zodiacModifiers)) {
+            return null;
+        }
+
+        $adjustedVal = $remainder + $zodiacModifiers[$zodiacKey];
+
+        // Step 6: Normalize Bounds (1 to 27)
+        if ($adjustedVal <= 0) {
+            $finalNumber = $adjustedVal + 27;
+        } elseif ($adjustedVal > 27) {
+            $finalNumber = $adjustedVal - 27;
+        } else {
+            $finalNumber = $adjustedVal;
+        }
+
+        // Step 7: Output & Nakhat Mapping (1-Indexed)
+        $nakhats = [
+            1 => 'အဿဝဏီ',
+            2 => 'ဘရဏီ',
+            3 => 'ကြတ္တိကာ',
+            4 => 'ရောဟဏီ',
+            5 => 'မိဂသီ',
+            6 => 'အာဒြ',
+            7 => 'ပုနဖုသျှု',
+            8 => 'ဖုသျှ',
+            9 => 'အဿလိဿ',
+            10 => 'မာဃ',
+            11 => 'ပြုဗ္ဗဖရဂုဏီ',
+            12 => 'ဥတ္တရဖရဂုဏီ',
+            13 => 'ဟဿတ',
+            14 => 'စိတ်',
+            15 => 'သွာတိ',
+            16 => 'ဝိသာခါ',
+            17 => 'အနုရာဓ',
+            18 => 'ဇေဋ္ဌ',
+            19 => 'မူလ',
+            20 => 'ပြုဗ္ဗာသဠ်',
+            21 => 'ဥတ္တရာသဠ်',
+            22 => 'သရဝဏ်',
+            23 => 'ဓနသိဒ္ဓ',
+            24 => 'သတ္တဘိသျှ',
+            25 => 'ပြုဗ္ဗဘဒြပိုဒ်',
+            26 => 'ဥတ္တရဘဒြပိုဒ်',
+            27 => 'ရေဝတီ',
+        ];
+
+        return [
+            'number' => $finalNumber,
+            'name' => $nakhats[$finalNumber],
+        ];
     }
 
     public function zodiac(string $date): string
