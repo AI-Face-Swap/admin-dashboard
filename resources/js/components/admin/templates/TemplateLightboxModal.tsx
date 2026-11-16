@@ -42,10 +42,10 @@ export function TemplateLightboxModal({
             open={!!selectedTemplate}
             onOpenChange={(open) => !open && onClose()}
         >
-            <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto p-0">
+            <DialogContent className="max-h-[90vh] w-[calc(100vw-1.5rem)] max-w-[calc(100vw-1.5rem)] overflow-x-hidden overflow-y-auto p-0 sm:max-w-3xl">
                 {selectedTemplate && (
-                    <div className="grid grid-cols-1 md:grid-cols-2">
-                        <div className="flex items-center justify-center bg-black/90 p-4 md:min-h-[420px]">
+                    <div className="grid min-w-0 grid-cols-1 md:grid-cols-2">
+                        <div className="flex min-w-0 items-center justify-center bg-black/90 p-4 md:min-h-[420px]">
                             {selectedTemplate.type === 'video' ? (
                                 <video
                                     src={selectedTemplate.file_url}
@@ -63,10 +63,10 @@ export function TemplateLightboxModal({
                             )}
                         </div>
 
-                        <div className="flex flex-col justify-between p-6">
-                            <div className="space-y-4">
+                        <div className="flex min-w-0 flex-col justify-between p-4 sm:p-6">
+                            <div className="min-w-0 space-y-4">
                                 <DialogHeader>
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex flex-wrap items-center gap-2">
                                         <Badge
                                             variant={
                                                 selectedTemplate.is_active
@@ -87,10 +87,10 @@ export function TemplateLightboxModal({
                                             </Badge>
                                         )}
                                     </div>
-                                    <DialogTitle className="mt-2 text-xl font-bold">
+                                    <DialogTitle className="mt-2 break-words text-xl font-bold">
                                         {selectedTemplate.name}
                                     </DialogTitle>
-                                    <DialogDescription className="flex items-center gap-2 font-mono text-xs">
+                                    <DialogDescription className="flex flex-wrap items-center gap-2 font-mono text-xs break-all">
                                         <span>
                                             slug: {selectedTemplate.slug}
                                         </span>
@@ -117,7 +117,7 @@ export function TemplateLightboxModal({
                                     </DialogDescription>
                                 </DialogHeader>
 
-                                <div className="grid grid-cols-2 gap-2.5 rounded-xl border bg-muted/30 p-3 text-xs">
+                                <div className="grid grid-cols-1 gap-2.5 rounded-xl border bg-muted/30 p-3 text-xs sm:grid-cols-2">
                                     <div>
                                         <span className="block text-[10px] text-muted-foreground uppercase">
                                             Point Cost
@@ -199,7 +199,7 @@ export function TemplateLightboxModal({
                                                 )}
                                             </button>
                                         </div>
-                                        <p className="max-h-36 overflow-y-auto text-xs leading-relaxed whitespace-pre-wrap text-foreground">
+                                        <p className="max-h-36 overflow-y-auto text-xs leading-relaxed break-words whitespace-pre-wrap text-foreground">
                                             {selectedTemplate.prompt}
                                         </p>
                                     </div>
