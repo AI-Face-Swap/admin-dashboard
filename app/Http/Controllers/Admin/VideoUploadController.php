@@ -30,7 +30,7 @@ class VideoUploadController extends Controller
                 });
             })
             ->latest('id')
-            ->paginate(12)
+            ->paginate(20)
             ->withQueryString()
             ->through(fn (UploadedVideo $video) => [
                 'id' => $video->id,

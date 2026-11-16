@@ -262,13 +262,13 @@ export default function VideoUploadsIndex({ videos, filters }: Props) {
                         </CardContent>
                     </AnimatedCard>
                 ) : (
-                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                    <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5">
                         {videos.data.map((video) => (
                             <AnimatedCard
                                 key={video.id}
                                 className="overflow-hidden"
                             >
-                                <div className="aspect-video bg-black">
+                                <div className="h-36 w-full bg-black">
                                     <video
                                         src={video.url}
                                         controls
@@ -276,13 +276,13 @@ export default function VideoUploadsIndex({ videos, filters }: Props) {
                                         className="h-full w-full object-contain"
                                     />
                                 </div>
-                                <CardContent className="space-y-3 p-4">
+                                <CardContent className="space-y-2 p-3">
                                     <div className="flex items-start justify-between gap-2">
                                         <div className="min-w-0">
-                                            <h3 className="truncate font-semibold">
+                                            <h3 className="truncate text-sm font-semibold">
                                                 {video.title}
                                             </h3>
-                                            <p className="truncate text-xs text-muted-foreground">
+                                            <p className="truncate text-[11px] text-muted-foreground">
                                                 {video.original_filename} ·{' '}
                                                 {formatBytes(video.size_bytes)}
                                             </p>
@@ -290,18 +290,18 @@ export default function VideoUploadsIndex({ videos, filters }: Props) {
                                         <button
                                             type="button"
                                             onClick={() => handleDelete(video)}
-                                            className="shrink-0 rounded-md p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                                            className="shrink-0 rounded-md p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                                             title="Delete video"
                                         >
-                                            <Trash2 className="h-4 w-4" />
+                                            <Trash2 className="h-3.5 w-3.5" />
                                         </button>
                                     </div>
 
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-1.5">
                                         <Input
                                             readOnly
                                             value={video.url}
-                                            className="h-8 font-mono text-xs"
+                                            className="h-7 px-2 font-mono text-[11px]"
                                             onClick={(e) =>
                                                 e.currentTarget.select()
                                             }
@@ -311,16 +311,16 @@ export default function VideoUploadsIndex({ videos, filters }: Props) {
                                             size="sm"
                                             variant="secondary"
                                             onClick={() => handleCopy(video)}
-                                            className="shrink-0"
+                                            className="h-7 shrink-0 px-2 text-xs"
                                         >
                                             {copiedId === video.id ? (
                                                 <>
-                                                    <Check className="mr-1 h-3.5 w-3.5 text-emerald-500" />
+                                                    <Check className="mr-1 h-3 w-3 text-emerald-500" />
                                                     Copied
                                                 </>
                                             ) : (
                                                 <>
-                                                    <Copy className="mr-1 h-3.5 w-3.5" />
+                                                    <Copy className="mr-1 h-3 w-3" />
                                                     Copy
                                                 </>
                                             )}
@@ -329,14 +329,14 @@ export default function VideoUploadsIndex({ videos, filters }: Props) {
                                             href={video.url}
                                             target="_blank"
                                             rel="noreferrer"
-                                            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-input bg-background hover:bg-accent"
+                                            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-input bg-background hover:bg-accent"
                                             title="Open video in new tab"
                                         >
-                                            <ExternalLink className="h-3.5 w-3.5" />
+                                            <ExternalLink className="h-3 w-3" />
                                         </a>
                                     </div>
 
-                                    <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                                    <div className="flex items-center justify-between text-[10px] text-muted-foreground">
                                         <span>
                                             {video.uploaded_by
                                                 ? `By ${video.uploaded_by}`
