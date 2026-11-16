@@ -490,7 +490,7 @@ export function ImageToVideoTab() {
 
                     {/* Row 1: AI Model + Image Mode side-by-side */}
                     <div className="grid gap-5 md:grid-cols-2">
-                        <div className="space-y-2">
+                        <div className="min-w-0 space-y-2">
                             <div className="flex items-center justify-between gap-2">
                                 <Label className="text-sm font-semibold">
                                     ၁။ AI Video Model
@@ -514,7 +514,7 @@ export function ImageToVideoTab() {
                                     }
                                 }}
                             >
-                                <SelectTrigger className="h-10 text-sm">
+                                <SelectTrigger className="h-10 w-full min-w-0 text-sm">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -576,7 +576,7 @@ export function ImageToVideoTab() {
                             </Select>
                         </div>
 
-                        <div className="space-y-2">
+                        <div className="min-w-0 space-y-2">
                             <Label className="text-sm font-semibold">
                                 ၂။ ဓာတ်ပုံ အသုံးပြုမည့် ပုံစံ (Image Mode)
                             </Label>
@@ -588,7 +588,7 @@ export function ImageToVideoTab() {
                                     )
                                 }
                             >
-                                <SelectTrigger className="h-10 text-sm">
+                                <SelectTrigger className="h-10 w-full min-w-0 text-sm">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -1305,7 +1305,7 @@ export function ImageToVideoTab() {
                                 value={aspectRatio}
                                 onValueChange={setAspectRatio}
                             >
-                                <SelectTrigger className="h-10 text-sm">
+                                <SelectTrigger className="h-10 w-full min-w-0 text-sm">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -1335,7 +1335,7 @@ export function ImageToVideoTab() {
                                 value={resolution}
                                 onValueChange={setResolution}
                             >
-                                <SelectTrigger className="h-10 text-sm">
+                                <SelectTrigger className="h-10 w-full min-w-0 text-sm">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -1360,7 +1360,7 @@ export function ImageToVideoTab() {
                                 value={duration}
                                 onValueChange={setDuration}
                             >
-                                <SelectTrigger className="h-10 text-sm">
+                                <SelectTrigger className="h-10 w-full min-w-0 text-sm">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -1397,7 +1397,7 @@ export function ImageToVideoTab() {
                                 value={seedPreset}
                                 onValueChange={setSeedPreset}
                             >
-                                <SelectTrigger className="h-10 text-sm">
+                                <SelectTrigger className="h-10 w-full min-w-0 text-sm">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>

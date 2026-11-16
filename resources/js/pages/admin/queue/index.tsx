@@ -666,10 +666,10 @@ export default function QueueMonitor({
                     </CardContent>
                 </AnimatedCard>
 
-                {/* FIXED-WIDTH GENERATIONS TABLE (NO HORIZONTAL SCROLL) */}
+                {/* RESPONSIVE GENERATIONS TABLE */}
                 <AnimatedCard>
-                    <CardContent className="p-0">
-                        <Table className="w-full table-fixed">
+                    <CardContent className="overflow-x-auto p-0">
+                        <Table className="w-full min-w-[860px] lg:table-fixed">
                             <TableHeader>
                                 <TableRow>
                                     <TableHead className="w-[15%] px-3 py-3">
@@ -1117,7 +1117,7 @@ export default function QueueMonitor({
                         !open && setSelectedGeneration(null)
                     }
                 >
-                    <DialogContent className="max-h-[88vh] max-w-2xl overflow-y-auto">
+                    <DialogContent className="max-h-[90vh] w-[calc(100vw-1.5rem)] max-w-[calc(100vw-1.5rem)] overflow-x-hidden overflow-y-auto sm:max-w-3xl">
                         <DialogHeader>
                             <DialogTitle className="flex items-center gap-2">
                                 <span>
@@ -1137,14 +1137,14 @@ export default function QueueMonitor({
                         </DialogHeader>
 
                         {selectedGeneration && (
-                            <div className="space-y-4 text-sm">
+                            <div className="min-w-0 space-y-4 text-sm">
                                 {/* CUSTOMER INFO */}
                                 <div className="rounded-lg border border-border bg-muted/40 p-3">
                                     <div className="mb-1 text-xs font-semibold text-muted-foreground uppercase">
                                         Customer Identity
                                     </div>
-                                    <div className="grid grid-cols-2 gap-2 text-xs">
-                                        <div>
+                                    <div className="grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
+                                        <div className="min-w-0 break-words">
                                             <span className="text-muted-foreground">
                                                 Name:{' '}
                                             </span>
@@ -1153,7 +1153,7 @@ export default function QueueMonitor({
                                                     ?.name || 'Admin / Studio'}
                                             </span>
                                         </div>
-                                        <div>
+                                        <div className="min-w-0 break-all">
                                             <span className="text-muted-foreground">
                                                 Email:{' '}
                                             </span>
@@ -1162,7 +1162,7 @@ export default function QueueMonitor({
                                                     ?.email || '—'}
                                             </span>
                                         </div>
-                                        <div className="col-span-2 font-mono text-[11px] text-muted-foreground">
+                                        <div className="min-w-0 break-all font-mono text-[11px] text-muted-foreground sm:col-span-2">
                                             Central Auth UUID:{' '}
                                             {selectedGeneration.customer
                                                 ?.central_auth_uuid || '—'}
@@ -1171,7 +1171,7 @@ export default function QueueMonitor({
                                 </div>
 
                                 {/* POINTS, API COST & TIMING */}
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                     <div className="rounded-lg border border-border bg-muted/40 p-3">
                                         <div className="mb-1 text-xs font-semibold text-muted-foreground uppercase">
                                             Points &amp; Provider API Cost
@@ -1251,7 +1251,7 @@ export default function QueueMonitor({
                                             Input Reference Media (
                                             {selectedInputMedia.length})
                                         </div>
-                                        <div className="grid grid-cols-3 gap-2">
+                                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                                             {selectedInputMedia.map(
                                                 (media, idx) => (
                                                     <div
@@ -1302,16 +1302,16 @@ export default function QueueMonitor({
                                         <div className="mb-1.5 text-xs font-semibold text-muted-foreground uppercase">
                                             Input Parameters
                                         </div>
-                                        <div className="grid grid-cols-3 gap-2">
+                                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                                             {selectedKeyParams.map((p) => (
                                                 <div
                                                     key={p.key}
-                                                    className="rounded border bg-muted/30 px-2.5 py-1.5 text-xs"
+                                                    className="min-w-0 rounded border bg-muted/30 px-2.5 py-1.5 text-xs"
                                                 >
                                                     <span className="block text-[10px] text-muted-foreground uppercase">
                                                         {p.key}
                                                     </span>
-                                                    <span className="font-mono font-semibold">
+                                                    <span className="font-mono font-semibold break-all">
                                                         {p.value}
                                                     </span>
                                                 </div>
@@ -1325,7 +1325,7 @@ export default function QueueMonitor({
                                     <div className="mb-1 text-xs font-semibold text-muted-foreground uppercase">
                                         Raw Input Metadata &amp; Prompt
                                     </div>
-                                    <pre className="max-h-44 overflow-x-auto rounded-lg border border-border bg-muted/60 p-3 font-mono text-xs whitespace-pre-wrap">
+                                    <pre className="max-h-52 w-full max-w-full overflow-auto rounded-lg border border-border bg-muted/60 p-3 font-mono text-xs break-all whitespace-pre-wrap">
                                         {JSON.stringify(
                                             selectedGeneration.input_metadata,
                                             null,
@@ -1342,7 +1342,7 @@ export default function QueueMonitor({
                                             <div className="mb-2 text-xs font-semibold text-muted-foreground uppercase">
                                                 Generated Output
                                             </div>
-                                            <div className="grid grid-cols-2 gap-3">
+                                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                                 {selectedGeneration.output_metadata.map(
                                                     (url, idx) => (
                                                         <div

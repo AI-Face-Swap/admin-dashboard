@@ -67,7 +67,7 @@ export function GenerationDetailModal({
             onClick={onClose}
         >
             <div
-                className="relative max-h-[88vh] w-full max-w-3xl overflow-y-auto rounded-2xl border bg-background p-6 shadow-2xl"
+                className="relative max-h-[88vh] w-full max-w-3xl overflow-x-hidden overflow-y-auto rounded-2xl border bg-background p-4 shadow-2xl sm:p-6"
                 onClick={(e) => e.stopPropagation()}
             >
                 <button

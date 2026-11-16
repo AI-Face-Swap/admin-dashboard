@@ -66,7 +66,7 @@ export function ModelInfoButton({
             </button>
 
             <Dialog open={open} onOpenChange={setOpen}>
-                <DialogContent className="max-h-[88vh] max-w-2xl overflow-y-auto p-0">
+                <DialogContent className="max-h-[88vh] w-[calc(100vw-1.5rem)] max-w-[calc(100vw-1.5rem)] overflow-x-hidden overflow-y-auto p-0 sm:max-w-2xl">
                     <div className="border-b bg-muted/30 px-6 py-5">
                         <DialogHeader className="space-y-2 text-left">
                             <div className="flex flex-wrap items-center justify-between gap-3 pr-6">
