@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\AIImageGenerationController;
 use App\Http\Controllers\Api\AIImageToVideoController;
 use App\Http\Controllers\Api\AIModelApiController;
 use App\Http\Controllers\Api\AITemplateGenerationController;
+use App\Http\Controllers\Api\AstrologyProfileController;
 use App\Http\Controllers\Api\Auth\SocialAuthController;
 use App\Http\Controllers\Api\CustomerAuthController;
 use App\Http\Controllers\Api\CustomerGenerationController;
@@ -144,6 +145,10 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'customer.not-banned'])->group(
     Route::delete('chat/conversations/{conversation}', [AIChatController::class, 'destroy']);
     // Customer AI Chat Question (Requires Bearer token authentication & sufficient points)
     Route::post('chat/send', [AIChatController::class, 'send'])->middleware('throttle:30,1');
+
+    // Customer Astrology Profile (Requires Bearer token authentication)
+    Route::get('astrology/profile', [AstrologyProfileController::class, 'show']);
+    Route::post('astrology/profile', [AstrologyProfileController::class, 'store']);
 
     Route::post('templates/{slug}/generate', [AITemplateGenerationController::class, 'store'])->middleware('throttle:20,1');
     Route::post('ai/template-generate', [AITemplateGenerationController::class, 'store'])->middleware('throttle:20,1');

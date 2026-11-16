@@ -24,7 +24,7 @@ class SendChatMessageRequest extends FormRequest
     {
         return [
             'prompt' => ['required', 'string', 'max:5000'],
-            'category' => ['nullable', 'string', 'in:general,health,education'],
+            'category' => ['nullable', 'string', 'in:general,health,education,astrology'],
             'conversation_id' => ['nullable', 'integer', 'exists:chat_conversations,id'],
             'language' => ['nullable', 'string', 'in:my,en'],
             'model' => ['nullable', 'string', 'in:deepseek-chat,deepseek-reasoner,qwen-flash,qwen3-vl-flash'],

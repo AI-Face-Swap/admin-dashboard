@@ -45,6 +45,7 @@ class AIChatService
         'general' => self::MODEL_DEEPSEEK_CHAT,
         'health' => self::MODEL_DEEPSEEK_REASONER,
         'education' => self::MODEL_DEEPSEEK_REASONER,
+        'astrology' => self::MODEL_DEEPSEEK_CHAT,
     ];
 
     public const DEFAULT_BASE_URL = 'https://api.segmind.com/v1';

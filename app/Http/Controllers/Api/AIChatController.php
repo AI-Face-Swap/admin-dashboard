@@ -171,10 +171,18 @@ class AIChatController extends Controller
             || $request->accepts('text/event-stream')
             || str_contains((string) $request->header('Accept', ''), 'text/event-stream');
 
+        $promptForAi = $prompt;
+        if ($category === 'astrology' && $customer->info && $customer->info->birthday) {
+            $info = $customer->info;
+            $dobStr = $info->birthday->format('Y-m-d');
+            $astroContext = "[User Astrology Profile: Name={$info->name}, Gender={$info->gender}, Birthday={$dobStr}, Myanmar Birthday={$info->myanmar_birthday}, Day={$info->day}, Zodiac={$info->zodiac}, Mahabote={$info->mahabote}, Nakhat={$info->nakhat}]\n";
+            $promptForAi = $astroContext.$prompt;
+        }
+
         if ($shouldStream) {
             return response()->stream(function () use (
                 $chatService,
-                $prompt,
+                $promptForAi,
                 $category,
                 $history,
                 $language,
@@ -205,7 +213,7 @@ class AIChatController extends Controller
 
                 try {
                     $aiResult = $chatService->streamChat(
-                        message: $prompt,
+                        message: $promptForAi,
                         category: $category,
                         history: $history,
                         language: $language,
@@ -285,7 +293,7 @@ class AIChatController extends Controller
 
         // Call Segmind via AIChatService
         $aiResult = $chatService->chat(
-            message: $prompt,
+            message: $promptForAi,
             category: $category,
             history: $history,
             language: $language,

@@ -13,6 +13,7 @@ class ChatSkillFactory
         'general' => GeneralSkill::class,
         'health' => HealthSkill::class,
         'education' => EducationSkill::class,
+        'astrology' => AstrologySkill::class,
     ];
 
     /**
