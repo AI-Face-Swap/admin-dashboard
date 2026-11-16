@@ -142,12 +142,6 @@ class AstrologyProfileController extends Controller
             'name' => $info->name,
             'gender' => $info->gender,
             'birthday' => $dob,
-            'birthday_en' => $info->birthday ? $calendarAction->changeNumber($info->birthday->format('j-m-Y')) : null,
-            'myanmar_birthday' => $myanmarBirthday,
-            'day' => $day,
-            'zodiac' => $zodiac,
-            'mahabote' => $mahabote,
-            'nakhat' => $nakhat,
             'info' => [
                 'birthday' => [
                     'date' => [
