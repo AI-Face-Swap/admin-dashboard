@@ -8,7 +8,7 @@ use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 
 #[Signature('app:cleanup-stuck-generations')]
-#[Description('Mark queued/processing generations older than 10 minutes as failed')]
+#[Description('Mark queued/processing generations older than 90 minutes as failed')]
 class CleanupStuckGenerations extends Command
 {
     public function handle(): int

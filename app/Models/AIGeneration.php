@@ -104,7 +104,7 @@ class AIGeneration extends Model
     public const SUBMISSION_UNRECONCILED = 'unreconciled';
 
     /** Generations stuck in queued/processing for longer than this are considered abandoned. */
-    public const TIMEOUT_MINUTES = 10;
+    public const TIMEOUT_MINUTES = 90;
 
     /** The provider that served this generation. */
     public function provider(): BelongsTo

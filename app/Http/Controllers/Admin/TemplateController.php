@@ -9,6 +9,7 @@ use App\Models\GenerationType;
 use App\Models\Template;
 use App\Models\TemplateCategory;
 use App\Models\TemplateTag;
+use App\Support\VideoThumbnailExtractor;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -129,6 +130,12 @@ class TemplateController extends Controller
 
         $filePath = $request->file('file')->store('templates', $this->disk);
         $thumbnailPath = $request->file('thumbnail')?->store('templates/thumbnails', $this->disk);
+        if ($thumbnailPath === null && $validated['type'] === Template::TYPE_VIDEO) {
+            $localFilePath = $request->file('file')->getRealPath();
+            if ($localFilePath !== false) {
+                $thumbnailPath = app(VideoThumbnailExtractor::class)->fromLocalFile($localFilePath, $this->disk);
+            }
+        }
         $referenceVideoPath = $request->file('reference_video')?->store('templates/references', $this->disk)
             ?? ($validated['reference_video_url'] ?? null);
         $referenceAudioPath = $request->file('reference_audio')?->store('templates/references', $this->disk)
@@ -308,6 +315,21 @@ class TemplateController extends Controller
 
         if ($request->hasFile('thumbnail')) {
             $data['thumbnail_path'] = $request->file('thumbnail')->store('templates/thumbnails', $this->disk);
+        } elseif ($validated['type'] === Template::TYPE_VIDEO) {
+            if ($request->hasFile('file')) {
+                $localFilePath = $request->file('file')->getRealPath();
+                if ($localFilePath !== false) {
+                    $extractedThumb = app(VideoThumbnailExtractor::class)->fromLocalFile($localFilePath, $this->disk);
+                    if ($extractedThumb !== null) {
+                        $data['thumbnail_path'] = $extractedThumb;
+                    }
+                }
+            } elseif (! $template->thumbnail_path && $template->file_path) {
+                $extractedThumb = app(VideoThumbnailExtractor::class)->fromDisk($template->file_path, $this->disk);
+                if ($extractedThumb !== null) {
+                    $data['thumbnail_path'] = $extractedThumb;
+                }
+            }
         }
 
         $template->update($data);
@@ -464,6 +486,10 @@ class TemplateController extends Controller
             }
         }
 
+        $thumbnailPath = $isVideo
+            ? app(VideoThumbnailExtractor::class)->fromDisk($newPath, $this->disk)
+            : $newPath;
+
         // Leave cost null so the template dynamically inherits its AI model's point cost unless manually overridden
         $template = Template::create([
             'generation_type_id' => $generationType?->id,
@@ -476,7 +502,7 @@ class TemplateController extends Controller
             'cost' => null,
             'discount_cost' => 0,
             'file_path' => $newPath,
-            'thumbnail_path' => $isVideo ? null : $newPath,
+            'thumbnail_path' => $thumbnailPath,
             'reference_video_path' => $referenceVideoPath,
             'reference_audio_path' => $referenceAudioPath,
             'reference_images' => null,

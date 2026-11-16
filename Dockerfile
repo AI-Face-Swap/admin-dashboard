@@ -37,6 +37,12 @@ RUN npm run build
 # ── Stage 3: Production runtime ──────────────────────────────────────────
 FROM serversideup/php:8.4-fpm-nginx
 
+USER root
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+USER www-data
+
 ENV NGINX_FASTCGI_BUFFERING="off" \
     NGINX_FASTCGI_READ_TIMEOUT="300s"
 
