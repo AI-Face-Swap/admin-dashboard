@@ -25,6 +25,14 @@ class AstrologyProfileController extends Controller
 
         $info = $customer->info;
 
+        if (! $info) {
+            $unclaimed = CustomerInfo::query()->whereNull('customer_id')->latest('id')->first();
+            if ($unclaimed) {
+                $unclaimed->update(['customer_id' => $customer->id]);
+                $info = $unclaimed->fresh();
+            }
+        }
+
         if (! $info || ! $info->birthday) {
             return response()->json([
                 'data' => null,
@@ -99,16 +107,32 @@ class AstrologyProfileController extends Controller
         $zodiac = $info->zodiac;
         $mahabote = $info->mahabote;
 
-        if ($dob && (! $myanmarBirthday || ! $nakhat || ! $day || ! $zodiac || ! $mahabote)) {
+        if ($dob) {
             $calendar = $calendarAction->handle($dob, $dob);
             $calendarData = json_decode(json_encode($calendar));
             $calInfo = $calendarData->info[0] ?? null;
             if ($calInfo) {
-                $myanmarBirthday = $myanmarBirthday ?: ($calInfo->formatted->year_my.', '.$calInfo->formatted->month_my.' '.$calInfo->formatted->day_my.' '.$calInfo->formatted->date_my);
-                $nakhat = $nakhat ?: ($calInfo->detail->nakhat ?? null);
-                $day = $day ?: ($calInfo->formatted->weekday_my ?? null);
-                $zodiac = $zodiac ?: ($calInfo->detail->zodiac ?? null);
-                $mahabote = $mahabote ?: ($calInfo->detail->mahabote ?? null);
+                $myanmarBirthday = $calInfo->formatted->year_my.', '.$calInfo->formatted->month_my.' '.$calInfo->formatted->day_my.' '.$calInfo->formatted->date_my;
+                $nakhat = $calInfo->detail->nakhat ?? $nakhat;
+                $day = $calInfo->formatted->weekday_my ?? $day;
+                $zodiac = $calInfo->detail->zodiac ?? $zodiac;
+                $mahabote = $calInfo->detail->mahabote ?? $mahabote;
+
+                if (
+                    $info->myanmar_birthday !== $myanmarBirthday ||
+                    $info->nakhat !== $nakhat ||
+                    $info->day !== $day ||
+                    $info->zodiac !== $zodiac ||
+                    $info->mahabote !== $mahabote
+                ) {
+                    $info->update([
+                        'myanmar_birthday' => $myanmarBirthday,
+                        'nakhat' => $nakhat,
+                        'day' => $day,
+                        'zodiac' => $zodiac,
+                        'mahabote' => $mahabote,
+                    ]);
+                }
             }
         }
 
