@@ -96,6 +96,8 @@ services:
     environment:
       MARIADB_DATABASE: ${DB_DATABASE:-htut-ai}
       MARIADB_ROOT_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env.production}
+    ports:
+      - "127.0.0.1:3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
