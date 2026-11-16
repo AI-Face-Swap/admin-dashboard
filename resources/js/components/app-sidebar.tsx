@@ -16,6 +16,7 @@ import {
     Users,
     MonitorPlay,
     Handshake,
+    Video,
 } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
@@ -49,6 +50,12 @@ const mainNavItems: NavItem[] = [
         title: 'AI Generation',
         href: '/admin/ai',
         icon: Sparkles,
+        permission: 'ai.view',
+    },
+    {
+        title: 'Video Uploads',
+        href: '/admin/video-uploads',
+        icon: Video,
         permission: 'ai.view',
     },
     {

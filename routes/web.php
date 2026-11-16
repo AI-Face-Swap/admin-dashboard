@@ -21,6 +21,7 @@ use App\Http\Controllers\Admin\TemplateCategoryController;
 use App\Http\Controllers\Admin\TemplateController;
 use App\Http\Controllers\Admin\TemplateTagController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\VideoUploadController;
 use App\Http\Controllers\Api\AIGenerationStatusController;
 use App\Http\Controllers\Api\AIImageEditController;
 use App\Http\Controllers\Api\AIImageGenerationController;
@@ -83,6 +84,10 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::get('ai/generations/{generation}/download', [AIController::class, 'download'])->middleware('permission:ai.view')->name('ai.download');
 
     Route::get('queue', [QueueController::class, 'index'])->middleware('permission:ai.view')->name('queue.index');
+
+    Route::get('video-uploads', [VideoUploadController::class, 'index'])->middleware('permission:ai.view')->name('video-uploads.index');
+    Route::post('video-uploads', [VideoUploadController::class, 'store'])->middleware('permission:ai.view')->name('video-uploads.store');
+    Route::delete('video-uploads/{videoUpload}', [VideoUploadController::class, 'destroy'])->middleware('permission:ai.view')->name('video-uploads.destroy');
     Route::get('queue/metrics', [QueueController::class, 'metrics'])->middleware('permission:ai.view')->name('queue.metrics');
     Route::post('queue/{generation}/retry', [QueueController::class, 'retry'])->middleware('permission:ai.view')->name('queue.retry');
 
