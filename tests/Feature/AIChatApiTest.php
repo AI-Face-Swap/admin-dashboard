@@ -55,11 +55,12 @@ class AIChatApiTest extends TestCase
         $this->assertStringContainsString('ပညာရေး', $education->label()['my']);
 
         $all = ChatSkillFactory::all();
-        $this->assertCount(3, $all);
+        $this->assertCount(4, $all);
         $keys = array_column($all, 'key');
         $this->assertContains('general', $keys);
         $this->assertContains('health', $keys);
         $this->assertContains('education', $keys);
+        $this->assertContains('astrology', $keys);
     }
 
     public function test_skills_format_structured_json_and_plain_text(): void
@@ -105,7 +106,17 @@ class AIChatApiTest extends TestCase
             'language' => 'my',
         ]);
 
-        $response->assertStatus(401);
+        $response->assertStatus(401)
+            ->assertJsonPath('redirect_url', '/login');
+
+        $astrologyResponse = $this->postJson('/api/v1/chat/send', [
+            'prompt' => 'ကျွန်ုပ်၏ ဗေဒင်ကို ဟောပေးပါ',
+            'category' => 'astrology',
+            'language' => 'my',
+        ]);
+
+        $astrologyResponse->assertStatus(401)
+            ->assertJsonPath('redirect_url', '/login');
     }
 
     public function test_authenticated_customer_sends_chat_and_deducts_5_points(): void

@@ -17,21 +17,20 @@ class AstrologyProfileController extends Controller
         /** @var Customer|null $customer */
         $customer = $request->user('sanctum') ?? $request->user();
 
-        if (! $customer) {
+        if (! $customer instanceof Customer) {
             return response()->json([
-                'message' => 'Unauthenticated. Please log in to chat with HTUT AI.',
+                'message' => 'Unauthenticated. Please log in to use Astrology.',
+                'redirect_url' => '/login',
             ], 401);
         }
 
-        $info = $customer->info;
-
-        if (! $info) {
-            $unclaimed = CustomerInfo::query()->whereNull('customer_id')->latest('id')->first();
-            if ($unclaimed) {
-                $unclaimed->update(['customer_id' => $customer->id]);
-                $info = $unclaimed->fresh();
-            }
+        if ($customer->isBanned()) {
+            return response()->json([
+                'message' => 'Your account is suspended.',
+            ], 403);
         }
+
+        $info = $customer->info;
 
         if (! $info || ! $info->birthday) {
             return response()->json([
@@ -49,10 +48,17 @@ class AstrologyProfileController extends Controller
         /** @var Customer|null $customer */
         $customer = $request->user('sanctum') ?? $request->user();
 
-        if (! $customer) {
+        if (! $customer instanceof Customer) {
             return response()->json([
-                'message' => 'Unauthenticated. Please log in to chat with HTUT AI.',
+                'message' => 'Unauthenticated. Please log in to use Astrology.',
+                'redirect_url' => '/login',
             ], 401);
+        }
+
+        if ($customer->isBanned()) {
+            return response()->json([
+                'message' => 'Your account is suspended.',
+            ], 403);
         }
 
         $validated = $request->validate([

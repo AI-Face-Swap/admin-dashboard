@@ -25,8 +25,15 @@ class AIChatController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        /** @var Customer $customer */
-        $customer = $request->user();
+        /** @var Customer|null $customer */
+        $customer = $request->user('sanctum') ?? $request->user();
+
+        if (! $customer instanceof Customer) {
+            return response()->json([
+                'message' => 'Unauthenticated. Please log in to chat with HTUT AI.',
+                'redirect_url' => '/login',
+            ], 401);
+        }
 
         $conversations = ChatConversation::query()
             ->where('customer_id', $customer->id)
@@ -61,8 +68,15 @@ class AIChatController extends Controller
      */
     public function show(Request $request, ChatConversation $conversation): JsonResponse
     {
-        /** @var Customer $customer */
-        $customer = $request->user();
+        /** @var Customer|null $customer */
+        $customer = $request->user('sanctum') ?? $request->user();
+
+        if (! $customer instanceof Customer) {
+            return response()->json([
+                'message' => 'Unauthenticated. Please log in to chat with HTUT AI.',
+                'redirect_url' => '/login',
+            ], 401);
+        }
 
         if ($conversation->customer_id !== $customer->id) {
             return response()->json(['message' => 'Unauthorized conversation access.'], 403);
@@ -83,9 +97,12 @@ class AIChatController extends Controller
         /** @var Customer|null $customer */
         $customer = $request->user('sanctum') ?? $request->user();
 
-        if (! $customer) {
+        if (! $customer instanceof Customer) {
             return response()->json([
-                'message' => 'Unauthenticated. Please log in to chat with HTUT AI.',
+                'message' => $request->input('category') === 'astrology'
+                    ? 'Unauthenticated. Please log in to use Astrology.'
+                    : 'Unauthenticated. Please log in to chat with HTUT AI.',
+                'redirect_url' => '/login',
             ], 401);
         }
 
@@ -346,8 +363,15 @@ class AIChatController extends Controller
      */
     public function destroy(Request $request, ChatConversation $conversation): JsonResponse
     {
-        /** @var Customer $customer */
-        $customer = $request->user();
+        /** @var Customer|null $customer */
+        $customer = $request->user('sanctum') ?? $request->user();
+
+        if (! $customer instanceof Customer) {
+            return response()->json([
+                'message' => 'Unauthenticated. Please log in to chat with HTUT AI.',
+                'redirect_url' => '/login',
+            ], 401);
+        }
 
         if ($conversation->customer_id !== $customer->id) {
             return response()->json(['message' => 'Unauthorized conversation delete.'], 403);

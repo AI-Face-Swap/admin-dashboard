@@ -106,3 +106,17 @@ test('astrology profile store and show persist and return san_yat_natkhat', func
     $showResponse->assertOk()
         ->assertJsonPath('data.info.birthday.san_yat_natkhat', 'ရောဟဏီ');
 });
+
+test('unauthenticated user cannot access or store astrology profile and receives 401 with login redirect', function () {
+    $this->getJson('/api/v1/astrology/profile')
+        ->assertStatus(401)
+        ->assertJsonPath('redirect_url', '/login');
+
+    $this->postJson('/api/v1/astrology/profile', [
+        'name' => 'Guest',
+        'birthday' => '2001-11-06',
+        'gender' => 'female',
+    ])
+        ->assertStatus(401)
+        ->assertJsonPath('redirect_url', '/login');
+});
