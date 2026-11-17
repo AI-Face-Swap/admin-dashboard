@@ -41,6 +41,10 @@ class TemplateGenerationRequest extends FormRequest
             'face_image' => ['nullable', 'image', 'max:20480'],
             'image_url' => ['nullable', 'url', 'max:2048'],
             'face_image_url' => ['nullable', 'url', 'max:2048'],
+            'second_image' => ['nullable', 'image', 'max:20480'],
+            'image_2' => ['nullable', 'image', 'max:20480'],
+            'second_image_url' => ['nullable', 'url', 'max:2048'],
+            'image_2_url' => ['nullable', 'url', 'max:2048'],
             'client_idempotency_token' => ['nullable', 'string', 'max:255'],
         ];
     }
@@ -54,15 +58,6 @@ class TemplateGenerationRequest extends FormRequest
     {
         return [
             function (Validator $validator): void {
-                $hasImage = $this->hasFile('image')
-                    || $this->hasFile('face_image')
-                    || $this->filled('image_url')
-                    || $this->filled('face_image_url');
-
-                if ($hasImage) {
-                    return;
-                }
-
                 $slug = $this->input('template_slug');
                 $template = $slug
                     ? Template::with(['generationType', 'aiModel.generationType'])->where('slug', $slug)->first()
@@ -75,7 +70,25 @@ class TemplateGenerationRequest extends FormRequest
                     return;
                 }
 
-                $validator->errors()->add('image', 'Please upload an image to generate with this template.');
+                $hasImage = $this->hasFile('image')
+                    || $this->hasFile('face_image')
+                    || $this->filled('image_url')
+                    || $this->filled('face_image_url');
+
+                if (! $hasImage) {
+                    $validator->errors()->add('image', 'Please upload an image to generate with this template.');
+                }
+
+                if (($template?->required_images ?? 1) >= 2) {
+                    $hasSecondImage = $this->hasFile('second_image')
+                        || $this->hasFile('image_2')
+                        || $this->filled('second_image_url')
+                        || $this->filled('image_2_url');
+
+                    if (! $hasSecondImage) {
+                        $validator->errors()->add('second_image', 'Please upload the second image required by this template.');
+                    }
+                }
             },
         ];
     }

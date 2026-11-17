@@ -66,6 +66,10 @@ export default function Create({
 }) {
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
+    const [guideline, setGuideline] = useState('');
+    const [requiredImages, setRequiredImages] = useState<'1' | '2'>('1');
+    const [exampleImageFiles, setExampleImageFiles] = useState<File[]>([]);
+    const [exampleImagePreviews, setExampleImagePreviews] = useState<string[]>([]);
     const [sortOrder, setSortOrder] = useState('1');
     const [prompt, setPrompt] = useState('');
     const [negativePrompt, setNegativePrompt] = useState('');
@@ -181,6 +185,9 @@ export default function Create({
             {
                 name,
                 description,
+                guideline: guideline || undefined,
+                required_images: parseInt(requiredImages, 10) || 1,
+                example_image_files: exampleImageFiles.length > 0 ? exampleImageFiles : undefined,
                 category_id: categoryId || undefined,
                 generation_type_id: generationTypeId || undefined,
                 type,
@@ -287,6 +294,42 @@ export default function Create({
                                         rows={2}
                                     />
                                     <InputError message={errors.description} />
+                                </div>
+
+                                <div className="grid gap-2">
+                                    <Label htmlFor="guideline">
+                                        Usage Guideline (Optional)
+                                    </Label>
+                                    <Textarea
+                                        id="guideline"
+                                        value={guideline}
+                                        onChange={(e) =>
+                                            setGuideline(e.target.value)
+                                        }
+                                        placeholder="Guide shown in the ! popup on the customer template page (e.g. Upload a clear front-facing photo)..."
+                                        rows={2}
+                                    />
+                                    <InputError message={errors.guideline} />
+                                </div>
+
+                                <div className="grid gap-2">
+                                    <Label>Required Customer Images</Label>
+                                    <div className="flex max-w-xs rounded-lg border border-border bg-muted/40 p-1">
+                                        {(['1', '2'] as const).map((count) => (
+                                            <button
+                                                key={count}
+                                                type="button"
+                                                onClick={() => setRequiredImages(count)}
+                                                className={`flex-1 rounded-md py-1.5 text-xs font-medium transition-all ${
+                                                    requiredImages === count
+                                                        ? 'bg-background text-foreground shadow-sm'
+                                                        : 'text-muted-foreground hover:text-foreground'
+                                                }`}
+                                            >
+                                                {count} {count === '1' ? 'Image' : 'Images'}
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
 
                                 <div className="grid gap-4 sm:grid-cols-3">
@@ -547,6 +590,40 @@ export default function Create({
                                                 alt="Thumbnail preview"
                                                 className="h-full w-full rounded-lg object-cover"
                                             />
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="grid gap-2 border-t border-border pt-2">
+                                    <Label htmlFor="example_images">
+                                        Example Photos (Optional, nullable — shown in ! popup)
+                                    </Label>
+                                    <Input
+                                        id="example_images"
+                                        type="file"
+                                        accept="image/*"
+                                        multiple
+                                        onChange={(e) => {
+                                            const files = Array.from(e.target.files ?? []);
+                                            setExampleImageFiles(files);
+                                            setExampleImagePreviews(files.map((f) => URL.createObjectURL(f)));
+                                        }}
+                                    />
+                                    <InputError message={errors.example_image_files} />
+                                    {exampleImagePreviews.length > 0 && (
+                                        <div className="mt-2 flex flex-wrap gap-2">
+                                            {exampleImagePreviews.map((src, idx) => (
+                                                <div
+                                                    key={idx}
+                                                    className="h-24 w-24 overflow-hidden rounded-xl border border-border bg-black/40 p-1"
+                                                >
+                                                    <img
+                                                        src={src}
+                                                        alt={`Example ${idx + 1}`}
+                                                        className="h-full w-full rounded-lg object-cover"
+                                                    />
+                                                </div>
+                                            ))}
                                         </div>
                                     )}
                                 </div>

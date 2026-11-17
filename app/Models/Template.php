@@ -50,12 +50,15 @@ use Illuminate\Support\Facades\Storage;
     'slug',
     'name',
     'description',
+    'guideline',
     'type',
+    'required_images',
     'is_commercial',
     'file_path',
     'thumbnail_path',
     'reference_video_path',
     'reference_images',
+    'example_images',
     'reference_audio_path',
     'model',
     'cost',
@@ -257,11 +260,13 @@ class Template extends Model
     protected function casts(): array
     {
         return [
+            'required_images' => 'integer',
             'cost' => 'integer',
             'discount_cost' => 'integer',
             'is_commercial' => 'boolean',
             'is_active' => 'boolean',
             'reference_images' => 'array',
+            'example_images' => 'array',
             'parameters' => 'array',
         ];
     }

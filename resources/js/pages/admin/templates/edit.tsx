@@ -69,6 +69,9 @@ type Template = {
     reference_audio_path?: string | null;
     reference_audio_url?: string | null;
     reference_images?: string[] | null;
+    example_images?: string[] | null;
+    guideline?: string | null;
+    required_images?: number;
     parameters?: Record<
         string,
         string | number | boolean | null | undefined
@@ -107,6 +110,16 @@ export default function Edit({
     const [name, setName] = useState(template.name);
     const [slug, setSlug] = useState(template.slug);
     const [description, setDescription] = useState(template.description ?? '');
+    const [guideline, setGuideline] = useState(template.guideline ?? '');
+    const [requiredImages, setRequiredImages] = useState<'1' | '2'>(
+        (template.required_images ?? 1) >= 2 ? '2' : '1',
+    );
+    const [existingExampleImages, setExistingExampleImages] = useState<string[]>(
+        template.example_images ?? [],
+    );
+    const [exampleImageFiles, setExampleImageFiles] = useState<File[]>([]);
+    const [exampleImagePreviews, setExampleImagePreviews] = useState<string[]>([]);
+    const [clearExampleImages, setClearExampleImages] = useState(false);
     const [sortOrder, setSortOrder] = useState(
         String(template.sort_order ?? 1),
     );
@@ -261,6 +274,11 @@ export default function Edit({
                 name,
                 slug,
                 description,
+                guideline,
+                required_images: parseInt(requiredImages, 10) || 1,
+                example_images: clearExampleImages ? [] : existingExampleImages,
+                example_image_files: exampleImageFiles.length > 0 ? exampleImageFiles : undefined,
+                clear_example_images: clearExampleImages,
                 category_id: categoryId || undefined,
                 generation_type_id: generationTypeId || undefined,
                 type,
@@ -384,6 +402,42 @@ export default function Edit({
                                         rows={2}
                                     />
                                     <InputError message={errors.description} />
+                                </div>
+
+                                <div className="grid gap-2">
+                                    <Label htmlFor="guideline">
+                                        Usage Guideline (Optional)
+                                    </Label>
+                                    <Textarea
+                                        id="guideline"
+                                        value={guideline}
+                                        onChange={(e) =>
+                                            setGuideline(e.target.value)
+                                        }
+                                        placeholder="Guide shown in the ! popup on the customer template page..."
+                                        rows={2}
+                                    />
+                                    <InputError message={errors.guideline} />
+                                </div>
+
+                                <div className="grid gap-2">
+                                    <Label>Required Customer Images</Label>
+                                    <div className="flex max-w-xs rounded-lg border border-border bg-muted/40 p-1">
+                                        {(['1', '2'] as const).map((count) => (
+                                            <button
+                                                key={count}
+                                                type="button"
+                                                onClick={() => setRequiredImages(count)}
+                                                className={`flex-1 rounded-md py-1.5 text-xs font-medium transition-all ${
+                                                    requiredImages === count
+                                                        ? 'bg-background text-foreground shadow-sm'
+                                                        : 'text-muted-foreground hover:text-foreground'
+                                                }`}
+                                            >
+                                                {count} {count === '1' ? 'Image' : 'Images'}
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
 
                                 <div className="grid gap-4 sm:grid-cols-3">
@@ -668,6 +722,71 @@ export default function Edit({
                                         }
                                     />
                                     <InputError message={errors.thumbnail} />
+                                </div>
+
+                                <div className="grid gap-2 border-t border-border pt-2">
+                                    <div className="flex items-center justify-between">
+                                        <Label htmlFor="example_images">
+                                            Example Photos (Optional, nullable — shown in ! popup)
+                                        </Label>
+                                        {(existingExampleImages.length > 0 || exampleImagePreviews.length > 0) && (
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setExistingExampleImages([]);
+                                                    setExampleImageFiles([]);
+                                                    setExampleImagePreviews([]);
+                                                    setClearExampleImages(true);
+                                                }}
+                                                className="text-xs text-destructive hover:underline"
+                                            >
+                                                Clear Examples
+                                            </button>
+                                        )}
+                                    </div>
+                                    {(existingExampleImages.length > 0 || exampleImagePreviews.length > 0) && (
+                                        <div className="flex flex-wrap gap-2">
+                                            {existingExampleImages.map((src, idx) => (
+                                                <div
+                                                    key={`existing-${idx}`}
+                                                    className="h-24 w-24 overflow-hidden rounded-xl border border-border bg-black/40 p-1"
+                                                >
+                                                    <img
+                                                        src={src}
+                                                        alt={`Example ${idx + 1}`}
+                                                        className="h-full w-full rounded-lg object-cover"
+                                                    />
+                                                </div>
+                                            ))}
+                                            {exampleImagePreviews.map((src, idx) => (
+                                                <div
+                                                    key={`new-${idx}`}
+                                                    className="h-24 w-24 overflow-hidden rounded-xl border border-primary/40 bg-black/40 p-1"
+                                                >
+                                                    <img
+                                                        src={src}
+                                                        alt={`New Example ${idx + 1}`}
+                                                        className="h-full w-full rounded-lg object-cover"
+                                                    />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                    <Input
+                                        id="example_images"
+                                        type="file"
+                                        accept="image/*"
+                                        multiple
+                                        onChange={(e) => {
+                                            const files = Array.from(e.target.files ?? []);
+                                            setExampleImageFiles(files);
+                                            setExampleImagePreviews(files.map((f) => URL.createObjectURL(f)));
+                                            if (files.length > 0) {
+                                                setClearExampleImages(false);
+                                            }
+                                        }}
+                                    />
+                                    <InputError message={errors.example_image_files} />
                                 </div>
 
                                 {/* AI Reference Video (for Seedance / Image-to-Video / Video Face Swap) */}

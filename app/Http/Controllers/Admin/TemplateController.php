@@ -90,10 +90,12 @@ class TemplateController extends Controller
             // No unique rule: HasAutoSlug appends -2, -3... when the slug exists.
             'slug' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:1000'],
+            'guideline' => ['nullable', 'string', 'max:5000'],
             'category_id' => ['nullable', 'integer', 'exists:template_categories,id'],
             'generation_type_id' => ['nullable', 'integer', 'exists:generation_types,id'],
             'ai_model_id' => ['nullable', 'integer', 'exists:ai_models,id'],
             'type' => ['required', Rule::in([Template::TYPE_IMAGE, Template::TYPE_VIDEO])],
+            'required_images' => ['sometimes', 'integer', 'in:1,2'],
             'is_commercial' => ['sometimes', 'boolean'],
             'file' => ['required', 'file', 'max:51200'], // 50 MB
             'thumbnail' => ['nullable', 'image', 'max:5120'],
@@ -105,6 +107,10 @@ class TemplateController extends Controller
             'reference_images.*' => ['nullable', 'string', 'max:2048'],
             'reference_image_files' => ['nullable', 'array'],
             'reference_image_files.*' => ['image', 'max:20480'],
+            'example_images' => ['nullable', 'array'],
+            'example_images.*' => ['nullable', 'string', 'max:2048'],
+            'example_image_files' => ['nullable', 'array'],
+            'example_image_files.*' => ['image', 'max:20480'],
             'parameters' => ['nullable', 'array'],
             'cost' => ['nullable', 'integer', 'min:0'],
             'discount_cost' => ['sometimes', 'nullable', 'integer', 'min:0'],
@@ -149,6 +155,14 @@ class TemplateController extends Controller
             }
         }
 
+        $exampleImages = array_values(array_filter($validated['example_images'] ?? []));
+        if ($request->hasFile('example_image_files')) {
+            foreach ($request->file('example_image_files') as $exampleImg) {
+                $storedExamplePath = $exampleImg->store('templates/examples', $this->disk);
+                $exampleImages[] = Storage::disk($this->disk)->url($storedExamplePath);
+            }
+        }
+
         $manualCost = isset($validated['cost']) && $validated['cost'] !== null && (int) $validated['cost'] > 0
             ? (int) $validated['cost']
             : null;
@@ -157,10 +171,12 @@ class TemplateController extends Controller
             'name' => $validated['name'],
             'slug' => $validated['slug'] ?? Str::slug($validated['name']),
             'description' => $validated['description'] ?? null,
+            'guideline' => $validated['guideline'] ?? null,
             'category_id' => $validated['category_id'] ?? null,
             'generation_type_id' => $validated['generation_type_id'] ?? null,
             'ai_model_id' => $validated['ai_model_id'] ?? null,
             'type' => $validated['type'],
+            'required_images' => (int) ($validated['required_images'] ?? 1),
             'is_commercial' => $request->boolean('is_commercial', false),
             'cost' => $manualCost,
             'discount_cost' => $validated['discount_cost'] ?? 0,
@@ -169,6 +185,7 @@ class TemplateController extends Controller
             'reference_video_path' => $referenceVideoPath ?: null,
             'reference_audio_path' => $referenceAudioPath ?: null,
             'reference_images' => ! empty($referenceImages) ? $referenceImages : null,
+            'example_images' => ! empty($exampleImages) ? $exampleImages : null,
             'parameters' => ! empty($validated['parameters']) ? $validated['parameters'] : null,
             'model' => $modelName,
             'is_active' => $validated['is_active'] ?? true,
@@ -213,10 +230,12 @@ class TemplateController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'slug' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:1000'],
+            'guideline' => ['nullable', 'string', 'max:5000'],
             'category_id' => ['nullable', 'integer', 'exists:template_categories,id'],
             'generation_type_id' => ['nullable', 'integer', 'exists:generation_types,id'],
             'ai_model_id' => ['nullable', 'integer', 'exists:ai_models,id'],
             'type' => ['required', Rule::in([Template::TYPE_IMAGE, Template::TYPE_VIDEO])],
+            'required_images' => ['sometimes', 'integer', 'in:1,2'],
             'is_commercial' => ['sometimes', 'boolean'],
             'file' => ['nullable', 'file', 'max:51200'],
             'thumbnail' => ['nullable', 'image', 'max:5120'],
@@ -229,6 +248,11 @@ class TemplateController extends Controller
             'reference_images.*' => ['nullable', 'string', 'max:2048'],
             'reference_image_files' => ['nullable', 'array'],
             'reference_image_files.*' => ['image', 'max:20480'],
+            'example_images' => ['nullable', 'array'],
+            'example_images.*' => ['nullable', 'string', 'max:2048'],
+            'example_image_files' => ['nullable', 'array'],
+            'example_image_files.*' => ['image', 'max:20480'],
+            'clear_example_images' => ['sometimes', 'boolean'],
             'parameters' => ['nullable', 'array'],
             'cost' => ['nullable', 'integer', 'min:0'],
             'discount_cost' => ['sometimes', 'nullable', 'integer', 'min:0'],
@@ -261,10 +285,12 @@ class TemplateController extends Controller
             // Slugs stay stable once created — only change when explicitly provided.
             'slug' => $validated['slug'] ?? $template->slug,
             'description' => $validated['description'] ?? null,
+            'guideline' => $request->exists('guideline') ? ($validated['guideline'] ?? null) : $template->guideline,
             'category_id' => $validated['category_id'] ?? null,
             'generation_type_id' => $validated['generation_type_id'] ?? null,
             'ai_model_id' => $validated['ai_model_id'] ?? null,
             'type' => $validated['type'],
+            'required_images' => (int) ($validated['required_images'] ?? $template->required_images ?? 1),
             'is_commercial' => $request->has('is_commercial')
                 ? $request->boolean('is_commercial')
                 : ($template->is_commercial ?? false),
@@ -293,6 +319,19 @@ class TemplateController extends Controller
                 }
             }
             $data['reference_images'] = ! empty($referenceImages) ? $referenceImages : null;
+        }
+
+        if ($request->boolean('clear_example_images')) {
+            $data['example_images'] = null;
+        } elseif ($request->has('example_images') || $request->hasFile('example_image_files')) {
+            $exampleImages = array_values(array_filter($validated['example_images'] ?? ($template->example_images ?? [])));
+            if ($request->hasFile('example_image_files')) {
+                foreach ($request->file('example_image_files') as $exampleImg) {
+                    $storedExamplePath = $exampleImg->store('templates/examples', $this->disk);
+                    $exampleImages[] = Storage::disk($this->disk)->url($storedExamplePath);
+                }
+            }
+            $data['example_images'] = ! empty($exampleImages) ? $exampleImages : null;
         }
 
         if ($request->boolean('clear_reference_video')) {
@@ -490,6 +529,8 @@ class TemplateController extends Controller
             ? app(VideoThumbnailExtractor::class)->fromDisk($newPath, $this->disk)
             : $newPath;
 
+        $exampleImages = $this->extractExampleImagesFromGenerationInput($input);
+
         // Leave cost null so the template dynamically inherits its AI model's point cost unless manually overridden
         $template = Template::create([
             'generation_type_id' => $generationType?->id,
@@ -499,6 +540,7 @@ class TemplateController extends Controller
             'slug' => strtolower($typeName).'-'.$generation->id, // HasAutoSlug will suffix if needed
             'description' => "Generated from {$operationLabel}",
             'type' => $type,
+            'required_images' => count($exampleImages) >= 2 ? 2 : 1,
             'cost' => null,
             'discount_cost' => 0,
             'file_path' => $newPath,
@@ -506,6 +548,7 @@ class TemplateController extends Controller
             'reference_video_path' => $referenceVideoPath,
             'reference_audio_path' => $referenceAudioPath,
             'reference_images' => null,
+            'example_images' => ! empty($exampleImages) ? $exampleImages : null,
             'parameters' => ! empty($parameters) ? $parameters : null,
             'is_active' => true,
             'sort_order' => 1,
@@ -518,6 +561,43 @@ class TemplateController extends Controller
 
         return to_route('admin.templates.edit', $template->id)
             ->with('success', 'Template created successfully from generation! You can now adjust its details.');
+    }
+
+    /**
+     * Extract ordered, unique input image URLs from an AIGeneration input_metadata payload.
+     *
+     * @param  array<string, mixed>  $input
+     * @return list<string>
+     */
+    private function extractExampleImagesFromGenerationInput(array $input): array
+    {
+        $candidates = [];
+
+        if (! empty($input['elements']) && is_array($input['elements'])) {
+            foreach ($input['elements'] as $element) {
+                if (is_array($element) && ! empty($element['frontal_image_url']) && is_string($element['frontal_image_url'])) {
+                    $candidates[] = $element['frontal_image_url'];
+                }
+            }
+        }
+
+        foreach (['reference_images', 'image_urls', 'image_input'] as $arrayKey) {
+            if (! empty($input[$arrayKey]) && is_array($input[$arrayKey])) {
+                foreach ($input[$arrayKey] as $url) {
+                    if (is_string($url) && $url !== '') {
+                        $candidates[] = $url;
+                    }
+                }
+            }
+        }
+
+        foreach (['input_image_1', 'input_image_2', 'image', 'source_image', 'first_frame_image', 'first_frame_url', 'image_url', 'input_image'] as $singleKey) {
+            if (! empty($input[$singleKey]) && is_string($input[$singleKey])) {
+                $candidates[] = $input[$singleKey];
+            }
+        }
+
+        return array_values(array_unique(array_filter($candidates, fn (string $u) => filter_var($u, FILTER_VALIDATE_URL) !== false)));
     }
 
     /**

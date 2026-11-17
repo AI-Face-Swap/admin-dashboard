@@ -65,7 +65,8 @@ class AITemplateGenerationController extends Controller
         $providerSlug = $aiModel?->provider_name ?? 'segmind';
 
         $userImageUrl = $this->resolveUserImageUrl($request);
-        $payload = $this->buildPayloadForOperation($operation, $modelSlug, $template, $userImageUrl);
+        $userSecondImageUrl = $this->resolveUserSecondImageUrl($request);
+        $payload = $this->buildPayloadForOperation($operation, $modelSlug, $template, $userImageUrl, $userSecondImageUrl);
 
         $requester = $request->user();
         $idempotencyToken = $request->string('client_idempotency_token')->toString() ?: null;
@@ -180,6 +181,7 @@ class AITemplateGenerationController extends Controller
         ?string $modelSlug,
         Template $template,
         ?string $userImageUrl,
+        ?string $userSecondImageUrl = null,
     ): array {
         $params = is_array($template->parameters) ? $template->parameters : [];
 
@@ -189,12 +191,14 @@ class AITemplateGenerationController extends Controller
                 $template,
                 $userImageUrl,
                 $params,
+                $userSecondImageUrl,
             ),
             AIGeneration::OPERATION_IMAGE_EDIT => $this->buildImageEditPayload(
                 $modelSlug ?: 'flux-kontext-dev',
                 $template,
                 $userImageUrl,
                 $params,
+                $userSecondImageUrl,
             ),
             AIGeneration::OPERATION_IMAGE => array_filter([
                 ...$params,
@@ -241,6 +245,7 @@ class AITemplateGenerationController extends Controller
         Template $template,
         ?string $userImageUrl,
         array $params,
+        ?string $userSecondImageUrl = null,
     ): array {
         $prompt = $template->prompt ?: ($params['prompt'] ?? 'Animate this reference smoothly and naturally.');
         $negativePrompt = $template->negative_prompt ?: ($params['negative_prompt'] ?? null);
@@ -251,7 +256,7 @@ class AITemplateGenerationController extends Controller
             : (int) ($params['seed'] ?? -1);
         $durationInt = (int) preg_replace('/[^0-9]/', '', (string) ($params['duration'] ?? '5')) ?: 5;
 
-        $refImages = $userImageUrl ? [$userImageUrl] : [];
+        $refImages = array_values(array_filter([$userImageUrl, $userSecondImageUrl]));
 
         // Only send reference_videos when the template actually has an explicit reference video
         $refVideos = [];
@@ -274,19 +279,22 @@ class AITemplateGenerationController extends Controller
             $finalPrompt = $prompt;
             $elements = [];
             $imageUrls = [];
-            if ($userImageUrl) {
+            if (! empty($refImages)) {
                 $usesImageTagOnly = preg_match('/@Image\s*\d+\b/i', $finalPrompt)
                     && ! preg_match('/@Element\s*\d+\b/i', $finalPrompt);
 
                 if ($usesImageTagOnly) {
-                    $imageUrls[] = $userImageUrl;
+                    $imageUrls = $refImages;
                 } else {
-                    $elements[] = [
-                        'frontal_image_url' => $userImageUrl,
-                        'reference_image_urls' => [$userImageUrl],
-                    ];
-                    if (! preg_match('/@Element\s*1\b/i', $finalPrompt)) {
-                        $finalPrompt = rtrim($finalPrompt).' @Element1';
+                    foreach ($refImages as $idx => $imgUrl) {
+                        $elements[] = [
+                            'frontal_image_url' => $imgUrl,
+                            'reference_image_urls' => [$imgUrl],
+                        ];
+                        $slot = $idx + 1;
+                        if (! preg_match("/@Element\s*{$slot}\b/i", $finalPrompt)) {
+                            $finalPrompt = rtrim($finalPrompt)." @Element{$slot}";
+                        }
                     }
                 }
             }
@@ -307,8 +315,11 @@ class AITemplateGenerationController extends Controller
         if ($model === 'kling-4-video-edit') {
             $sourceVideoUrl = $refVideos[0] ?? $template->file_url;
             $finalPrompt = $prompt;
-            if ($userImageUrl && ! preg_match('/@Image\s*1\b/i', $finalPrompt)) {
-                $finalPrompt = rtrim($finalPrompt).' @Image1';
+            foreach ($refImages as $idx => $imgUrl) {
+                $slot = $idx + 1;
+                if (! preg_match("/@Image\s*{$slot}\b/i", $finalPrompt)) {
+                    $finalPrompt = rtrim($finalPrompt)." @Image{$slot}";
+                }
             }
 
             return array_filter([
@@ -492,6 +503,7 @@ class AITemplateGenerationController extends Controller
         Template $template,
         ?string $userImageUrl,
         array $params,
+        ?string $userSecondImageUrl = null,
     ): array {
         $prompt = $template->prompt ?: ($params['prompt'] ?? 'Apply the template style to the subject.');
         $aspectRatio = $template->aspect_ratio ?: ($params['aspect_ratio'] ?? '1:1');
@@ -499,7 +511,7 @@ class AITemplateGenerationController extends Controller
             ? (int) $template->seed
             : ($params['seed'] ?? null);
 
-        $refImages = $userImageUrl ? [$userImageUrl] : [];
+        $refImages = array_values(array_filter([$userImageUrl, $userSecondImageUrl]));
 
         $base = array_filter([
             ...$params,
@@ -518,10 +530,11 @@ class AITemplateGenerationController extends Controller
                 ...$base,
                 'image_input' => $refImages,
             ],
-            'multi-image-kontext-max' => [
+            'multi-image-kontext-max' => array_filter([
                 ...$base,
                 'input_image_1' => $userImageUrl,
-            ],
+                'input_image_2' => $userSecondImageUrl,
+            ], fn ($v) => $v !== null && $v !== ''),
             'kling-3-image2image' => [
                 ...$base,
                 'image_url' => $userImageUrl,
@@ -555,17 +568,7 @@ class AITemplateGenerationController extends Controller
         $file = $request->file('image') ?? $request->file('face_image');
 
         if ($file instanceof UploadedFile) {
-            $path = $file->storeAs(
-                'inputs/template-gen',
-                Str::uuid().'.'.$file->getClientOriginalExtension(),
-                'spaces',
-            );
-
-            if ($path === false) {
-                throw new RuntimeException('Failed to store the uploaded image.');
-            }
-
-            return Storage::disk('spaces')->url($path);
+            return $this->storeUploadedInputImage($file);
         }
 
         if ($request->filled('image_url')) {
@@ -577,5 +580,45 @@ class AITemplateGenerationController extends Controller
         }
 
         return null;
+    }
+
+    /**
+     * Resolve the optional second uploaded user image (or URL) to a public Spaces URL.
+     */
+    private function resolveUserSecondImageUrl(TemplateGenerationRequest $request): ?string
+    {
+        $file = $request->file('second_image') ?? $request->file('image_2');
+
+        if ($file instanceof UploadedFile) {
+            return $this->storeUploadedInputImage($file);
+        }
+
+        if ($request->filled('second_image_url')) {
+            return $request->string('second_image_url')->toString();
+        }
+
+        if ($request->filled('image_2_url')) {
+            return $request->string('image_2_url')->toString();
+        }
+
+        return null;
+    }
+
+    /**
+     * Store an uploaded input image on Spaces and return its public URL.
+     */
+    private function storeUploadedInputImage(UploadedFile $file): string
+    {
+        $path = $file->storeAs(
+            'inputs/template-gen',
+            Str::uuid().'.'.$file->getClientOriginalExtension(),
+            'spaces',
+        );
+
+        if ($path === false) {
+            throw new RuntimeException('Failed to store the uploaded image.');
+        }
+
+        return Storage::disk('spaces')->url($path);
     }
 }
