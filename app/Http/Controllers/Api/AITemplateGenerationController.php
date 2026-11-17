@@ -29,10 +29,16 @@ class AITemplateGenerationController extends Controller
     /**
      * Generate AI media using a template slug.
      *
+     * Supports both single-image (`required_images = 1`) and two-image (`required_images = 2`) templates:
+     * - Photo 1: `image` (file) or `image_url` (URL) — aliases `face_image` / `face_image_url`
+     * - Photo 2 (required when `template.required_images >= 2`): `second_image` (file) or `second_image_url` (URL) — aliases `image_2` / `image_2_url`
+     *
      * Automatically routes to the right AI operation, provider, and model
      * (`image-to-video`, `image-editing`, `video-face-swap`, `face-swap`, or `image-generation`)
      * based on the template's configured `generation_type`, `ai_model`, `prompt`,
      * `reference_video_path`, `reference_images`, and `parameters`.
+     *
+     * @response 202 {"status": "queued", "generation": {"id": 231, "operation": "image-to-video", "model": "kling-4-video-edit", "template_id": 55, "status": "queued", "points_spent": 20, "points_remaining": 180, "message": "Template generation job dispatched. Poll /api/v1/ai/generations/231 for status."}}
      */
     public function store(TemplateGenerationRequest $request, ?string $slug = null): JsonResponse
     {

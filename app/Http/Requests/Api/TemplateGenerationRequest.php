@@ -36,15 +36,25 @@ class TemplateGenerationRequest extends FormRequest
     public function rules(): array
     {
         return [
+            /** Template slug (optional when passed via `{slug}` route parameter). @example video-216 */
             'template_slug' => ['required', 'string', 'max:255', 'exists:templates,slug'],
+            /** Primary customer input image file (Photo 1). Required unless `image_url` or `face_image*` is provided. */
             'image' => ['nullable', 'image', 'max:20480'],
+            /** Alias for `image` (Photo 1 file upload). */
             'face_image' => ['nullable', 'image', 'max:20480'],
+            /** Primary customer input image URL (Photo 1). @example https://example.com/person1.jpg */
             'image_url' => ['nullable', 'url', 'max:2048'],
+            /** Alias for `image_url` (Photo 1 URL). */
             'face_image_url' => ['nullable', 'url', 'max:2048'],
+            /** Second customer input image file (Photo 2). Required when `template.required_images >= 2`. */
             'second_image' => ['nullable', 'image', 'max:20480'],
+            /** Alias for `second_image` (Photo 2 file upload). */
             'image_2' => ['nullable', 'image', 'max:20480'],
+            /** Second customer input image URL (Photo 2). Required when `template.required_images >= 2`. @example https://example.com/person2.jpg */
             'second_image_url' => ['nullable', 'url', 'max:2048'],
+            /** Alias for `second_image_url` (Photo 2 URL). */
             'image_2_url' => ['nullable', 'url', 'max:2048'],
+            /** Optional idempotency key to prevent duplicate charges on retries. */
             'client_idempotency_token' => ['nullable', 'string', 'max:255'],
         ];
     }

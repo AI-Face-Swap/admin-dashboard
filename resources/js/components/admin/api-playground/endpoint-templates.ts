@@ -55,6 +55,18 @@ export const ENDPOINT_TEMPLATES: EndpointTemplate[] = [
         ],
     },
     {
+        label: 'Template Generate by Slug (2 Images - URL)',
+        group: 'ai',
+        method: 'POST',
+        url: '/api/v1/templates/video-216/generate',
+        bodyType: 'json',
+        body: '{\n  "image_url": "https://example.com/person1.jpg",\n  "second_image_url": "https://example.com/person2.jpg"\n}',
+        headers: [
+            { key: 'Content-Type', value: 'application/json' },
+            { key: 'Accept', value: 'application/json' },
+        ],
+    },
+    {
         label: 'Template Generate by Slug (Upload)',
         group: 'ai',
         method: 'POST',
@@ -70,6 +82,18 @@ export const ENDPOINT_TEMPLATES: EndpointTemplate[] = [
         url: '/api/v1/ai/template-generate',
         bodyType: 'json',
         body: '{\n  "template_slug": "superman",\n  "image_url": "https://example.com/face.jpg"\n}',
+        headers: [
+            { key: 'Content-Type', value: 'application/json' },
+            { key: 'Accept', value: 'application/json' },
+        ],
+    },
+    {
+        label: 'Template Generate Unified (2 Images - URL)',
+        group: 'ai',
+        method: 'POST',
+        url: '/api/v1/ai/template-generate',
+        bodyType: 'json',
+        body: '{\n  "template_slug": "video-216",\n  "image_url": "https://example.com/person1.jpg",\n  "second_image_url": "https://example.com/person2.jpg"\n}',
         headers: [
             { key: 'Content-Type', value: 'application/json' },
             { key: 'Accept', value: 'application/json' },
