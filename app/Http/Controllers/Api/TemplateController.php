@@ -7,6 +7,9 @@ use App\Models\Template;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
+/**
+ * @tags Templates
+ */
 class TemplateController extends Controller
 {
     /**

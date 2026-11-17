@@ -13,10 +13,30 @@ class TemplateGenerationRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
+        $merge = [];
+
         if ($this->route('slug') && ! $this->filled('template_slug')) {
-            $this->merge([
-                'template_slug' => $this->route('slug'),
-            ]);
+            $merge['template_slug'] = $this->route('slug');
+        }
+
+        if (! $this->filled('image_url') && $this->filled('face_image_url')) {
+            $merge['image_url'] = $this->input('face_image_url');
+        }
+
+        if (! $this->filled('second_image_url') && $this->filled('image_2_url')) {
+            $merge['second_image_url'] = $this->input('image_2_url');
+        }
+
+        if (! $this->hasFile('image') && $this->hasFile('face_image')) {
+            $this->files->set('image', $this->file('face_image'));
+        }
+
+        if (! $this->hasFile('second_image') && $this->hasFile('image_2')) {
+            $this->files->set('second_image', $this->file('image_2'));
+        }
+
+        if (! empty($merge)) {
+            $this->merge($merge);
         }
     }
 
@@ -36,24 +56,16 @@ class TemplateGenerationRequest extends FormRequest
     public function rules(): array
     {
         return [
-            /** Template slug (optional when passed via `{slug}` route parameter). @example video-216 */
-            'template_slug' => ['required', 'string', 'max:255', 'exists:templates,slug'],
-            /** Primary customer input image file (Photo 1). Required unless `image_url` or `face_image*` is provided. */
+            /** Primary input image file (Photo 1). */
             'image' => ['nullable', 'image', 'max:20480'],
-            /** Alias for `image` (Photo 1 file upload). */
-            'face_image' => ['nullable', 'image', 'max:20480'],
-            /** Primary customer input image URL (Photo 1). @example https://example.com/person1.jpg */
-            'image_url' => ['nullable', 'url', 'max:2048'],
-            /** Alias for `image_url` (Photo 1 URL). */
-            'face_image_url' => ['nullable', 'url', 'max:2048'],
-            /** Second customer input image file (Photo 2). Required when `template.required_images >= 2`. */
+            /** Second input image file (Photo 2 — only required when `template.required_images === 2`). */
             'second_image' => ['nullable', 'image', 'max:20480'],
-            /** Alias for `second_image` (Photo 2 file upload). */
-            'image_2' => ['nullable', 'image', 'max:20480'],
-            /** Second customer input image URL (Photo 2). Required when `template.required_images >= 2`. @example https://example.com/person2.jpg */
+            /** Primary input image URL (alternative to `image` file). @example https://example.com/person1.jpg */
+            'image_url' => ['nullable', 'url', 'max:2048'],
+            /** Second input image URL (alternative to `second_image` file, when `required_images === 2`). @example https://example.com/person2.jpg */
             'second_image_url' => ['nullable', 'url', 'max:2048'],
-            /** Alias for `second_image_url` (Photo 2 URL). */
-            'image_2_url' => ['nullable', 'url', 'max:2048'],
+            /** Template slug (auto-filled from `{slug}` in URL on `/v1/templates/{slug}/generate`). @example video-216 */
+            'template_slug' => ['required', 'string', 'max:255', 'exists:templates,slug'],
             /** Optional idempotency key to prevent duplicate charges on retries. */
             'client_idempotency_token' => ['nullable', 'string', 'max:255'],
         ];
