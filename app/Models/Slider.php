@@ -13,6 +13,7 @@ class Slider extends Model
         'description',
         'cta_text',
         'cta_url',
+        'cta_mobile_url',
         'file_path',
         'type',
         'sorting',

@@ -23,6 +23,7 @@ export default function Create() {
         description: '',
         cta_text: '',
         cta_url: '',
+        cta_mobile_url: '',
         file: null as File | null,
         type: 'image',
         sorting: '0',
@@ -69,17 +70,16 @@ export default function Create() {
                 <form onSubmit={handleSubmit}>
                     <AnimatedCard>
                         <CardContent className="space-y-6">
-                            {/* Title */}
+                            {/* Title (Optional) */}
                             <div className="space-y-2">
-                                <Label htmlFor="title">Title *</Label>
+                                <Label htmlFor="title">Title</Label>
                                 <Input
                                     id="title"
                                     value={data.title}
                                     onChange={(e) =>
                                         setData('title', e.target.value)
                                     }
-                                    placeholder="HappyHorse 1.0"
-                                    required
+                                    placeholder="Optional (leave blank for image-only slider)"
                                 />
                                 {errors.title && (
                                     <p className="text-sm text-destructive">
@@ -127,7 +127,7 @@ export default function Create() {
                             </div>
 
                             {/* CTA */}
-                            <div className="grid gap-4 sm:grid-cols-2">
+                            <div className="grid gap-4 sm:grid-cols-3">
                                 <div className="space-y-2">
                                     <Label htmlFor="cta_text">CTA Text</Label>
                                     <Input
@@ -140,15 +140,31 @@ export default function Create() {
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="cta_url">CTA URL</Label>
+                                    <Label htmlFor="cta_url">CTA URL (Web)</Label>
                                     <Input
                                         id="cta_url"
                                         value={data.cta_url}
                                         onChange={(e) =>
                                             setData('cta_url', e.target.value)
                                         }
-                                        placeholder="/ai/face-swap"
+                                        placeholder="/templates/video-216"
                                     />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="cta_mobile_url">CTA Mobile URL</Label>
+                                    <Input
+                                        id="cta_mobile_url"
+                                        value={data.cta_mobile_url}
+                                        onChange={(e) =>
+                                            setData('cta_mobile_url', e.target.value)
+                                        }
+                                        placeholder="/chat or htutai://..."
+                                    />
+                                    {errors.cta_mobile_url && (
+                                        <p className="text-sm text-destructive">
+                                            {errors.cta_mobile_url}
+                                        </p>
+                                    )}
                                 </div>
                             </div>
 

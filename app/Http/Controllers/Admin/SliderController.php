@@ -42,10 +42,11 @@ class SliderController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'title' => ['required', 'string', 'max:255'],
+            'title' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:1000'],
             'cta_text' => ['nullable', 'string', 'max:100'],
             'cta_url' => ['nullable', 'string', 'max:500'],
+            'cta_mobile_url' => ['nullable', 'string', 'max:2048'],
             'file' => ['required', 'file', 'mimes:jpg,jpeg,png,webp,gif,mp4,webm,mov', 'max:20480'], // 20MB
             'type' => ['required', 'in:image,video'],
             'sorting' => ['required', 'integer', 'min:0', 'max:9999'],
@@ -62,6 +63,7 @@ class SliderController extends Controller
 
         Slider::create([
             ...$validated,
+            'title' => $validated['title'] ?? null,
             'file_path' => $path,
             'is_active' => $request->boolean('is_active', true),
         ]);
@@ -86,10 +88,11 @@ class SliderController extends Controller
     public function update(Request $request, Slider $slider): RedirectResponse
     {
         $validated = $request->validate([
-            'title' => ['required', 'string', 'max:255'],
+            'title' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:1000'],
             'cta_text' => ['nullable', 'string', 'max:100'],
             'cta_url' => ['nullable', 'string', 'max:500'],
+            'cta_mobile_url' => ['nullable', 'string', 'max:2048'],
             'file' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,gif,mp4,webm,mov', 'max:20480'],
             'type' => ['required', 'in:image,video'],
             'sorting' => ['required', 'integer', 'min:0', 'max:9999'],
@@ -98,10 +101,11 @@ class SliderController extends Controller
         ]);
 
         $data = [
-            'title' => $validated['title'],
+            'title' => $validated['title'] ?? null,
             'description' => $validated['description'] ?? null,
             'cta_text' => $validated['cta_text'] ?? null,
             'cta_url' => $validated['cta_url'] ?? null,
+            'cta_mobile_url' => $validated['cta_mobile_url'] ?? null,
             'type' => $validated['type'],
             'sorting' => $validated['sorting'],
             'is_active' => $request->boolean('is_active', true),

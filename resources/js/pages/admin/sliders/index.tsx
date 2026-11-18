@@ -17,10 +17,11 @@ import admin from '@/routes/admin';
 
 type Slider = {
     id: number;
-    title: string;
+    title: string | null;
     description: string | null;
     cta_text: string | null;
     cta_url: string | null;
+    cta_mobile_url?: string | null;
     file_path: string;
     file_url: string | null;
     type: 'image' | 'video';
@@ -42,7 +43,7 @@ type Props = {
 
 export default function Index({ sliders }: Props) {
     const handleDelete = (slider: Slider) => {
-        if (confirm(`Delete "${slider.title}"? This cannot be undone.`)) {
+        if (confirm(`Delete "${slider.title || `Slider #${slider.id}`}"? This cannot be undone.`)) {
             router.delete(`/admin/sliders/${slider.id}`);
         }
     };
@@ -120,7 +121,7 @@ export default function Index({ sliders }: Props) {
                                                 ) : (
                                                     <img
                                                         src={slider.file_url}
-                                                        alt={slider.title}
+                                                        alt={slider.title || `Slider #${slider.id}`}
                                                         className="size-12 rounded object-cover"
                                                     />
                                                 )
@@ -132,7 +133,7 @@ export default function Index({ sliders }: Props) {
                                         </TableCell>
                                         <TableCell>
                                             <p className="font-medium">
-                                                {slider.title}
+                                                {slider.title || '— (Image only)'}
                                             </p>
                                             {slider.description && (
                                                 <p className="max-w-[200px] truncate text-xs text-muted-foreground">

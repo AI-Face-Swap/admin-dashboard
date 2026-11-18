@@ -19,10 +19,11 @@ import admin from '@/routes/admin';
 
 type Slider = {
     id: number;
-    title: string;
+    title: string | null;
     description: string | null;
     cta_text: string | null;
     cta_url: string | null;
+    cta_mobile_url: string | null;
     file_path: string;
     file_url: string | null;
     type: 'image' | 'video';
@@ -37,10 +38,11 @@ type Props = {
 
 export default function Edit({ slider }: Props) {
     const { data, setData, post, processing, errors } = useForm({
-        title: slider.title,
+        title: slider.title ?? '',
         description: slider.description ?? '',
         cta_text: slider.cta_text ?? '',
         cta_url: slider.cta_url ?? '',
+        cta_mobile_url: slider.cta_mobile_url ?? '',
         file: null as File | null,
         type: slider.type,
         sorting: String(slider.sorting),
@@ -75,27 +77,27 @@ export default function Edit({ slider }: Props) {
 
     return (
         <>
-            <Head title={`Edit — ${slider.title}`} />
+            <Head title={`Edit — ${slider.title || `Slider #${slider.id}`}`} />
 
             <div className="flex flex-1 flex-col gap-6 p-4 md:p-6">
                 <Heading
-                    title={`Edit: ${slider.title}`}
+                    title={`Edit: ${slider.title || `Slider #${slider.id}`}`}
                     description="Update slider details."
                 />
 
                 <form onSubmit={handleSubmit}>
                     <AnimatedCard>
                         <CardContent className="space-y-6">
-                            {/* Title */}
+                            {/* Title (Optional) */}
                             <div className="space-y-2">
-                                <Label htmlFor="title">Title *</Label>
+                                <Label htmlFor="title">Title</Label>
                                 <Input
                                     id="title"
                                     value={data.title}
                                     onChange={(e) =>
                                         setData('title', e.target.value)
                                     }
-                                    required
+                                    placeholder="Optional (leave blank for image-only slider)"
                                 />
                                 {errors.title && (
                                     <p className="text-sm text-destructive">
@@ -132,7 +134,7 @@ export default function Edit({ slider }: Props) {
                             </div>
 
                             {/* CTA */}
-                            <div className="grid gap-4 sm:grid-cols-2">
+                            <div className="grid gap-4 sm:grid-cols-3">
                                 <div className="space-y-2">
                                     <Label htmlFor="cta_text">CTA Text</Label>
                                     <Input
@@ -144,7 +146,7 @@ export default function Edit({ slider }: Props) {
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="cta_url">CTA URL</Label>
+                                    <Label htmlFor="cta_url">CTA URL (Web)</Label>
                                     <Input
                                         id="cta_url"
                                         value={data.cta_url}
@@ -152,6 +154,22 @@ export default function Edit({ slider }: Props) {
                                             setData('cta_url', e.target.value)
                                         }
                                     />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="cta_mobile_url">CTA Mobile URL</Label>
+                                    <Input
+                                        id="cta_mobile_url"
+                                        value={data.cta_mobile_url}
+                                        onChange={(e) =>
+                                            setData('cta_mobile_url', e.target.value)
+                                        }
+                                        placeholder="/chat or htutai://..."
+                                    />
+                                    {errors.cta_mobile_url && (
+                                        <p className="text-sm text-destructive">
+                                            {errors.cta_mobile_url}
+                                        </p>
+                                    )}
                                 </div>
                             </div>
 

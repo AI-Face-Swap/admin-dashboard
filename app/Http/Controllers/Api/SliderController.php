@@ -24,6 +24,7 @@ class SliderController extends Controller
                 'description' => $slider->description,
                 'cta_text' => $slider->cta_text,
                 'cta_url' => $slider->cta_url,
+                'cta_mobile_url' => $slider->cta_mobile_url,
                 'file_url' => $slider->file_url,
                 'type' => $slider->type,
                 'badge' => $slider->badge,
