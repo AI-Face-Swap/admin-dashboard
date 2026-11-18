@@ -38,6 +38,7 @@ class AIChatController extends Controller
         $conversations = ChatConversation::query()
             ->where('customer_id', $customer->id)
             ->with(['messages' => fn ($q) => $q->orderBy('id', 'asc')])
+            ->orderBy('is_pinned', 'desc')
             ->orderBy('updated_at', 'desc')
             ->get()
             ->map(fn (ChatConversation $conv) => $this->formatConversation($conv));
@@ -359,6 +360,28 @@ class AIChatController extends Controller
     }
 
     /**
+     * Toggle pin status on a conversation.
+     */
+    public function togglePin(Request $request, ChatConversation $conversation): JsonResponse
+    {
+        /** @var Customer $customer */
+        $customer = $request->user();
+
+        if ($conversation->customer_id !== $customer->id) {
+            return response()->json(['message' => 'Unauthorized conversation access.'], 403);
+        }
+
+        $conversation->is_pinned = ! (bool) $conversation->is_pinned;
+        $conversation->save();
+
+        return response()->json([
+            'success' => true,
+            'is_pinned' => (bool) $conversation->is_pinned,
+            'conversation' => $this->formatConversation($conversation),
+        ]);
+    }
+
+    /**
      * Delete a conversation.
      */
     public function destroy(Request $request, ChatConversation $conversation): JsonResponse
@@ -401,6 +424,8 @@ class AIChatController extends Controller
             'titleEn' => $conv->title_en,
             'titleMy' => $conv->title_my,
             'category' => $conv->category,
+            'is_pinned' => (bool) $conv->is_pinned,
+            'isPinned' => (bool) $conv->is_pinned,
             'dateEn' => $this->formatDateEn($updated),
             'dateMy' => $this->formatDateMy($updated),
             'updated_at' => $updated->toIso8601String(),

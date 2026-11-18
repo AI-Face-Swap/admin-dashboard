@@ -142,6 +142,7 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'customer.not-banned'])->group(
     // Customer Chat Conversations & Messages
     Route::get('chat/conversations', [AIChatController::class, 'index']);
     Route::get('chat/conversations/{conversation}', [AIChatController::class, 'show']);
+    Route::post('chat/conversations/{conversation}/pin', [AIChatController::class, 'togglePin']);
     Route::delete('chat/conversations/{conversation}', [AIChatController::class, 'destroy']);
     // Customer AI Chat Question (Requires Bearer token authentication & sufficient points)
     Route::post('chat/send', [AIChatController::class, 'send'])->middleware('throttle:30,1');

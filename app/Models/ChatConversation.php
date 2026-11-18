@@ -16,6 +16,7 @@ use Illuminate\Support\Carbon;
  * @property string $title_en
  * @property string $title_my
  * @property string $category
+ * @property bool $is_pinned
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Customer $customer
@@ -26,12 +27,23 @@ use Illuminate\Support\Carbon;
     'title_en',
     'title_my',
     'category',
+    'is_pinned',
 ])]
 class ChatConversation extends Model
 {
     use HasFactory;
 
     protected $table = 'chat_conversations';
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'is_pinned' => 'boolean',
+        ];
+    }
 
     /**
      * @return BelongsTo<Customer, $this>
