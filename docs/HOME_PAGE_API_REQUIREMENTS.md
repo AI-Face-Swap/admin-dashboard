@@ -110,7 +110,7 @@ Controls the global footer links, social media URLs, contact information, and co
     {
       "data": {
         "about_text": "HTUT AI is the leading platform for generating...",
-        "contact_email": "it@htut.com",
+        "contact_email": "info@htut.com",
         "social_links": {
           "facebook": "https://facebook.com/...",
           "twitter": "https://twitter.com/...",

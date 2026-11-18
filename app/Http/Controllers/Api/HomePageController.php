@@ -102,7 +102,7 @@ class HomePageController extends Controller
 
         $data = [
             'about_text' => $settings['about_text'] ?? 'HTUT AI is the leading platform for generating...',
-            'contact_email' => $settings['contact_email'] ?? 'it@htut.com',
+            'contact_email' => $settings['contact_email'] ?? 'info@htut.com',
             'social_links' => [
                 'facebook' => $settings['social_facebook'] ?? null,
                 'twitter' => $settings['social_twitter'] ?? null,
