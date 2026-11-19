@@ -5,6 +5,7 @@ import {
     Cpu,
     LayoutGrid,
     LayoutTemplate,
+    MessageSquare,
     SlidersHorizontal,
     Server,
     Settings,
@@ -128,6 +129,12 @@ const mainNavItems: NavItem[] = [
         title: 'API Logs',
         href: '/admin/api-logs',
         icon: ScrollText,
+        permission: 'settings.manage',
+    },
+    {
+        title: 'Chat Categories',
+        href: '/admin/chat-categories',
+        icon: MessageSquare,
         permission: 'settings.manage',
     },
     {

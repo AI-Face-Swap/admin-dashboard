@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\AIController;
 use App\Http\Controllers\Admin\AIModelController;
 use App\Http\Controllers\Admin\APIPlaygroundController;
 use App\Http\Controllers\Admin\APIRequestLogController;
+use App\Http\Controllers\Admin\ChatCategoryController;
 use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\GenerationTypeController;
@@ -137,6 +138,14 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     // Settings
     Route::get('settings', [SettingController::class, 'index'])->middleware('permission:settings.manage')->name('settings.index');
     Route::put('settings', [SettingController::class, 'update'])->middleware('permission:settings.manage')->name('settings.update');
+
+    Route::middleware('permission:settings.manage')->prefix('chat-categories')->name('chat-categories.')->group(function () {
+        Route::get('/', [ChatCategoryController::class, 'index'])->name('index');
+        Route::post('/', [ChatCategoryController::class, 'store'])->name('store');
+        Route::put('{chatCategory}', [ChatCategoryController::class, 'update'])->name('update');
+        Route::patch('{chatCategory}/toggle', [ChatCategoryController::class, 'toggle'])->name('toggle');
+        Route::delete('{chatCategory}', [ChatCategoryController::class, 'destroy'])->name('destroy');
+    });
 
     // Sliders
     Route::get('sliders', [SliderController::class, 'index'])->middleware('permission:templates.view')->name('sliders.index');

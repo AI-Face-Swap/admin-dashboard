@@ -2,6 +2,9 @@
 
 namespace App\AI\Skills;
 
+use App\Models\ChatCategory;
+use Illuminate\Support\Facades\Schema;
+
 class ChatSkillFactory
 {
     /**
@@ -39,8 +42,25 @@ class ChatSkillFactory
      */
     public static function all(): array
     {
+        if (Schema::hasTable('chat_categories')) {
+            return ChatCategory::active()
+                ->ordered()
+                ->get(['key', 'label_en', 'label_my'])
+                ->map(fn (ChatCategory $category) => [
+                    'key' => $category->key,
+                    'label_en' => $category->label_en,
+                    'label_my' => $category->label_my,
+                ])
+                ->values()
+                ->all();
+        }
+
         $list = [];
-        foreach (self::$skills as $key => $class) {
+        foreach (['astrology', 'general'] as $key) {
+            if (! isset(self::$skills[$key])) {
+                continue;
+            }
+            $class = self::$skills[$key];
             /** @var ChatSkillInterface $instance */
             $instance = new $class;
             $label = $instance->label();

@@ -51,6 +51,16 @@ class AIChatController extends Controller
     }
 
     /**
+     * List active AI chat categories.
+     */
+    public function categories(): JsonResponse
+    {
+        return response()->json([
+            'categories' => ChatSkillFactory::all(),
+        ]);
+    }
+
+    /**
      * List all available AI chat models and category-based default model mappings.
      */
     public function models(AIChatService $chatService): JsonResponse

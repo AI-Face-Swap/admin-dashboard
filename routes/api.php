@@ -131,6 +131,8 @@ Route::prefix('v1')->group(function () {
             'X-Accel-Buffering' => 'no',
         ]);
     });
+
+    Route::get('chat/categories', [AIChatController::class, 'categories']);
 });
 
 Route::prefix('v1')->middleware(['auth:sanctum', 'customer.not-banned'])->group(function () {
