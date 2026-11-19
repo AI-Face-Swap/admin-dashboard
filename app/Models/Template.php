@@ -253,6 +253,29 @@ class Template extends Model
     }
 
     /**
+     * Return custom guideline or fallback default instruction based on required_images.
+     */
+    public function resolvedGuideline(?string $lang = null): string
+    {
+        $custom = is_string($this->guideline) ? trim($this->guideline) : '';
+        if ($custom !== '') {
+            return $custom;
+        }
+
+        $requiresMultiple = (int) ($this->required_images ?? 1) >= 2;
+
+        if ($lang === 'en') {
+            return $requiresMultiple
+                ? 'Upload 2 clear, well-lit front-facing photos.'
+                : 'Upload a clear, well-lit front-facing photo.';
+        }
+
+        return $requiresMultiple
+            ? 'မျက်နှာရှင်းလင်းသော Front-facing ပုံ ၂ ပုံလုံး တင်ပေးပါ။'
+            : 'မျက်နှာရှင်းလင်းပြီး အလင်းအားကောင်းသော Front-facing ပုံကို တင်ပေးပါ။';
+    }
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>

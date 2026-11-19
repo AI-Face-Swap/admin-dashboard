@@ -58,13 +58,20 @@ class TemplateController extends Controller
             ->paginate($validated['per_page'] ?? 12)
             ->withQueryString();
 
+        $lang = is_string($request->query('lang')) ? $request->query('lang') : null;
+        $templates->getCollection()->transform(function (Template $template) use ($lang) {
+            $template->guideline = $template->resolvedGuideline($lang);
+
+            return $template;
+        });
+
         return response()->json($templates);
     }
 
     /**
      * Get a single active template by slug.
      */
-    public function show(string $slug): JsonResponse
+    public function show(Request $request, string $slug): JsonResponse
     {
         $template = Template::where('slug', $slug)
             ->where('is_active', true)
@@ -75,6 +82,9 @@ class TemplateController extends Controller
                 'generationType:id,name,slug',
             ])
             ->firstOrFail();
+
+        $lang = is_string($request->query('lang')) ? $request->query('lang') : null;
+        $template->guideline = $template->resolvedGuideline($lang);
 
         return response()->json($template);
     }
