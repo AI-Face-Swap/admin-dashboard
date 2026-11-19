@@ -59,11 +59,7 @@ class TemplateController extends Controller
             ->withQueryString();
 
         $lang = is_string($request->query('lang')) ? $request->query('lang') : null;
-        $templates->getCollection()->transform(function (Template $template) use ($lang) {
-            $template->guideline = $template->resolvedGuideline($lang);
-
-            return $template;
-        });
+        $templates->getCollection()->transform(fn (Template $template) => $this->formatTemplate($template, $lang));
 
         return response()->json($templates);
     }
@@ -84,8 +80,49 @@ class TemplateController extends Controller
             ->firstOrFail();
 
         $lang = is_string($request->query('lang')) ? $request->query('lang') : null;
-        $template->guideline = $template->resolvedGuideline($lang);
 
-        return response()->json($template);
+        return response()->json($this->formatTemplate($template, $lang));
+    }
+
+    /**
+     * Shape template payload for public/mobile API consumers, omitting heavy/internal fields.
+     *
+     * @return array<string, mixed>
+     */
+    protected function formatTemplate(Template $template, ?string $lang = null): array
+    {
+        return [
+            'id' => $template->id,
+            'slug' => $template->slug,
+            'name' => $template->name,
+            'description' => $template->description,
+            'guideline' => $template->resolvedGuideline($lang),
+            'type' => $template->type,
+            'required_images' => (int) ($template->required_images ?? 1),
+            'is_commercial' => (bool) $template->is_commercial,
+            'file_url' => $template->file_url,
+            'thumbnail_url' => $template->thumbnail_url,
+            'example_images' => $template->example_images ?? [],
+            'aspect_ratio' => $template->aspect_ratio,
+            'resolution' => $template->resolution,
+            'cost' => $template->cost,
+            'discount_cost' => (int) ($template->discount_cost ?? 0),
+            'effective_cost' => $template->effective_cost,
+            'category' => $template->category ? [
+                'id' => $template->category->id,
+                'name' => $template->category->name,
+                'slug' => $template->category->slug,
+            ] : null,
+            'tags' => $template->tags->map(fn ($tag) => [
+                'id' => $tag->id,
+                'name' => $tag->name,
+                'slug' => $tag->slug,
+            ])->values()->all(),
+            'generation_type' => $template->generationType ? [
+                'id' => $template->generationType->id,
+                'name' => $template->generationType->name,
+                'slug' => $template->generationType->slug,
+            ] : null,
+        ];
     }
 }
