@@ -25,20 +25,31 @@ class NotificationController extends Controller
             ->latest('id')
             ->paginate(20);
 
-        $customers = Customer::query()
-            ->where('is_banned', false)
-            ->orderBy('name')
-            ->get(['id', 'name', 'email', 'phone']);
-
-        $templates = Template::query()
-            ->where('is_active', true)
-            ->orderBy('name')
-            ->get(['id', 'name', 'slug']);
-
         return Inertia::render('admin/notifications/index', [
             'notifications' => $notifications,
-            'customers' => $customers,
-            'templates' => $templates,
+        ]);
+    }
+
+    public function create(): Response
+    {
+        return Inertia::render('admin/notifications/create', [
+            'customers' => $this->customerOptions(),
+            'templates' => $this->templateOptions(),
+        ]);
+    }
+
+    public function edit(PushNotification $notification): Response|RedirectResponse
+    {
+        if (in_array($notification->status, [PushNotification::STATUS_SENT, PushNotification::STATUS_SENDING], true)) {
+            return redirect()
+                ->route('admin.notifications.index')
+                ->with('error', 'Sent notifications cannot be edited.');
+        }
+
+        return Inertia::render('admin/notifications/edit', [
+            'notification' => $notification,
+            'customers' => $this->customerOptions(),
+            'templates' => $this->templateOptions(),
         ]);
     }
 
@@ -75,16 +86,22 @@ class NotificationController extends Controller
         if ($sendNow && ! $isScheduled) {
             $fcmService->dispatchCampaign($campaign);
 
-            return back()->with('success', 'Notification sent successfully.');
+            return redirect()
+                ->route('admin.notifications.index')
+                ->with('success', 'Notification sent successfully.');
         }
 
-        return back()->with('success', $isScheduled ? 'Notification scheduled successfully.' : 'Notification draft saved.');
+        return redirect()
+            ->route('admin.notifications.index')
+            ->with('success', $isScheduled ? 'Notification scheduled successfully.' : 'Notification draft saved.');
     }
 
     public function update(Request $request, PushNotification $notification): RedirectResponse
     {
         if (in_array($notification->status, [PushNotification::STATUS_SENT, PushNotification::STATUS_SENDING], true)) {
-            return back()->with('error', 'Sent notifications cannot be edited.');
+            return redirect()
+                ->route('admin.notifications.index')
+                ->with('error', 'Sent notifications cannot be edited.');
         }
 
         $validated = $this->validateNotification($request);
@@ -113,7 +130,9 @@ class NotificationController extends Controller
             'status' => $isScheduled ? PushNotification::STATUS_SCHEDULED : PushNotification::STATUS_DRAFT,
         ]);
 
-        return back()->with('success', 'Notification updated successfully.');
+        return redirect()
+            ->route('admin.notifications.index')
+            ->with('success', 'Notification updated successfully.');
     }
 
     public function send(PushNotification $notification, FcmNotificationService $fcmService): RedirectResponse
@@ -132,6 +151,22 @@ class NotificationController extends Controller
         $notification->delete();
 
         return back()->with('success', 'Notification deleted successfully.');
+    }
+
+    private function customerOptions()
+    {
+        return Customer::query()
+            ->where('is_banned', false)
+            ->orderBy('name')
+            ->get(['id', 'name', 'email', 'phone']);
+    }
+
+    private function templateOptions()
+    {
+        return Template::query()
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'name', 'slug']);
     }
 
     /**

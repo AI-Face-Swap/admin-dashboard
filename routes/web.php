@@ -174,7 +174,9 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     // Push Notifications
     Route::middleware('permission:settings.manage')->prefix('notifications')->name('notifications.')->group(function () {
         Route::get('/', [NotificationController::class, 'index'])->name('index');
+        Route::get('create', [NotificationController::class, 'create'])->name('create');
         Route::post('/', [NotificationController::class, 'store'])->name('store');
+        Route::get('{notification}/edit', [NotificationController::class, 'edit'])->name('edit');
         Route::put('{notification}', [NotificationController::class, 'update'])->name('update');
         Route::post('{notification}/send', [NotificationController::class, 'send'])->name('send');
         Route::delete('{notification}', [NotificationController::class, 'destroy'])->name('destroy');
