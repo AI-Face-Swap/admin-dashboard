@@ -1,6 +1,7 @@
 import { Link } from '@inertiajs/react';
 import {
     Activity,
+    Bell,
     BookOpen,
     Cpu,
     LayoutGrid,
@@ -135,6 +136,12 @@ const mainNavItems: NavItem[] = [
         title: 'Chat Categories',
         href: '/admin/chat-categories',
         icon: MessageSquare,
+        permission: 'settings.manage',
+    },
+    {
+        title: 'Notifications',
+        href: '/admin/notifications',
+        icon: Bell,
         permission: 'settings.manage',
     },
     {

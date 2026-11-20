@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\AstrologyProfileController;
 use App\Http\Controllers\Api\Auth\SocialAuthController;
 use App\Http\Controllers\Api\CustomerAuthController;
 use App\Http\Controllers\Api\CustomerGenerationController;
+use App\Http\Controllers\Api\CustomerNotificationController;
 use App\Http\Controllers\Api\HomePageController;
 use App\Http\Controllers\Api\HtutCentralAuthController;
 use App\Http\Controllers\Api\PaymentPackageController;
@@ -139,6 +140,16 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'customer.not-banned'])->group(
     Route::post('auth/logout', [CustomerAuthController::class, 'logout']);
     Route::get('auth/me', [CustomerAuthController::class, 'me']);
     Route::post('customer/avatar', [CustomerAuthController::class, 'updateAvatar']);
+    Route::post('customer/fcm-token', [CustomerNotificationController::class, 'storeFcmToken']);
+
+    // Customer Notifications & History
+    Route::get('notifications', [CustomerNotificationController::class, 'index']);
+    Route::get('notifications/unread-count', [CustomerNotificationController::class, 'unreadCount']);
+    Route::post('notifications/read-all', [CustomerNotificationController::class, 'markAllAsRead']);
+    Route::post('notifications/{notification}/read', [CustomerNotificationController::class, 'markAsRead']);
+    Route::delete('notifications', [CustomerNotificationController::class, 'destroyAll']);
+    Route::delete('notifications/{notification}', [CustomerNotificationController::class, 'destroy']);
+
     Route::post('packages/checkout', [PaymentPackageController::class, 'checkout']);
 
     // Customer Chat Conversations & Messages

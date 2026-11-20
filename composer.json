@@ -11,6 +11,7 @@
     "require": {
         "php": "^8.3",
         "dedoc/scramble": "*",
+        "google/auth": "*",
         "inertiajs/inertia-laravel": "^3.0",
         "laravel/chisel": "^0.1.0",
         "laravel/fortify": "^1.37.2",

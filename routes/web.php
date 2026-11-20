@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\GenerationTypeController;
 use App\Http\Controllers\Admin\HomeFeatureController;
 use App\Http\Controllers\Admin\HomeHeroController;
 use App\Http\Controllers\Admin\HomeShowcaseController;
+use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Admin\PartnerController;
 use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\ProviderController;
@@ -169,6 +170,15 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::get('generation-types/{generationType}/edit', [GenerationTypeController::class, 'edit'])->middleware('permission:settings.manage')->name('generation-types.edit');
     Route::put('generation-types/{generationType}', [GenerationTypeController::class, 'update'])->middleware('permission:settings.manage')->name('generation-types.update');
     Route::delete('generation-types/{generationType}', [GenerationTypeController::class, 'destroy'])->middleware('permission:settings.manage')->name('generation-types.destroy');
+
+    // Push Notifications
+    Route::middleware('permission:settings.manage')->prefix('notifications')->name('notifications.')->group(function () {
+        Route::get('/', [NotificationController::class, 'index'])->name('index');
+        Route::post('/', [NotificationController::class, 'store'])->name('store');
+        Route::put('{notification}', [NotificationController::class, 'update'])->name('update');
+        Route::post('{notification}/send', [NotificationController::class, 'send'])->name('send');
+        Route::delete('{notification}', [NotificationController::class, 'destroy'])->name('destroy');
+    });
 });
 
 require __DIR__.'/settings.php';

@@ -39,7 +39,7 @@ use Laravel\Sanctum\HasApiTokens;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['central_auth_uuid', 'name', 'email', 'phone', 'password', 'avatar', 'auth_provider', 'auth_provider_id', 'customer_type', 'expired_at', 'is_banned', 'email_verified_at', 'last_active_at'])]
+#[Fillable(['central_auth_uuid', 'name', 'email', 'phone', 'password', 'avatar', 'fcm_token', 'auth_provider', 'auth_provider_id', 'customer_type', 'expired_at', 'is_banned', 'email_verified_at', 'last_active_at'])]
 #[Hidden(['password', 'remember_token'])]
 class Customer extends Authenticatable implements MustVerifyEmail
 {
@@ -60,6 +60,16 @@ class Customer extends Authenticatable implements MustVerifyEmail
     public function generations(): HasMany
     {
         return $this->hasMany(AIGeneration::class);
+    }
+
+    /**
+     * Get the customer's notification history.
+     *
+     * @return HasMany<CustomerNotification, $this>
+     */
+    public function notificationsHistory(): HasMany
+    {
+        return $this->hasMany(CustomerNotification::class)->latest('id');
     }
 
     /**

@@ -10,3 +10,6 @@ Artisan::command('inspire', function () {
 
 // Auto-fail generations stuck in processing for more than 10 minutes.
 Schedule::command('app:cleanup-stuck-generations')->everyFiveMinutes();
+
+// Dispatch due scheduled push notifications.
+Schedule::command('app:send-scheduled-notifications')->everyMinute();

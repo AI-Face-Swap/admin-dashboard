@@ -216,4 +216,63 @@ class AIGeneration extends Model
             'reconciliation_attempted' => 'boolean',
         ];
     }
+
+    protected static function booted(): void
+    {
+        static::updated(function (self $generation): void {
+            if (! $generation->wasChanged('status') || ! $generation->customer_id) {
+                return;
+            }
+
+            if (! in_array($generation->status, [self::STATUS_COMPLETED, self::STATUS_FAILED], true)) {
+                return;
+            }
+
+            $customer = Customer::find($generation->customer_id);
+            if (! $customer) {
+                return;
+            }
+
+            $templateName = null;
+            if ($generation->template_id) {
+                $templateName = PromptTemplate::query()
+                    ->whereKey($generation->template_id)
+                    ->value('name');
+            }
+
+            $isSuccess = $generation->status === self::STATUS_COMPLETED;
+            $type = $isSuccess
+                ? CustomerNotification::TYPE_GENERATION_SUCCESS
+                : CustomerNotification::TYPE_GENERATION_FAILED;
+
+            $label = $templateName ?: 'AI generation';
+            $title = $isSuccess
+                ? 'Generation Completed'
+                : 'Generation Failed';
+            $body = $isSuccess
+                ? "Your {$label} is ready!"
+                : ($generation->error
+                    ? "Your {$label} failed: {$generation->error}"
+                    : "Your {$label} could not be completed. Please try again.");
+
+            try {
+                app(\App\Services\FcmNotificationService::class)->notifyCustomer(
+                    customer: $customer,
+                    type: $type,
+                    title: $title,
+                    body: $body,
+                    data: array_filter([
+                        'generation_id' => $generation->id,
+                        'template_id' => $generation->template_id,
+                        'template_name' => $templateName,
+                        'operation' => $generation->operation,
+                        'status' => $generation->status,
+                        'output_url' => $generation->output_url,
+                    ], fn ($v) => $v !== null),
+                );
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Failed to send generation notification: '.$e->getMessage());
+            }
+        });
+    }
 }
