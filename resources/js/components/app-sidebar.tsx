@@ -4,6 +4,7 @@ import {
     Bell,
     BookOpen,
     Cpu,
+    KeyRound,
     LayoutGrid,
     LayoutTemplate,
     MessageSquare,
@@ -145,6 +146,12 @@ const mainNavItems: NavItem[] = [
         permission: 'settings.manage',
     },
     {
+        title: 'API Docs Access',
+        href: '/admin/settings/api-docs',
+        icon: KeyRound,
+        permission: 'settings.manage',
+    },
+    {
         title: 'Settings',
         href: '/admin/settings',
         icon: Settings,
@@ -154,8 +161,8 @@ const mainNavItems: NavItem[] = [
 
 const footerNavItems: NavItem[] = [
     {
-        title: 'Documentation',
-        href: 'https://laravel.com/docs/starter-kits#react',
+        title: 'API Documentation',
+        href: '/docs/api',
         icon: BookOpen,
     },
 ];

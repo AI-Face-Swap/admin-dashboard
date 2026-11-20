@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\AIController;
 use App\Http\Controllers\Admin\AIModelController;
 use App\Http\Controllers\Admin\APIPlaygroundController;
 use App\Http\Controllers\Admin\APIRequestLogController;
+use App\Http\Controllers\Admin\ApiDocsSettingsController;
 use App\Http\Controllers\Admin\ChatCategoryController;
 use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\DashboardController;
@@ -31,6 +32,7 @@ use App\Http\Controllers\Api\AIImageToVideoController;
 use App\Http\Controllers\Api\AITemplateGenerationController;
 use App\Http\Controllers\Api\Auth\SocialAuthController;
 use App\Http\Controllers\Api\HtutCentralAuthController;
+use App\Http\Controllers\ApiDocsAuthController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -46,6 +48,11 @@ Route::get('v1/auth/htut/redirect', [HtutCentralAuthController::class, 'redirect
 Route::get('v1/auth/htut/callback', [HtutCentralAuthController::class, 'callback']);
 Route::post('v1/auth/htut/callback', [HtutCentralAuthController::class, 'mobileCallback']);
 Route::post('v1/htut/customer/sync', [HtutCentralAuthController::class, 'syncCustomerWebhook']);
+
+// Public Password-Protected API Docs Gate
+Route::get('docs/api/unlock', [ApiDocsAuthController::class, 'showUnlock'])->name('api-docs.unlock');
+Route::post('docs/api/unlock', [ApiDocsAuthController::class, 'unlock'])->middleware('throttle:10,1')->name('api-docs.unlock.submit');
+Route::post('docs/api/lock', [ApiDocsAuthController::class, 'lock'])->name('api-docs.lock');
 Route::post('v1/htut/packages/cache-clear', [HtutCentralAuthController::class, 'clearPackageCache']);
 
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -139,6 +146,8 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     // Settings
     Route::get('settings', [SettingController::class, 'index'])->middleware('permission:settings.manage')->name('settings.index');
     Route::put('settings', [SettingController::class, 'update'])->middleware('permission:settings.manage')->name('settings.update');
+    Route::get('settings/api-docs', [ApiDocsSettingsController::class, 'index'])->middleware('permission:settings.manage')->name('settings.api-docs.index');
+    Route::put('settings/api-docs', [ApiDocsSettingsController::class, 'update'])->middleware('permission:settings.manage')->name('settings.api-docs.update');
 
     Route::middleware('permission:settings.manage')->prefix('chat-categories')->name('chat-categories.')->group(function () {
         Route::get('/', [ChatCategoryController::class, 'index'])->name('index');

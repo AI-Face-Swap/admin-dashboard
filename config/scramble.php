@@ -107,6 +107,7 @@ EOD,
 
     'middleware' => [
         'web',
+        \App\Http\Middleware\ProtectApiDocs::class,
     ],
 
     'extensions' => [],
