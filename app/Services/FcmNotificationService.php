@@ -183,6 +183,37 @@ class FcmNotificationService
         }
     }
 
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function resolveCredentialsArray(): ?array
+    {
+        $raw = config('services.firebase.credentials_json');
+        if (is_string($raw) && trim($raw) !== '') {
+            $trimmed = trim($raw);
+            $decoded = json_decode($trimmed, true);
+            if (! is_array($decoded)) {
+                $b64 = base64_decode($trimmed, true);
+                if (is_string($b64)) {
+                    $decoded = json_decode($b64, true);
+                }
+            }
+
+            if (is_array($decoded) && ! empty($decoded['client_email']) && ! empty($decoded['private_key'])) {
+                return $decoded;
+            }
+        }
+
+        $path = $this->resolveCredentialsPath();
+        if (! $path) {
+            return null;
+        }
+
+        $decoded = json_decode((string) file_get_contents($path), true);
+
+        return is_array($decoded) ? $decoded : null;
+    }
+
     private function resolveCredentialsPath(): ?string
     {
         $configured = config('services.firebase.credentials');
@@ -211,12 +242,7 @@ class FcmNotificationService
             return $configured;
         }
 
-        $path = $this->resolveCredentialsPath();
-        if (! $path) {
-            return null;
-        }
-
-        $json = json_decode((string) file_get_contents($path), true);
+        $json = $this->resolveCredentialsArray();
 
         return is_array($json) ? ($json['project_id'] ?? null) : null;
     }
@@ -227,15 +253,15 @@ class FcmNotificationService
             return $this->cachedAccessToken;
         }
 
-        $path = $this->resolveCredentialsPath();
-        if (! $path) {
+        $credentialsData = $this->resolveCredentialsArray();
+        if (! $credentialsData) {
             return null;
         }
 
         try {
             $credentials = new ServiceAccountCredentials(
                 'https://www.googleapis.com/auth/firebase.messaging',
-                $path,
+                $credentialsData,
             );
 
             $token = $credentials->fetchAuthToken(HttpHandlerFactory::build());
