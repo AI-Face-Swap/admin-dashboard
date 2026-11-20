@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Head, router, useForm } from '@inertiajs/react';
-import { Bell, CalendarClock, Pencil, Plus, Send, Trash2, Users, User } from 'lucide-react';
+import { Bell, CalendarClock, Image as ImageIcon, Link2, Pencil, Plus, Send, Sparkles, Trash2, User, Users } from 'lucide-react';
 import { AnimatedButton } from '@/components/animated/AnimatedButton';
 import { AnimatedCard } from '@/components/animated/AnimatedCard';
 import Heading from '@/components/heading';
@@ -33,6 +33,12 @@ type CustomerOption = {
     phone: string | null;
 };
 
+type TemplateOption = {
+    id: number;
+    name: string;
+    slug: string;
+};
+
 type PushNotificationItem = {
     id: number;
     title: string;
@@ -40,6 +46,11 @@ type PushNotificationItem = {
     target_type: 'all' | 'single';
     customer_id: number | null;
     customer: CustomerOption | null;
+    template_id: number | null;
+    template: TemplateOption | null;
+    image_url: string | null;
+    web_url: string | null;
+    mobile_url: string | null;
     status: 'draft' | 'scheduled' | 'sending' | 'sent' | 'failed';
     scheduled_at: string | null;
     sent_at: string | null;
@@ -58,6 +69,7 @@ type PaginatedNotifications = {
 type Props = {
     notifications: PaginatedNotifications;
     customers: CustomerOption[];
+    templates: TemplateOption[];
 };
 
 const statusColorMap: Record<PushNotificationItem['status'], string> = {
@@ -80,15 +92,32 @@ function toDateTimeLocal(iso: string | null): string {
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-export default function Index({ notifications, customers }: Props) {
+export default function Index({ notifications, customers, templates }: Props) {
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editingItem, setEditingItem] = useState<PushNotificationItem | null>(null);
 
-    const form = useForm({
+    const form = useForm<{
+        title: string;
+        body: string;
+        target_type: 'all' | 'single';
+        customer_id: string | number;
+        template_id: string | number;
+        web_url: string;
+        mobile_url: string;
+        image_url: string;
+        image: File | null;
+        scheduled_at: string;
+        send_now: boolean;
+    }>({
         title: '',
         body: '',
-        target_type: 'all' as 'all' | 'single',
-        customer_id: '' as string | number,
+        target_type: 'all',
+        customer_id: '',
+        template_id: '',
+        web_url: '',
+        mobile_url: '',
+        image_url: '',
+        image: null,
         scheduled_at: '',
         send_now: true,
     });
@@ -100,6 +129,11 @@ export default function Index({ notifications, customers }: Props) {
             body: '',
             target_type: 'all',
             customer_id: '',
+            template_id: '',
+            web_url: '',
+            mobile_url: '',
+            image_url: '',
+            image: null,
             scheduled_at: '',
             send_now: true,
         });
@@ -114,6 +148,11 @@ export default function Index({ notifications, customers }: Props) {
             body: item.body,
             target_type: item.target_type,
             customer_id: item.customer_id ?? '',
+            template_id: item.template_id ?? '',
+            web_url: item.web_url ?? '',
+            mobile_url: item.mobile_url ?? '',
+            image_url: item.image_url ?? '',
+            image: null,
             scheduled_at: toDateTimeLocal(item.scheduled_at),
             send_now: false,
         });
@@ -121,11 +160,33 @@ export default function Index({ notifications, customers }: Props) {
         setDialogOpen(true);
     };
 
+    const handleTemplateChange = (value: string) => {
+        form.setData('template_id', value);
+        const tpl = templates.find((t) => String(t.id) === value);
+        if (tpl) {
+            form.setData((prev) => ({
+                ...prev,
+                template_id: value,
+                web_url: prev.web_url || `/templates/${tpl.slug}`,
+                mobile_url: prev.mobile_url || `/templates/${tpl.slug}`,
+            }));
+        }
+    };
+
     const submitForm = (sendNowOverride?: boolean) => {
         const sendNow = sendNowOverride ?? form.data.send_now;
 
         if (editingItem) {
-            form.put(`/admin/notifications/${editingItem.id}`, {
+            form.transform((data) => ({
+                ...data,
+                _method: 'put',
+                customer_id: data.target_type === 'single' && data.customer_id ? Number(data.customer_id) : null,
+                template_id: data.template_id ? Number(data.template_id) : null,
+                scheduled_at: data.scheduled_at || null,
+            }));
+
+            form.post(`/admin/notifications/${editingItem.id}`, {
+                forceFormData: true,
                 preserveScroll: true,
                 onSuccess: () => setDialogOpen(false),
             });
@@ -135,11 +196,13 @@ export default function Index({ notifications, customers }: Props) {
         form.transform((data) => ({
             ...data,
             customer_id: data.target_type === 'single' && data.customer_id ? Number(data.customer_id) : null,
+            template_id: data.template_id ? Number(data.template_id) : null,
             scheduled_at: data.scheduled_at || null,
             send_now: data.scheduled_at ? false : sendNow,
         }));
 
         form.post('/admin/notifications', {
+            forceFormData: true,
             preserveScroll: true,
             onSuccess: () => setDialogOpen(false),
         });
@@ -167,7 +230,7 @@ export default function Index({ notifications, customers }: Props) {
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <Heading
                         title="Push Notifications"
-                        description="Send broadcast or single-user push notifications, or schedule them for later."
+                        description="Send broadcast or single-user push notifications with optional template links, web/mobile URLs, images, or scheduling."
                     />
                     <AnimatedButton onClick={openCreate}>
                         <Plus className="mr-2 h-4 w-4" />
@@ -181,6 +244,7 @@ export default function Index({ notifications, customers }: Props) {
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>Title & Message</TableHead>
+                                    <TableHead>Link / Promo</TableHead>
                                     <TableHead>Target</TableHead>
                                     <TableHead>Status</TableHead>
                                     <TableHead>Schedule / Sent</TableHead>
@@ -191,7 +255,7 @@ export default function Index({ notifications, customers }: Props) {
                             <TableBody>
                                 {notifications.data.length === 0 ? (
                                     <TableRow>
-                                        <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
+                                        <TableCell colSpan={7} className="py-10 text-center text-muted-foreground">
                                             <Bell className="mx-auto mb-2 h-8 w-8 opacity-40" />
                                             No notifications created yet.
                                         </TableCell>
@@ -202,8 +266,40 @@ export default function Index({ notifications, customers }: Props) {
                                         return (
                                             <TableRow key={item.id}>
                                                 <TableCell className="max-w-xs">
-                                                    <div className="font-medium">{item.title}</div>
-                                                    <div className="line-clamp-2 text-xs text-muted-foreground">{item.body}</div>
+                                                    <div className="flex items-start gap-2.5">
+                                                        {item.image_url && (
+                                                            <img
+                                                                src={item.image_url}
+                                                                alt=""
+                                                                className="h-10 w-10 shrink-0 rounded-md object-cover border"
+                                                            />
+                                                        )}
+                                                        <div className="min-w-0">
+                                                            <div className="font-medium truncate">{item.title}</div>
+                                                            <div className="line-clamp-2 text-xs text-muted-foreground">{item.body}</div>
+                                                        </div>
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell className="max-w-[200px] text-xs">
+                                                    {item.template ? (
+                                                        <Badge variant="secondary" className="gap-1 mb-1">
+                                                            <Sparkles className="h-3 w-3" />
+                                                            {item.template.name}
+                                                        </Badge>
+                                                    ) : null}
+                                                    {item.web_url && (
+                                                        <div className="truncate text-muted-foreground" title={item.web_url}>
+                                                            Web: {item.web_url}
+                                                        </div>
+                                                    )}
+                                                    {item.mobile_url && (
+                                                        <div className="truncate text-muted-foreground" title={item.mobile_url}>
+                                                            Mobile: {item.mobile_url}
+                                                        </div>
+                                                    )}
+                                                    {!item.template && !item.web_url && !item.mobile_url && (
+                                                        <span className="text-muted-foreground/60">—</span>
+                                                    )}
                                                 </TableCell>
                                                 <TableCell>
                                                     {item.target_type === 'all' ? (
@@ -284,11 +380,11 @@ export default function Index({ notifications, customers }: Props) {
             </div>
 
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                <DialogContent className="sm:max-w-lg">
+                <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle>{editingItem ? 'Edit Notification' : 'Create Push Notification'}</DialogTitle>
                         <DialogDescription>
-                            Send immediately to all users or a specific customer, or schedule for later.
+                            Promote a template, link custom web/mobile URLs, attach an optional image, or schedule for later.
                         </DialogDescription>
                     </DialogHeader>
 
@@ -299,7 +395,7 @@ export default function Index({ notifications, customers }: Props) {
                                 id="notif-title"
                                 value={form.data.title}
                                 onChange={(e) => form.setData('title', e.target.value)}
-                                placeholder="e.g. New AI Template Available!"
+                                placeholder="e.g. Spiderman ပုံကလေးထုတ်ကြည့်လိုက်ပါ!"
                             />
                             {form.errors.title && <p className="text-xs text-destructive">{form.errors.title}</p>}
                         </div>
@@ -315,6 +411,84 @@ export default function Index({ notifications, customers }: Props) {
                                 placeholder="Write your notification message..."
                             />
                             {form.errors.body && <p className="text-xs text-destructive">{form.errors.body}</p>}
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <Label htmlFor="notif-template" className="inline-flex items-center gap-1.5">
+                                <Sparkles className="h-3.5 w-3.5" />
+                                Promote Template (Optional)
+                            </Label>
+                            <select
+                                id="notif-template"
+                                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                                value={form.data.template_id}
+                                onChange={(e) => handleTemplateChange(e.target.value)}
+                            >
+                                <option value="">-- None (Custom URL or Plain Notification) --</option>
+                                {templates.map((tpl) => (
+                                    <option key={tpl.id} value={tpl.id}>
+                                        {tpl.name} (/templates/{tpl.slug})
+                                    </option>
+                                ))}
+                            </select>
+                            {form.errors.template_id && <p className="text-xs text-destructive">{form.errors.template_id}</p>}
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                            <div className="space-y-1.5">
+                                <Label htmlFor="notif-web-url" className="inline-flex items-center gap-1.5">
+                                    <Link2 className="h-3.5 w-3.5" />
+                                    Web URL (Optional)
+                                </Label>
+                                <Input
+                                    id="notif-web-url"
+                                    value={form.data.web_url}
+                                    onChange={(e) => form.setData('web_url', e.target.value)}
+                                    placeholder="/templates/spiderman or https://..."
+                                />
+                                {form.errors.web_url && <p className="text-xs text-destructive">{form.errors.web_url}</p>}
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <Label htmlFor="notif-mobile-url" className="inline-flex items-center gap-1.5">
+                                    <Link2 className="h-3.5 w-3.5" />
+                                    Mobile URL / Deep Link (Optional)
+                                </Label>
+                                <Input
+                                    id="notif-mobile-url"
+                                    value={form.data.mobile_url}
+                                    onChange={(e) => form.setData('mobile_url', e.target.value)}
+                                    placeholder="/templates/spiderman or htutai://..."
+                                />
+                                {form.errors.mobile_url && <p className="text-xs text-destructive">{form.errors.mobile_url}</p>}
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                            <div className="space-y-1.5">
+                                <Label htmlFor="notif-image-url" className="inline-flex items-center gap-1.5">
+                                    <ImageIcon className="h-3.5 w-3.5" />
+                                    Image URL (Optional)
+                                </Label>
+                                <Input
+                                    id="notif-image-url"
+                                    value={form.data.image_url}
+                                    onChange={(e) => form.setData('image_url', e.target.value)}
+                                    placeholder="https://..."
+                                />
+                                {form.errors.image_url && <p className="text-xs text-destructive">{form.errors.image_url}</p>}
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <Label htmlFor="notif-image-file">Or Upload Image (Optional)</Label>
+                                <Input
+                                    id="notif-image-file"
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={(e) => form.setData('image', e.target.files?.[0] ?? null)}
+                                />
+                                {form.errors.image && <p className="text-xs text-destructive">{form.errors.image}</p>}
+                            </div>
                         </div>
 
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

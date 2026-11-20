@@ -269,6 +269,11 @@ class AIGeneration extends Model
                         'status' => $generation->status,
                         'output_url' => $generation->output_url,
                     ], fn ($v) => $v !== null),
+                    imageUrl: $isSuccess && is_string($generation->output_url) && str_starts_with($generation->output_url, 'http')
+                        ? $generation->output_url
+                        : null,
+                    webUrl: "/generations/{$generation->id}",
+                    mobileUrl: "/generations/{$generation->id}",
                 );
             } catch (\Throwable $e) {
                 \Illuminate\Support\Facades\Log::warning('Failed to send generation notification: '.$e->getMessage());

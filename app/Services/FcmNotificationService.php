@@ -27,6 +27,9 @@ class FcmNotificationService
         string $body,
         array $data = [],
         ?int $pushNotificationId = null,
+        ?string $imageUrl = null,
+        ?string $webUrl = null,
+        ?string $mobileUrl = null,
     ): array {
         $notification = CustomerNotification::query()->create([
             'customer_id' => $customer->id,
@@ -34,6 +37,9 @@ class FcmNotificationService
             'type' => $type,
             'title' => $title,
             'body' => $body,
+            'image_url' => $imageUrl,
+            'web_url' => $webUrl,
+            'mobile_url' => $mobileUrl,
             'data' => $data,
         ]);
 
@@ -45,14 +51,20 @@ class FcmNotificationService
             ];
         }
 
+        $fcmData = array_merge($data, array_filter([
+            'notification_id' => (string) $notification->id,
+            'type' => $type,
+            'image_url' => $imageUrl,
+            'web_url' => $webUrl,
+            'mobile_url' => $mobileUrl,
+        ], fn ($v) => $v !== null && $v !== ''));
+
         $sent = $this->sendToToken(
             token: $customer->fcm_token,
             title: $title,
             body: $body,
-            data: array_merge($data, [
-                'notification_id' => (string) $notification->id,
-                'type' => $type,
-            ]),
+            data: $fcmData,
+            imageUrl: $imageUrl,
         );
 
         return [
@@ -96,6 +108,15 @@ class FcmNotificationService
         $failedCount = 0;
         $data = is_array($campaign->data) ? $campaign->data : [];
 
+        if ($campaign->template_id) {
+            $campaign->loadMissing('template:id,slug,name');
+            if ($campaign->template) {
+                $data['template_id'] = $campaign->template->id;
+                $data['template_slug'] = $campaign->template->slug;
+                $data['template_name'] = $campaign->template->name;
+            }
+        }
+
         $query->chunkById(200, function ($customers) use ($campaign, $type, $data, &$sentCount, &$failedCount) {
             foreach ($customers as $customer) {
                 $result = $this->notifyCustomer(
@@ -105,6 +126,9 @@ class FcmNotificationService
                     body: $campaign->body,
                     data: $data,
                     pushNotificationId: $campaign->id,
+                    imageUrl: $campaign->image_url,
+                    webUrl: $campaign->web_url,
+                    mobileUrl: $campaign->mobile_url,
                 );
 
                 if (! empty($customer->fcm_token)) {
@@ -136,7 +160,7 @@ class FcmNotificationService
      *
      * @param  array<string, mixed>  $data
      */
-    public function sendToToken(string $token, string $title, string $body, array $data = []): bool
+    public function sendToToken(string $token, string $title, string $body, array $data = [], ?string $imageUrl = null): bool
     {
         $projectId = $this->resolveProjectId();
         $accessToken = $this->getAccessToken();
@@ -152,16 +176,21 @@ class FcmNotificationService
                 : json_encode($value);
         }
 
+        $notificationPayload = [
+            'title' => $title,
+            'body' => $body,
+        ];
+        if (! empty($imageUrl)) {
+            $notificationPayload['image'] = $imageUrl;
+        }
+
         try {
             $response = Http::withToken($accessToken)
                 ->timeout(10)
                 ->post("https://fcm.googleapis.com/v1/projects/{$projectId}/messages:send", [
                     'message' => [
                         'token' => $token,
-                        'notification' => [
-                            'title' => $title,
-                            'body' => $body,
-                        ],
+                        'notification' => $notificationPayload,
                         'data' => $stringData,
                     ],
                 ]);

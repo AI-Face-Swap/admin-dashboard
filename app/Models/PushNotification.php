@@ -13,7 +13,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'body',
     'target_type',
     'customer_id',
+    'template_id',
     'image_url',
+    'web_url',
+    'mobile_url',
     'data',
     'scheduled_at',
     'status',
@@ -36,6 +39,11 @@ class PushNotification extends Model
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);
+    }
+
+    public function template(): BelongsTo
+    {
+        return $this->belongsTo(PromptTemplate::class, 'template_id');
     }
 
     public function creator(): BelongsTo

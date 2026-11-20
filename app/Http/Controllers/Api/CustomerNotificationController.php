@@ -99,9 +99,8 @@ class CustomerNotificationController extends Controller
             return response()->json(['success' => false, 'message' => 'Not found.'], 404);
         }
 
-        if (! $notification->is_read) {
+        if (! $notification->read_at) {
             $notification->update([
-                'is_read' => true,
                 'read_at' => now(),
             ]);
         }
@@ -121,7 +120,6 @@ class CustomerNotificationController extends Controller
             ->where('customer_id', $request->user()->id)
             ->unread()
             ->update([
-                'is_read' => true,
                 'read_at' => now(),
             ]);
 

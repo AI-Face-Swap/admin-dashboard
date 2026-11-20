@@ -14,11 +14,19 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'title',
     'body',
     'image_url',
+    'web_url',
+    'mobile_url',
     'data',
     'read_at',
 ])]
 class CustomerNotification extends Model
 {
+    protected $appends = ['is_read'];
+
+    public function getIsReadAttribute(): bool
+    {
+        return $this->read_at !== null;
+    }
     public const TYPE_BROADCAST = 'broadcast';
     public const TYPE_SINGLE = 'single';
     public const TYPE_SCHEDULED = 'scheduled';
