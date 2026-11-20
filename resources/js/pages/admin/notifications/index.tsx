@@ -88,8 +88,28 @@ function toDateTimeLocal(iso: string | null): string {
     if (Number.isNaN(d.getTime())) {
         return '';
     }
-    const pad = (n: number) => String(n).padStart(2, '0');
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    const parts = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Yangon',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+    }).formatToParts(d);
+    const get = (type: string) => parts.find((p) => p.type === type)?.value ?? '00';
+    return `${get('year')}-${get('month')}-${get('day')}T${get('hour')}:${get('minute')}`;
+}
+
+function formatYangonDateTime(iso: string): string {
+    return new Date(iso).toLocaleString('en-US', {
+        timeZone: 'Asia/Yangon',
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    });
 }
 
 export default function Index({ notifications, customers, templates }: Props) {
@@ -321,11 +341,11 @@ export default function Index({ notifications, customers, templates }: Props) {
                                                 </TableCell>
                                                 <TableCell className="text-xs text-muted-foreground">
                                                     {item.sent_at ? (
-                                                        <span>Sent: {new Date(item.sent_at).toLocaleString()}</span>
+                                                        <span>Sent: {formatYangonDateTime(item.sent_at)}</span>
                                                     ) : item.scheduled_at ? (
                                                         <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-300">
                                                             <CalendarClock className="h-3.5 w-3.5" />
-                                                            {new Date(item.scheduled_at).toLocaleString()}
+                                                            {formatYangonDateTime(item.scheduled_at)}
                                                         </span>
                                                     ) : (
                                                         <span>Draft</span>
@@ -506,7 +526,7 @@ export default function Index({ notifications, customers, templates }: Props) {
                             </div>
 
                             <div className="space-y-1.5">
-                                <Label htmlFor="notif-schedule">Schedule (Optional)</Label>
+                                <Label htmlFor="notif-schedule">Schedule (Yangon Time, Optional)</Label>
                                 <Input
                                     id="notif-schedule"
                                     type="datetime-local"

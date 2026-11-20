@@ -13,6 +13,8 @@ services:
     ports:
       - "${APP_PORT:-8080}:8080" # host nginx reverse-proxies to this
     environment:
+      TZ: Asia/Yangon
+      APP_TIMEZONE: Asia/Yangon
       # serversideup image automations
       AUTORUN_ENABLED: 'true' # runs `php artisan migrate` on container start
       PHP_OPCACHE_ENABLE: '1'
@@ -41,6 +43,9 @@ services:
     restart: unless-stopped
     command: ['php', 'artisan', 'queue:work', '--queue=default', '--tries=1', '--timeout=5700']
     env_file: .env.production
+    environment:
+      TZ: Asia/Yangon
+      APP_TIMEZONE: Asia/Yangon
     healthcheck:
       test: ['CMD-SHELL', 'pgrep -f "queue:work" >/dev/null || exit 1']
       interval: 30s
@@ -77,6 +82,9 @@ services:
     restart: unless-stopped
     command: ['php', 'artisan', 'schedule:work']
     env_file: .env.production
+    environment:
+      TZ: Asia/Yangon
+      APP_TIMEZONE: Asia/Yangon
     healthcheck:
       test: ['CMD-SHELL', 'pgrep -f "schedule:work" >/dev/null || exit 1']
       interval: 30s
