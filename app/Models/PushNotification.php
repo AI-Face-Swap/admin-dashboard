@@ -43,7 +43,7 @@ class PushNotification extends Model
 
     public function template(): BelongsTo
     {
-        return $this->belongsTo(PromptTemplate::class, 'template_id');
+        return $this->belongsTo(Template::class, 'template_id');
     }
 
     public function creator(): BelongsTo

@@ -235,7 +235,7 @@ class AIGeneration extends Model
 
             $templateName = null;
             if ($generation->template_id) {
-                $templateName = PromptTemplate::query()
+                $templateName = Template::query()
                     ->whereKey($generation->template_id)
                     ->value('name');
             }

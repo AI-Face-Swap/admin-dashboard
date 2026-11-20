@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Customer;
-use App\Models\PromptTemplate;
 use App\Models\PushNotification;
+use App\Models\Template;
 use App\Services\FcmNotificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -30,7 +30,7 @@ class NotificationController extends Controller
             ->orderBy('name')
             ->get(['id', 'name', 'email', 'phone']);
 
-        $templates = PromptTemplate::query()
+        $templates = Template::query()
             ->where('is_active', true)
             ->orderBy('name')
             ->get(['id', 'name', 'slug']);
@@ -144,7 +144,7 @@ class NotificationController extends Controller
             'body' => ['required', 'string', 'max:2000'],
             'target_type' => ['required', 'in:all,single'],
             'customer_id' => ['nullable', 'required_if:target_type,single', 'exists:customers,id'],
-            'template_id' => ['nullable', 'exists:prompt_templates,id'],
+            'template_id' => ['nullable', 'exists:'.Template::class.',id'],
             'image' => ['nullable', 'image', 'max:5120'],
             'image_url' => ['nullable', 'string', 'max:500'],
             'web_url' => ['nullable', 'string', 'max:500'],
@@ -180,7 +180,7 @@ class NotificationController extends Controller
         $resolvedMobile = is_string($mobileUrl) && trim($mobileUrl) !== '' ? trim($mobileUrl) : null;
 
         if ($templateId && ($resolvedWeb === null || $resolvedMobile === null)) {
-            $slug = PromptTemplate::query()->whereKey($templateId)->value('slug');
+            $slug = Template::query()->whereKey($templateId)->value('slug');
             if ($slug) {
                 $resolvedWeb ??= "/templates/{$slug}";
                 $resolvedMobile ??= "/templates/{$slug}";
