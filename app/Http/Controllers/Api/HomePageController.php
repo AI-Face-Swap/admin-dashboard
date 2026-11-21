@@ -22,12 +22,10 @@ class HomePageController extends Controller
      */
     public function ecosystemPage(): JsonResponse
     {
-        $videoUrl = Setting::get('ecosystem', 'video_url')
-            ?: env('ECOSYSTEM_VIDEO_URL')
-            ?: HomeHero::query()->active()->whereNotNull('video_url')->value('video_url');
+        $videoUrl = Setting::get('ecosystem', 'video_url') ?: env('ECOSYSTEM_VIDEO_URL');
 
         return response()->json([
-            'video_url' => $videoUrl,
+            'video_url' => $videoUrl ?: null,
         ]);
     }
 

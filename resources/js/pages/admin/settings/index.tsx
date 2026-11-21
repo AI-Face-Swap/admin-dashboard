@@ -32,14 +32,16 @@ type FooterSettings = {
 type Props = {
     coinCosts: CoinCosts;
     footerSettings: FooterSettings;
+    ecosystemVideoUrl?: string;
 };
 
-export default function Index({ coinCosts, footerSettings }: Props) {
+export default function Index({ coinCosts, footerSettings, ecosystemVideoUrl = '' }: Props) {
     const { can } = usePermissions();
     const flash = usePage().props.flash as { success?: string } | undefined;
 
     const [costs, setCosts] = useState<CoinCosts>(coinCosts);
     const [footer, setFooter] = useState<FooterSettings>(footerSettings || {});
+    const [ecoVideoUrl, setEcoVideoUrl] = useState<string>(ecosystemVideoUrl);
     const [saving, setSaving] = useState(false);
     const [hasChanges, setHasChanges] = useState(false);
 
@@ -68,7 +70,7 @@ export default function Index({ coinCosts, footerSettings }: Props) {
 
         router.put(
             '/admin/settings',
-            { coin_costs: costs, footer_settings: footer },
+            { coin_costs: costs, footer_settings: footer, ecosystem_video_url: ecoVideoUrl },
             {
                 preserveScroll: true,
                 onSuccess: () => {
@@ -82,6 +84,7 @@ export default function Index({ coinCosts, footerSettings }: Props) {
     const handleReset = () => {
         setCosts(coinCosts);
         setFooter(footerSettings || {});
+        setEcoVideoUrl(ecosystemVideoUrl);
     };
 
     if (!can('settings.manage')) {
@@ -391,6 +394,33 @@ export default function Index({ coinCosts, footerSettings }: Props) {
                                         />
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+
+                        {/* Ecosystem Page Video URL */}
+                        <div className="space-y-4 border-t pt-6">
+                            <div>
+                                <h2 className="text-base font-semibold">
+                                    Ecosystem Page Video
+                                </h2>
+                                <p className="text-xs text-muted-foreground">
+                                    Video link returned by public endpoint{' '}
+                                    <code>GET /api/v1/ecosystem-page</code>.
+                                </p>
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="ecosystem_video_url">
+                                    Video URL
+                                </Label>
+                                <Input
+                                    id="ecosystem_video_url"
+                                    value={ecoVideoUrl}
+                                    onChange={(e) => {
+                                        setEcoVideoUrl(e.target.value);
+                                        setHasChanges(true);
+                                    }}
+                                    placeholder="https://.../ecosystem-video.mp4"
+                                />
                             </div>
                         </div>
 

@@ -27,6 +27,7 @@ class SettingController extends Controller
         return Inertia::render('admin/settings/index', [
             'coinCosts' => $coinCosts,
             'footerSettings' => $footerSettings,
+            'ecosystemVideoUrl' => (string) Setting::get('ecosystem', 'video_url', ''),
         ]);
     }
 
@@ -50,6 +51,7 @@ class SettingController extends Controller
             'footer_settings.link_privacy' => 'nullable|string',
             'footer_settings.link_faq' => 'nullable|string',
             'footer_settings.copyright_text' => 'nullable|string',
+            'ecosystem_video_url' => 'nullable|string|max:1000',
         ]);
 
         Setting::set('ai', 'coin_cost_image_generation', $validated['coin_costs']['image_generation']);
@@ -60,6 +62,10 @@ class SettingController extends Controller
             foreach ($validated['footer_settings'] as $key => $value) {
                 Setting::set('footer', $key, $value);
             }
+        }
+
+        if (array_key_exists('ecosystem_video_url', $validated)) {
+            Setting::set('ecosystem', 'video_url', trim((string) ($validated['ecosystem_video_url'] ?? '')));
         }
 
         // Clear config cache so changes take effect immediately
@@ -76,6 +82,7 @@ class SettingController extends Controller
         return Inertia::render('admin/settings/index', [
             'coinCosts' => $coinCosts,
             'footerSettings' => Setting::group('footer'),
+            'ecosystemVideoUrl' => (string) Setting::get('ecosystem', 'video_url', ''),
             'flash' => ['success' => 'Settings updated successfully.'],
         ]);
     }
