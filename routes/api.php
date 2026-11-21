@@ -64,6 +64,7 @@ Route::prefix('v1')->group(function () {
     Route::get('chat/models', [AIChatController::class, 'models']);
 
     // Home Page Dynamic Content & Ecosystem Project Landings
+    Route::get('ecosystem-page', [HomePageController::class, 'ecosystemPage']);
     Route::get('project-landings', [HomePageController::class, 'projectLandings']);
     Route::get('project-landings/{identifier}', [HomePageController::class, 'projectLandingDetail']);
     Route::get('home-heroes', [HomePageController::class, 'heroes']);

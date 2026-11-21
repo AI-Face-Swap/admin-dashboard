@@ -15,6 +15,23 @@ use Illuminate\Http\Request;
 class HomePageController extends Controller
 {
     /**
+     * Get Ecosystem Page Video Link.
+     *
+     * Public endpoint — no authentication required.
+     * Returns only the ecosystem video URL.
+     */
+    public function ecosystemPage(): JsonResponse
+    {
+        $videoUrl = Setting::get('ecosystem', 'video_url')
+            ?: env('ECOSYSTEM_VIDEO_URL')
+            ?: HomeHero::query()->active()->whereNotNull('video_url')->value('video_url');
+
+        return response()->json([
+            'video_url' => $videoUrl,
+        ]);
+    }
+
+    /**
      * Get HTUT Ecosystem Project Landings from Central Auth SSO.
      *
      * Public endpoint — no authentication required.
