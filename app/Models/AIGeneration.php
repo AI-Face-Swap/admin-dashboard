@@ -46,6 +46,7 @@ use Illuminate\Support\Carbon;
     'duration_ms',
     'input_metadata',
     'output_metadata',
+    'thumbnail_path',
     'raw_response',
     'error',
     'client_idempotency_token',
@@ -217,6 +218,35 @@ class AIGeneration extends Model
         ];
     }
 
+    public function isVideoOperation(): bool
+    {
+        return in_array($this->operation, [
+            self::OPERATION_VIDEO_FACE_SWAP,
+            self::OPERATION_IMAGE_TO_VIDEO,
+        ], true);
+    }
+
+    public function getThumbnailUrlAttribute(): ?string
+    {
+        if (! empty($this->thumbnail_path)) {
+            if (str_starts_with($this->thumbnail_path, 'http')) {
+                return $this->thumbnail_path;
+            }
+
+            return \Illuminate\Support\Facades\Storage::disk('spaces')->url($this->thumbnail_path);
+        }
+
+        if (! $this->isVideoOperation() && $this->output_url) {
+            return $this->output_url;
+        }
+
+        if ($this->relationLoaded('template') && $this->template?->thumbnail_url) {
+            return $this->template->thumbnail_url;
+        }
+
+        return null;
+    }
+
     protected static function booted(): void
     {
         static::updated(function (self $generation): void {
@@ -226,6 +256,12 @@ class AIGeneration extends Model
 
             if (! in_array($generation->status, [self::STATUS_COMPLETED, self::STATUS_FAILED], true)) {
                 return;
+            }
+
+            $isSuccess = $generation->status === self::STATUS_COMPLETED;
+
+            if ($isSuccess && $generation->isVideoOperation() && empty($generation->thumbnail_path)) {
+                app(\App\Services\VideoThumbnailService::class)->generateForGeneration($generation);
             }
 
             $customer = Customer::find($generation->customer_id);
@@ -240,7 +276,6 @@ class AIGeneration extends Model
                     ->value('name');
             }
 
-            $isSuccess = $generation->status === self::STATUS_COMPLETED;
             $type = $isSuccess
                 ? CustomerNotification::TYPE_GENERATION_SUCCESS
                 : CustomerNotification::TYPE_GENERATION_FAILED;
@@ -269,8 +304,8 @@ class AIGeneration extends Model
                         'status' => $generation->status,
                         'output_url' => $generation->output_url,
                     ], fn ($v) => $v !== null),
-                    imageUrl: $isSuccess && is_string($generation->output_url) && str_starts_with($generation->output_url, 'http')
-                        ? $generation->output_url
+                    imageUrl: $isSuccess && is_string($generation->thumbnail_url) && str_starts_with($generation->thumbnail_url, 'http')
+                        ? $generation->thumbnail_url
                         : null,
                     webUrl: "/generations/{$generation->id}",
                     mobileUrl: "/generations/{$generation->id}",

@@ -38,7 +38,7 @@ class AIGenerationStatusController extends Controller
             }
         }
 
-        $generation->load(['provider:id,name,slug', 'template:id,name,slug,type']);
+        $generation->load(['provider:id,name,slug', 'template:id,name,slug,type,thumbnail_path']);
 
         return response()->json([
             'id' => $generation->id,
@@ -49,6 +49,7 @@ class AIGenerationStatusController extends Controller
             'currency' => $generation->currency,
             'duration_ms' => $generation->duration_ms,
             'output' => $generation->output_metadata ?? [],
+            'thumbnail_url' => $generation->thumbnail_url,
             'error' => $generation->error,
             'provider' => $generation->provider,
             'template' => $generation->template,

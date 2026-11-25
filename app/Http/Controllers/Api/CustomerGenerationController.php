@@ -71,6 +71,7 @@ class CustomerGenerationController extends Controller
             'currency' => $gen->currency,
             'duration_ms' => $gen->duration_ms,
             'output' => $gen->output_metadata ?? [],
+            'thumbnail_url' => $gen->thumbnail_url,
             'error' => $gen->error,
             'provider' => $gen->provider,
             'template' => $gen->template,
