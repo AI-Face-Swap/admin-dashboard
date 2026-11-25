@@ -218,6 +218,26 @@ class AIGeneration extends Model
         ];
     }
 
+    public function getOutputUrlAttribute(): ?string
+    {
+        $meta = $this->output_metadata;
+        if (! is_array($meta) || $meta === []) {
+            return null;
+        }
+
+        if (isset($meta[0]) && is_string($meta[0]) && $meta[0] !== '') {
+            return $meta[0];
+        }
+
+        foreach (['video_url', 'url', 'image_url'] as $key) {
+            if (! empty($meta[$key]) && is_string($meta[$key])) {
+                return $meta[$key];
+            }
+        }
+
+        return null;
+    }
+
     public function isVideoOperation(): bool
     {
         return in_array($this->operation, [
