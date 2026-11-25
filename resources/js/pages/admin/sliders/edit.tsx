@@ -16,6 +16,10 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import admin from '@/routes/admin';
+import {
+    MobileCtaPicker,
+    type SliderTemplateOption,
+} from './MobileCtaPicker';
 
 type Slider = {
     id: number;
@@ -34,9 +38,10 @@ type Slider = {
 
 type Props = {
     slider: Slider;
+    templates?: SliderTemplateOption[];
 };
 
-export default function Edit({ slider }: Props) {
+export default function Edit({ slider, templates = [] }: Props) {
     const { data, setData, post, processing, errors } = useForm({
         title: slider.title ?? '',
         description: slider.description ?? '',
@@ -134,7 +139,7 @@ export default function Edit({ slider }: Props) {
                             </div>
 
                             {/* CTA */}
-                            <div className="grid gap-4 sm:grid-cols-3">
+                            <div className="grid gap-4 sm:grid-cols-2">
                                 <div className="space-y-2">
                                     <Label htmlFor="cta_text">CTA Text</Label>
                                     <Input
@@ -155,23 +160,19 @@ export default function Edit({ slider }: Props) {
                                         }
                                     />
                                 </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="cta_mobile_url">CTA Mobile URL</Label>
-                                    <Input
-                                        id="cta_mobile_url"
-                                        value={data.cta_mobile_url}
-                                        onChange={(e) =>
-                                            setData('cta_mobile_url', e.target.value)
-                                        }
-                                        placeholder="/chat or htutai://..."
-                                    />
-                                    {errors.cta_mobile_url && (
-                                        <p className="text-sm text-destructive">
-                                            {errors.cta_mobile_url}
-                                        </p>
-                                    )}
-                                </div>
                             </div>
+
+                            <MobileCtaPicker
+                                value={data.cta_mobile_url}
+                                templates={templates}
+                                error={errors.cta_mobile_url}
+                                onChange={(nextMobileUrl, suggestedWebUrl) => {
+                                    setData('cta_mobile_url', nextMobileUrl);
+                                    if (suggestedWebUrl && !data.cta_url) {
+                                        setData('cta_url', suggestedWebUrl);
+                                    }
+                                }}
+                            />
 
                             {/* Type + Sorting + Active */}
                             <div className="grid gap-4 sm:grid-cols-3">

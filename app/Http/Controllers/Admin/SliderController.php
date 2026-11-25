@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Slider;
+use App\Models\Template;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -33,7 +35,9 @@ class SliderController extends Controller
      */
     public function create(): Response
     {
-        return Inertia::render('admin/sliders/create');
+        return Inertia::render('admin/sliders/create', [
+            'templates' => $this->templateOptions(),
+        ]);
     }
 
     /**
@@ -64,6 +68,7 @@ class SliderController extends Controller
         Slider::create([
             ...$validated,
             'title' => $validated['title'] ?? null,
+            'cta_mobile_url' => $this->normalizeMobileUrl($validated['cta_mobile_url'] ?? null),
             'file_path' => $path,
             'is_active' => $request->boolean('is_active', true),
         ]);
@@ -79,6 +84,7 @@ class SliderController extends Controller
     {
         return Inertia::render('admin/sliders/edit', [
             'slider' => $slider,
+            'templates' => $this->templateOptions(),
         ]);
     }
 
@@ -105,7 +111,7 @@ class SliderController extends Controller
             'description' => $validated['description'] ?? null,
             'cta_text' => $validated['cta_text'] ?? null,
             'cta_url' => $validated['cta_url'] ?? null,
-            'cta_mobile_url' => $validated['cta_mobile_url'] ?? null,
+            'cta_mobile_url' => $this->normalizeMobileUrl($validated['cta_mobile_url'] ?? null),
             'type' => $validated['type'],
             'sorting' => $validated['sorting'],
             'is_active' => $request->boolean('is_active', true),
@@ -149,5 +155,41 @@ class SliderController extends Controller
 
         return redirect()->route('admin.sliders.index')
             ->with('success', 'Slider deleted successfully.');
+    }
+
+    private function templateOptions()
+    {
+        return Template::query()
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'name', 'slug']);
+    }
+
+    private function normalizeMobileUrl(?string $value): ?string
+    {
+        $trimmed = trim((string) $value);
+        if ($trimmed === '') {
+            return null;
+        }
+
+        // External scheme URLs (https://, http://, mailto:, tel:) are passed through as-is.
+        if (preg_match('/^[a-z][a-z0-9+.-]*:/i', $trimmed)) {
+            return $trimmed;
+        }
+
+        $path = strtok($trimmed, '?') ?: $trimmed;
+        $path = '/'.trim(strtolower($path), '/');
+
+        if ($path === '/chat' || $path === '/chat-home') {
+            return '/chat';
+        }
+
+        if (preg_match('#^/templates?/([a-z0-9_-]+)$#', $path, $matches)) {
+            return '/templates/'.$matches[1];
+        }
+
+        throw ValidationException::withMessages([
+            'cta_mobile_url' => 'Unsupported mobile path. Use /templates/{slug}, /chat, an https:// URL, or leave blank.',
+        ]);
     }
 }
