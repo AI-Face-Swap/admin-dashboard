@@ -26,6 +26,11 @@ class Slider extends Model
         'sorting' => 'integer',
     ];
 
+    protected $appends = [
+        'file_url',
+        'thumbnail_url',
+    ];
+
     /**
      * Scope: active sliders ordered by sorting DESC, created_at DESC.
      *

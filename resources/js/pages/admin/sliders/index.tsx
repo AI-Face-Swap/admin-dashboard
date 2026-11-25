@@ -74,7 +74,7 @@ export default function Index({ sliders }: Props) {
                                     <TableHead className="w-[60px]">
                                         Sort
                                     </TableHead>
-                                    <TableHead className="w-[80px]">
+                                    <TableHead className="w-[120px]">
                                         Preview
                                     </TableHead>
                                     <TableHead>Title</TableHead>
@@ -109,11 +109,12 @@ export default function Index({ sliders }: Props) {
                                         <TableCell>
                                             {slider.file_url ? (
                                                 slider.type === 'video' ? (
-                                                    <div className="size-12 overflow-hidden rounded bg-muted">
+                                                    <div className="h-14 w-24 overflow-hidden rounded border bg-muted">
                                                         <video
                                                             src={
                                                                 slider.file_url
                                                             }
+                                                            preload="metadata"
                                                             className="size-full object-cover"
                                                             muted
                                                         />
@@ -122,11 +123,12 @@ export default function Index({ sliders }: Props) {
                                                     <img
                                                         src={slider.file_url}
                                                         alt={slider.title || `Slider #${slider.id}`}
-                                                        className="size-12 rounded object-cover"
+                                                        loading="lazy"
+                                                        className="h-14 w-24 rounded border object-cover"
                                                     />
                                                 )
                                             ) : (
-                                                <div className="flex size-12 items-center justify-center rounded bg-muted text-xs text-muted-foreground">
+                                                <div className="flex h-14 w-24 items-center justify-center rounded border bg-muted text-xs text-muted-foreground">
                                                     —
                                                 </div>
                                             )}
@@ -177,10 +179,24 @@ export default function Index({ sliders }: Props) {
                                             </Badge>
                                         </TableCell>
                                         <TableCell>
-                                            {slider.cta_text ? (
-                                                <span className="text-sm">
-                                                    {slider.cta_text}
-                                                </span>
+                                            {slider.cta_text || slider.cta_mobile_url || slider.cta_url ? (
+                                                <div className="space-y-0.5 text-xs">
+                                                    {slider.cta_text && (
+                                                        <div className="font-medium text-sm">
+                                                            {slider.cta_text}
+                                                        </div>
+                                                    )}
+                                                    {slider.cta_mobile_url && (
+                                                        <div className="max-w-[180px] truncate text-muted-foreground" title={slider.cta_mobile_url}>
+                                                            App: {slider.cta_mobile_url}
+                                                        </div>
+                                                    )}
+                                                    {slider.cta_url && (
+                                                        <div className="max-w-[180px] truncate text-muted-foreground" title={slider.cta_url}>
+                                                            Web: {slider.cta_url}
+                                                        </div>
+                                                    )}
+                                                </div>
                                             ) : (
                                                 <span className="text-muted-foreground">
                                                     —
