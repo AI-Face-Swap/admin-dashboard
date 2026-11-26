@@ -30,6 +30,9 @@ return [
         'image_to_video_720p' => (int) env('AI_IMAGE_TO_VIDEO_720P_COST', 20),
         'image_edit' => (int) env('AI_IMAGE_EDIT_COST', 10),
         'chat' => (int) env('AI_CHAT_COST', 5),
+        'astrology_short' => (int) env('AI_ASTROLOGY_SHORT_COST', 3),
+        'astrology_normal' => (int) env('AI_ASTROLOGY_NORMAL_COST', 5),
+        'astrology_long' => (int) env('AI_ASTROLOGY_LONG_COST', 10),
     ],
 
     // Backward-compatible alias
@@ -41,6 +44,9 @@ return [
         'image_to_video_720p' => (int) env('AI_IMAGE_TO_VIDEO_720P_COST', 20),
         'image_edit' => (int) env('AI_IMAGE_EDIT_COST', 10),
         'chat' => (int) env('AI_CHAT_COST', 5),
+        'astrology_short' => (int) env('AI_ASTROLOGY_SHORT_COST', 3),
+        'astrology_normal' => (int) env('AI_ASTROLOGY_NORMAL_COST', 5),
+        'astrology_long' => (int) env('AI_ASTROLOGY_LONG_COST', 10),
     ],
 
     'chat_model' => env('AI_CHAT_MODEL', 'deepseek-chat'),

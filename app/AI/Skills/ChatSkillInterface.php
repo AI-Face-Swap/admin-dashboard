@@ -19,14 +19,14 @@ interface ChatSkillInterface
     /**
      * System instructions defining the agent's persona, constraints, and expertise.
      */
-    public function systemPrompt(string $language = 'my'): string;
+    public function systemPrompt(string $language = 'my', ?string $responseType = null): string;
 
     /**
      * Build the optimized, token-efficient full prompt for the LLM.
      *
      * @param  array<int, array{role: string, content: string}>  $history
      */
-    public function buildPrompt(string $userMessage, array $history = [], string $language = 'my'): string;
+    public function buildPrompt(string $userMessage, array $history = [], string $language = 'my', ?string $responseType = null): string;
 
     /**
      * Normalize the parsed LLM response into the format expected by the frontend.

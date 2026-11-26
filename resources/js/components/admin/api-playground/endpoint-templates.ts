@@ -443,7 +443,7 @@ export const ENDPOINT_TEMPLATES: EndpointTemplate[] = [
         method: 'POST',
         url: '/api/v1/chat/send',
         bodyType: 'json',
-        body: '{\n  "message": "Hello HTUT AI!"\n}',
+        body: '{\n  "prompt": "ကျွန်ုပ်၏ ဒီနေ့ ဗေဒင်ကို ဟောပေးပါ",\n  "category": "astrology",\n  "response_type": "normal",\n  "language": "my"\n}',
         headers: [
             { key: 'Content-Type', value: 'application/json' },
             { key: 'Accept', value: 'application/json' },

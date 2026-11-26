@@ -39,6 +39,10 @@ class PointCostController extends Controller
             ];
         }
 
+        $astrologyShort = (int) Setting::get('ai', 'point_cost_astrology_short', config('ai.point_costs.astrology_short', 3));
+        $astrologyNormal = (int) Setting::get('ai', 'point_cost_astrology_normal', config('ai.point_costs.astrology_normal', 5));
+        $astrologyLong = (int) Setting::get('ai', 'point_cost_astrology_long', config('ai.point_costs.astrology_long', 10));
+
         return response()->json([
             'image_generation' => (int) Setting::get('ai', 'point_cost_image_generation', Setting::get('ai', 'coin_cost_image_generation', config('ai.point_costs.image_generation', config('ai.coin_costs.image_generation', 5)))),
             'image_to_video_480p' => (int) Setting::get('ai', 'point_cost_image_to_video_480p', Setting::get('ai', 'coin_cost_image_to_video_480p', config('ai.point_costs.image_to_video_480p', config('ai.coin_costs.image_to_video_480p', 10)))),
@@ -46,6 +50,14 @@ class PointCostController extends Controller
             'image_to_video_1080p' => (int) Setting::get('ai', 'point_cost_image_to_video_1080p', Setting::get('ai', 'coin_cost_image_to_video_1080p', config('ai.point_costs.image_to_video_1080p', config('ai.coin_costs.image_to_video_1080p', 35)))),
             'image_edit' => (int) Setting::get('ai', 'point_cost_image_edit', Setting::get('ai', 'coin_cost_image_edit', config('ai.point_costs.image_edit', config('ai.coin_costs.image_edit', 10)))),
             'chat' => (int) Setting::get('ai', 'point_cost_chat', config('ai.point_costs.chat', 5)),
+            'astrology_short' => $astrologyShort,
+            'astrology_normal' => $astrologyNormal,
+            'astrology_long' => $astrologyLong,
+            'astrology' => [
+                'short' => $astrologyShort,
+                'normal' => $astrologyNormal,
+                'long' => $astrologyLong,
+            ],
 
             // Dynamic model-specific pricing and configurations
             'models' => $modelsMap,

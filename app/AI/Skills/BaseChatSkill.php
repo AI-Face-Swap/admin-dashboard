@@ -9,9 +9,9 @@ abstract class BaseChatSkill implements ChatSkillInterface
      *
      * @param  array<int, array{role: string, content: string}>  $history
      */
-    public function buildPrompt(string $userMessage, array $history = [], string $language = 'my'): string
+    public function buildPrompt(string $userMessage, array $history = [], string $language = 'my', ?string $responseType = null): string
     {
-        $systemInstructions = $this->systemPrompt($language);
+        $systemInstructions = $this->systemPrompt($language, $responseType);
 
         // Keep conversation history balanced (last 4 messages) to maintain natural conversational context
         $historyText = '';
@@ -26,8 +26,19 @@ abstract class BaseChatSkill implements ChatSkillInterface
             $historyText = "Conversation Context:\n".implode("\n", $historyLines)."\n\n";
         }
 
+        $jsonFormatSpec = $this->jsonFormatSpec($language, $responseType);
+
+        return "{$systemInstructions}\n\n{$historyText}Question:\n{$userMessage}\n\n{$jsonFormatSpec}";
+    }
+
+    /**
+     * Build the JSON output format specification for the LLM.
+     */
+    protected function jsonFormatSpec(string $language = 'my', ?string $responseType = null): string
+    {
         $targetLang = $language === 'my' ? 'natural Myanmar Unicode' : 'English';
-        $jsonFormatSpec = <<<PROMPT
+
+        return <<<PROMPT
 Return strictly raw JSON (no markdown):
 {
   "content": "A clear, engaging overview in {$targetLang} (2 to 3 sentences).",
@@ -42,8 +53,6 @@ Return strictly raw JSON (no markdown):
 }
 Structure guidelines: Provide 2 to 3 informative sections and 2 to 4 checklist items. Keep the entire response rich, well-formatted, and under 250 Burmese words.
 PROMPT;
-
-        return "{$systemInstructions}\n\n{$historyText}Question:\n{$userMessage}\n\n{$jsonFormatSpec}";
     }
 
     /**

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\AI\Skills\AstrologySkill;
 use App\AI\Skills\ChatSkillFactory;
 use App\AI\Skills\EducationSkill;
 use App\AI\Skills\GeneralSkill;
@@ -10,6 +11,7 @@ use App\Models\AIProvider;
 use App\Models\ChatConversation;
 use App\Models\ChatMessage;
 use App\Models\Customer;
+use App\Models\Setting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Cache;
@@ -528,5 +530,181 @@ class AIChatApiTest extends TestCase
         $aiModelsResponse = $this->getJson('/api/v1/ai-models?type=chat');
         $aiModelsResponse->assertStatus(200)
             ->assertJsonCount(4, 'data');
+    }
+
+    public function test_astrology_skill_returns_different_default_prompts_for_short_normal_and_long(): void
+    {
+        /** @var AstrologySkill $astrology */
+        $astrology = ChatSkillFactory::make('astrology');
+        $this->assertInstanceOf(AstrologySkill::class, $astrology);
+
+        $shortSystem = $astrology->systemPrompt('en', 'short');
+        $normalSystem = $astrology->systemPrompt('en', 'normal');
+        $longSystem = $astrology->systemPrompt('en', 'long');
+
+        $this->assertNotEquals($shortSystem, $normalSystem);
+        $this->assertNotEquals($normalSystem, $longSystem);
+        $this->assertNotEquals($shortSystem, $longSystem);
+
+        $shortFull = $astrology->buildPrompt('My fortune today', [], 'en', 'short');
+        $normalFull = $astrology->buildPrompt('My fortune today', [], 'en', 'normal');
+        $longFull = $astrology->buildPrompt('My fortune today', [], 'en', 'long');
+
+        $this->assertStringContainsString('under 100 words', $shortFull);
+        $this->assertStringContainsString('under 250 words', $normalFull);
+        $this->assertStringContainsString('up to 600 words', $longFull);
+
+        // Custom admin-configured prompt overrides built-in default
+        Setting::set('ai', 'astrology_prompt_short', 'Custom short astrology advisor prompt.');
+        $this->assertStringContainsString('Custom short astrology advisor prompt.', $astrology->systemPrompt('my', 'short'));
+    }
+
+    public function test_astrology_chat_deducts_points_according_to_response_type(): void
+    {
+        /** @var Customer $customer */
+        $customer = Customer::factory()->create([
+            'central_auth_uuid' => 'test-uuid-astrology-tiers',
+        ]);
+        Cache::put('customer_points_test-uuid-astrology-tiers', 100, 30);
+
+        Sanctum::actingAs($customer);
+
+        Http::fake([
+            'https://api.segmind.com/v1/*' => Http::response([
+                'id' => 'chatcmpl-astro-tiers',
+                'choices' => [
+                    [
+                        'message' => [
+                            'content' => json_encode([
+                                'content' => 'Astrology reading response.',
+                                'structured' => [
+                                    'sections' => [
+                                        ['title' => 'Overview', 'description' => 'Auspicious energy today.'],
+                                    ],
+                                    'checklist' => [
+                                        ['item' => 'Lucky Color', 'detail' => 'Green'],
+                                    ],
+                                ],
+                            ]),
+                        ],
+                    ],
+                ],
+                'usage' => ['total_tokens' => 100, 'prompt_tokens' => 40, 'completion_tokens' => 60],
+            ], 200),
+            '*/api/v1/s2s/points/deduct' => Http::response([
+                'success' => true,
+                'points' => 90,
+            ], 200),
+            '*/api/v1/s2s/points/*' => Http::response([
+                'success' => true,
+                'points' => 100,
+            ], 200),
+        ]);
+
+        // Short -> 3 points
+        $shortResp = $this->postJson('/api/v1/chat/send', [
+            'prompt' => 'Quick daily fortune',
+            'category' => 'astrology',
+            'response_type' => 'short',
+            'language' => 'en',
+        ]);
+
+        $shortResp->assertStatus(200)
+            ->assertJsonPath('response_type', 'short')
+            ->assertJsonPath('points_deducted', 3);
+
+        $this->assertDatabaseHas('ai_generations', [
+            'customer_id' => $customer->id,
+            'operation' => 'chat',
+            'coins_spent' => 3,
+        ]);
+
+        // Normal (default when omitted) -> 5 points
+        $normalResp = $this->postJson('/api/v1/chat/send', [
+            'prompt' => 'Standard weekly reading',
+            'category' => 'astrology',
+            'language' => 'en',
+        ]);
+
+        $normalResp->assertStatus(200)
+            ->assertJsonPath('response_type', 'normal')
+            ->assertJsonPath('points_deducted', 5);
+
+        $this->assertDatabaseHas('ai_generations', [
+            'customer_id' => $customer->id,
+            'operation' => 'chat',
+            'coins_spent' => 5,
+        ]);
+
+        // Long -> 10 points
+        $longResp = $this->postJson('/api/v1/chat/send', [
+            'prompt' => 'Full yearly Mahabote reading',
+            'category' => 'astrology',
+            'response_type' => 'long',
+            'language' => 'en',
+        ]);
+
+        $longResp->assertStatus(200)
+            ->assertJsonPath('response_type', 'long')
+            ->assertJsonPath('points_deducted', 10);
+
+        $this->assertDatabaseHas('ai_generations', [
+            'customer_id' => $customer->id,
+            'operation' => 'chat',
+            'coins_spent' => 10,
+        ]);
+
+        // Verify different prompts were sent to Segmind
+        Http::assertSent(fn (Request $req) => str_contains((string) ($req['prompt'] ?? ''), 'under 100 words'));
+        Http::assertSent(fn (Request $req) => str_contains((string) ($req['prompt'] ?? ''), 'under 250 words'));
+        Http::assertSent(fn (Request $req) => str_contains((string) ($req['prompt'] ?? ''), 'up to 600 words'));
+    }
+
+    public function test_astrology_long_requires_10_points_and_rejects_invalid_response_type(): void
+    {
+        /** @var Customer $customer */
+        $customer = Customer::factory()->create([
+            'central_auth_uuid' => 'test-uuid-astrology-8pts',
+        ]);
+        Sanctum::actingAs($customer);
+
+        Http::fake([
+            '*/api/v1/s2s/points/*' => Http::response([
+                'success' => true,
+                'points' => 8,
+            ], 200),
+        ]);
+
+        $insufficientResp = $this->postJson('/api/v1/chat/send', [
+            'prompt' => 'Deep astrology reading',
+            'category' => 'astrology',
+            'response_type' => 'long',
+        ]);
+
+        $insufficientResp->assertStatus(402)
+            ->assertJsonPath('required_points', 10)
+            ->assertJsonPath('current_points', 8);
+
+        $invalidResp = $this->postJson('/api/v1/chat/send', [
+            'prompt' => 'Invalid type reading',
+            'category' => 'astrology',
+            'response_type' => 'extra_long',
+        ]);
+
+        $invalidResp->assertStatus(422)
+            ->assertJsonValidationErrors(['response_type']);
+    }
+
+    public function test_point_costs_endpoint_returns_astrology_tier_costs(): void
+    {
+        $response = $this->getJson('/api/v1/point-costs');
+
+        $response->assertStatus(200)
+            ->assertJsonPath('astrology_short', 3)
+            ->assertJsonPath('astrology_normal', 5)
+            ->assertJsonPath('astrology_long', 10)
+            ->assertJsonPath('astrology.short', 3)
+            ->assertJsonPath('astrology.normal', 5)
+            ->assertJsonPath('astrology.long', 10);
     }
 }

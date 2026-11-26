@@ -17,7 +17,7 @@ class EducationSkill extends BaseChatSkill
         ];
     }
 
-    public function systemPrompt(string $language = 'my'): string
+    public function systemPrompt(string $language = 'my', ?string $responseType = null): string
     {
         $langInstruction = $language === 'my'
             ? 'Output strictly in natural Myanmar (Burmese Unicode).'

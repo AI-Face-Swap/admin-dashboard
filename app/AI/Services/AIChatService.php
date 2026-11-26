@@ -3,6 +3,7 @@
 namespace App\AI\Services;
 
 use App\AI\Exceptions\AIGenerationFailedException;
+use App\AI\Skills\AstrologySkill;
 use App\AI\Skills\ChatSkillFactory;
 use App\Models\AIGeneration;
 use App\Models\AIModel;
@@ -194,11 +195,36 @@ class AIChatService
     }
 
     /**
+     * Resolve point cost for a chat request based on category and optional response type.
+     */
+    public function resolvePointCost(string $category = 'general', ?string $responseType = null): int
+    {
+        $normalizedCategory = strtolower(trim($category)) ?: 'general';
+
+        if ($normalizedCategory === 'astrology') {
+            $type = AstrologySkill::normalizeResponseType($responseType);
+            $defaultCost = match ($type) {
+                AstrologySkill::TYPE_SHORT => 3,
+                AstrologySkill::TYPE_LONG => 10,
+                default => 5,
+            };
+
+            return (int) Setting::get(
+                'ai',
+                "point_cost_astrology_{$type}",
+                config("ai.point_costs.astrology_{$type}", $defaultCost)
+            );
+        }
+
+        return (int) Setting::get('ai', 'point_cost_chat', config('ai.point_costs.chat', 5));
+    }
+
+    /**
      * Build the request payload tailored to the selected Segmind LLM endpoint.
      *
      * @return array<string, mixed>
      */
-    protected function buildModelPayload(string $selectedModel, string $fullPrompt, ?string $imageUrl = null): array
+    protected function buildModelPayload(string $selectedModel, string $fullPrompt, ?string $imageUrl = null, ?string $responseType = null): array
     {
         $payload = [
             'prompt' => $fullPrompt,
@@ -207,7 +233,12 @@ class AIChatService
 
         // Qwen models support max_tokens and image input; DeepSeek models strictly accept prompt + response_format
         if (in_array($selectedModel, [self::MODEL_QWEN_FLASH, self::MODEL_QWEN3_VL_FLASH], true)) {
-            $payload['max_tokens'] = (int) config('ai.chat_max_tokens', 650);
+            $defaultMaxTokens = (int) config('ai.chat_max_tokens', 650);
+            $payload['max_tokens'] = match ($responseType) {
+                AstrologySkill::TYPE_SHORT => min($defaultMaxTokens, 350),
+                AstrologySkill::TYPE_LONG => max($defaultMaxTokens, 1500),
+                default => $defaultMaxTokens,
+            };
             if ($imageUrl) {
                 $payload['image'] = $imageUrl;
             }
@@ -248,17 +279,21 @@ class AIChatService
         User|Customer|null $requester = null,
         ?string $model = null,
         ?string $imageUrl = null,
+        ?string $responseType = null,
     ): array {
         $sanitizedMessage = mb_substr(trim($message), 0, 5000);
         $skill = ChatSkillFactory::make($category);
-        $fullPrompt = $skill->buildPrompt($sanitizedMessage, $history, $language);
+        $resolvedResponseType = $skill->category() === 'astrology'
+            ? AstrologySkill::normalizeResponseType($responseType)
+            : null;
+        $fullPrompt = $skill->buildPrompt($sanitizedMessage, $history, $language, $resolvedResponseType);
 
         $selectedModel = $this->resolveModel($skill->category(), $model, $imageUrl);
 
         $apiKey = (string) config('ai.providers.segmind.api_key');
         $endpoint = rtrim(config('ai.providers.segmind.base_url_v1', self::DEFAULT_BASE_URL), '/').'/'.$selectedModel;
 
-        $pointCost = (int) Setting::get('ai', 'point_cost_chat', config('ai.point_costs.chat', 5));
+        $pointCost = $this->resolvePointCost($skill->category(), $resolvedResponseType);
         $provider = AIProvider::where('slug', 'segmind')->first();
 
         $generation = AIGeneration::create([
@@ -271,6 +306,7 @@ class AIChatService
             'input_metadata' => [
                 'model' => $selectedModel,
                 'category' => $skill->category(),
+                'response_type' => $resolvedResponseType,
                 'language' => $language,
                 'prompt' => $sanitizedMessage,
                 'image_url' => $imageUrl,
@@ -280,7 +316,7 @@ class AIChatService
         $startedAt = hrtime(true);
 
         try {
-            $payload = $this->buildModelPayload($selectedModel, $fullPrompt, $imageUrl);
+            $payload = $this->buildModelPayload($selectedModel, $fullPrompt, $imageUrl, $resolvedResponseType);
 
             $response = Http::withHeaders([
                 'x-api-key' => $apiKey,
@@ -368,11 +404,12 @@ class AIChatService
         ?string $model = null,
         ?callable $onChunk = null,
         ?string $imageUrl = null,
+        ?string $responseType = null,
     ): array {
         $sanitizedMessage = mb_substr(trim($message), 0, 5000);
 
         if (app()->environment('testing')) {
-            $result = $this->chat($sanitizedMessage, $category, $history, $language, $requester, $model, $imageUrl);
+            $result = $this->chat($sanitizedMessage, $category, $history, $language, $requester, $model, $imageUrl, $responseType);
             if ($onChunk) {
                 $words = preg_split('/(\s+)/u', $result['content'], -1, PREG_SPLIT_DELIM_CAPTURE);
                 if (is_array($words)) {
@@ -388,13 +425,16 @@ class AIChatService
         }
 
         $skill = ChatSkillFactory::make($category);
-        $fullPrompt = $skill->buildPrompt($sanitizedMessage, $history, $language);
+        $resolvedResponseType = $skill->category() === 'astrology'
+            ? AstrologySkill::normalizeResponseType($responseType)
+            : null;
+        $fullPrompt = $skill->buildPrompt($sanitizedMessage, $history, $language, $resolvedResponseType);
 
         $selectedModel = $this->resolveModel($skill->category(), $model, $imageUrl);
 
         $apiKey = (string) config('ai.providers.segmind.api_key');
         $endpoint = rtrim(config('ai.providers.segmind.base_url_v1', self::DEFAULT_BASE_URL), '/').'/'.$selectedModel;
-        $pointCost = (int) Setting::get('ai', 'point_cost_chat', config('ai.point_costs.chat', 5));
+        $pointCost = $this->resolvePointCost($skill->category(), $resolvedResponseType);
         $provider = AIProvider::where('slug', 'segmind')->first();
 
         $generation = AIGeneration::create([
@@ -407,6 +447,7 @@ class AIChatService
             'input_metadata' => [
                 'model' => $selectedModel,
                 'category' => $skill->category(),
+                'response_type' => $resolvedResponseType,
                 'language' => $language,
                 'prompt' => $sanitizedMessage,
                 'image_url' => $imageUrl,
@@ -418,7 +459,7 @@ class AIChatService
         $accumulatedContent = '';
 
         try {
-            $payload = $this->buildModelPayload($selectedModel, $fullPrompt, $imageUrl);
+            $payload = $this->buildModelPayload($selectedModel, $fullPrompt, $imageUrl, $resolvedResponseType);
 
             // Segmind generates chat completions via HTTP synchronously.
             // We fetch the completion and stream tokens word-by-word via $onChunk to deliver smooth real-time SSE streaming.
@@ -516,7 +557,7 @@ class AIChatService
             }
 
             $generation->delete();
-            $fallbackResult = $this->chat($sanitizedMessage, $category, $history, $language, $requester, $model, $imageUrl);
+            $fallbackResult = $this->chat($sanitizedMessage, $category, $history, $language, $requester, $model, $imageUrl, $responseType);
             if ($onChunk) {
                 $onChunk($fallbackResult['content']);
             }

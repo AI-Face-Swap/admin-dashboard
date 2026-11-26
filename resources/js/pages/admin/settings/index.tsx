@@ -13,7 +13,16 @@ type CoinCosts = {
     image_generation: number;
     image_to_video_480p: number;
     image_to_video_720p: number;
+    astrology_short: number;
+    astrology_normal: number;
+    astrology_long: number;
     // face_swap and video_face_swap use template.cost, not global setting
+};
+
+type AstrologyPrompts = {
+    short: string;
+    normal: string;
+    long: string;
 };
 
 type FooterSettings = {
@@ -31,6 +40,7 @@ type FooterSettings = {
 
 type Props = {
     coinCosts: CoinCosts;
+    astrologyPrompts: AstrologyPrompts;
     footerSettings: FooterSettings;
     ecosystemVideoUrl?: string;
     ecosystemBannerImageUrl?: string;
@@ -39,6 +49,7 @@ type Props = {
 
 export default function Index({
     coinCosts,
+    astrologyPrompts,
     footerSettings,
     ecosystemVideoUrl = '',
     ecosystemBannerImageUrl = '',
@@ -48,6 +59,9 @@ export default function Index({
     const flash = usePage().props.flash as { success?: string } | undefined;
 
     const [costs, setCosts] = useState<CoinCosts>(coinCosts);
+    const [astroPrompts, setAstroPrompts] = useState<AstrologyPrompts>(
+        astrologyPrompts || { short: '', normal: '', long: '' },
+    );
     const [footer, setFooter] = useState<FooterSettings>(footerSettings || {});
     const [ecoVideoUrl, setEcoVideoUrl] = useState<string>(ecosystemVideoUrl);
     const [ecoVideoFile, setEcoVideoFile] = useState<File | null>(null);
@@ -72,6 +86,17 @@ export default function Index({
         }
     };
 
+    const handleAstroPromptChange = (
+        key: keyof AstrologyPrompts,
+        value: string,
+    ) => {
+        setAstroPrompts((prev) => ({
+            ...prev,
+            [key]: value,
+        }));
+        setHasChanges(true);
+    };
+
     const handleFooterChange = (key: keyof FooterSettings, value: string) => {
         setFooter((prev) => ({
             ...prev,
@@ -88,6 +113,7 @@ export default function Index({
             {
                 _method: 'put',
                 coin_costs: costs,
+                astrology_prompts: astroPrompts,
                 footer_settings: footer,
                 ecosystem_video_url: ecoVideoUrl,
                 ecosystem_banner_image_url: ecoBannerUrl,
@@ -101,6 +127,12 @@ export default function Index({
                 preserveScroll: true,
                 onSuccess: (page) => {
                     const props = page.props as unknown as Props;
+                    if (props.coinCosts) {
+                        setCosts(props.coinCosts);
+                    }
+                    if (props.astrologyPrompts) {
+                        setAstroPrompts(props.astrologyPrompts);
+                    }
                     if (typeof props.ecosystemVideoUrl === 'string') {
                         setEcoVideoUrl(props.ecosystemVideoUrl);
                     }
@@ -124,6 +156,7 @@ export default function Index({
 
     const handleReset = () => {
         setCosts(coinCosts);
+        setAstroPrompts(astrologyPrompts || { short: '', normal: '', long: '' });
         setFooter(footerSettings || {});
         setEcoVideoUrl(ecosystemVideoUrl);
         setEcoBannerUrl(ecosystemBannerImageUrl);
@@ -273,6 +306,154 @@ export default function Index({
                                     <p className="text-xs text-muted-foreground">
                                         Higher quality, slower generation
                                     </p>
+                                </div>
+                            </div>
+
+                            <div className="border-t pt-4">
+                                <p className="mb-3 text-sm font-medium text-muted-foreground">
+                                    Astrology Chat (Response Types &amp; Default System Prompts)
+                                </p>
+
+                                <div className="grid gap-4 md:grid-cols-3">
+                                    <div className="space-y-2">
+                                        <Label
+                                            htmlFor="astrology_short"
+                                            className="text-sm font-medium"
+                                        >
+                                            Short Reading Cost
+                                        </Label>
+                                        <div className="flex items-center gap-2">
+                                            <Input
+                                                id="astrology_short"
+                                                type="number"
+                                                min={0}
+                                                max={1000}
+                                                value={costs.astrology_short}
+                                                onChange={(e) =>
+                                                    handleChange(
+                                                        'astrology_short',
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                className="w-[120px] font-mono text-sm"
+                                            />
+                                            <span className="text-sm text-muted-foreground">
+                                                points
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label
+                                            htmlFor="astrology_normal"
+                                            className="text-sm font-medium"
+                                        >
+                                            Normal Reading Cost
+                                        </Label>
+                                        <div className="flex items-center gap-2">
+                                            <Input
+                                                id="astrology_normal"
+                                                type="number"
+                                                min={0}
+                                                max={1000}
+                                                value={costs.astrology_normal}
+                                                onChange={(e) =>
+                                                    handleChange(
+                                                        'astrology_normal',
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                className="w-[120px] font-mono text-sm"
+                                            />
+                                            <span className="text-sm text-muted-foreground">
+                                                points
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label
+                                            htmlFor="astrology_long"
+                                            className="text-sm font-medium"
+                                        >
+                                            Long Reading Cost
+                                        </Label>
+                                        <div className="flex items-center gap-2">
+                                            <Input
+                                                id="astrology_long"
+                                                type="number"
+                                                min={0}
+                                                max={1000}
+                                                value={costs.astrology_long}
+                                                onChange={(e) =>
+                                                    handleChange(
+                                                        'astrology_long',
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                className="w-[120px] font-mono text-sm"
+                                            />
+                                            <span className="text-sm text-muted-foreground">
+                                                points
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="mt-4 space-y-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="astrology_prompt_short">
+                                            Short Default System Prompt
+                                        </Label>
+                                        <textarea
+                                            id="astrology_prompt_short"
+                                            className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
+                                            value={astroPrompts.short}
+                                            onChange={(e) =>
+                                                handleAstroPromptChange(
+                                                    'short',
+                                                    e.target.value,
+                                                )
+                                            }
+                                            rows={3}
+                                        />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="astrology_prompt_normal">
+                                            Normal Default System Prompt
+                                        </Label>
+                                        <textarea
+                                            id="astrology_prompt_normal"
+                                            className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
+                                            value={astroPrompts.normal}
+                                            onChange={(e) =>
+                                                handleAstroPromptChange(
+                                                    'normal',
+                                                    e.target.value,
+                                                )
+                                            }
+                                            rows={3}
+                                        />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="astrology_prompt_long">
+                                            Long Default System Prompt
+                                        </Label>
+                                        <textarea
+                                            id="astrology_prompt_long"
+                                            className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
+                                            value={astroPrompts.long}
+                                            onChange={(e) =>
+                                                handleAstroPromptChange(
+                                                    'long',
+                                                    e.target.value,
+                                                )
+                                            }
+                                            rows={4}
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         </div>

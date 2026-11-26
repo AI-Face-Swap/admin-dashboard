@@ -3,13 +3,13 @@
 namespace App\Http\Controllers\Api;
 
 use App\AI\Services\AIChatService;
+use App\AI\Skills\AstrologySkill;
 use App\AI\Skills\ChatSkillFactory;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\SendChatMessageRequest;
 use App\Models\ChatConversation;
 use App\Models\ChatMessage;
 use App\Models\Customer;
-use App\Models\Setting;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -121,7 +121,16 @@ class AIChatController extends Controller
             return response()->json(['message' => 'Your account is suspended.'], 403);
         }
 
-        $pointCost = (int) Setting::get('ai', 'point_cost_chat', config('ai.point_costs.chat', 5));
+        $prompt = trim($request->input('prompt'));
+        $category = (string) $request->input('category', 'general');
+        $responseType = $category === 'astrology'
+            ? AstrologySkill::normalizeResponseType($request->input('response_type'))
+            : null;
+        $language = (string) $request->input('language', 'my');
+        $model = $request->input('model');
+        $conversationId = $request->input('conversation_id');
+
+        $pointCost = $chatService->resolvePointCost($category, $responseType);
 
         if (! $customer->hasEnoughPoints($pointCost)) {
             return response()->json([
@@ -130,12 +139,6 @@ class AIChatController extends Controller
                 'current_points' => $customer->points,
             ], 402);
         }
-
-        $prompt = trim($request->input('prompt'));
-        $category = (string) $request->input('category', 'general');
-        $language = (string) $request->input('language', 'my');
-        $model = $request->input('model');
-        $conversationId = $request->input('conversation_id');
 
         // Handle uploaded image or direct image URL
         $imageUrl = null;
@@ -212,6 +215,7 @@ class AIChatController extends Controller
                 $chatService,
                 $promptForAi,
                 $category,
+                $responseType,
                 $history,
                 $language,
                 $customer,
@@ -258,6 +262,7 @@ class AIChatController extends Controller
                             flush();
                         },
                         imageUrl: $imageUrl,
+                        responseType: $responseType,
                     );
 
                     $assistantMessage = ChatMessage::create([
@@ -274,11 +279,12 @@ class AIChatController extends Controller
 
                     $customer->spendPoints(
                         cost: $pointCost,
-                        description: "HTUT AI Chat ({$category})",
+                        description: $responseType ? "HTUT AI Chat ({$category} - {$responseType})" : "HTUT AI Chat ({$category})",
                         referenceId: "chat_msg_{$assistantMessage->id}",
                         metadata: [
                             'conversation_id' => $conversation->id,
                             'model' => $aiResult['model'],
+                            'response_type' => $responseType,
                         ],
                     );
 
@@ -288,6 +294,7 @@ class AIChatController extends Controller
                         'conversation_title_en' => $conversation->title_en,
                         'conversation_title_my' => $conversation->title_my,
                         'assistant_message' => $this->formatMessage($assistantMessage),
+                        'response_type' => $responseType,
                         'points_deducted' => $pointCost,
                         'points_remaining' => $customer->fresh()->points,
                     ])."\n\n";
@@ -328,6 +335,7 @@ class AIChatController extends Controller
             requester: $customer,
             model: $model,
             imageUrl: $imageUrl,
+            responseType: $responseType,
         );
 
         // Save Assistant Message
@@ -347,11 +355,12 @@ class AIChatController extends Controller
         // Deduct points from Customer via Central Auth
         $spendResult = $customer->spendPoints(
             cost: $pointCost,
-            description: "HTUT AI Chat ({$category})",
+            description: $responseType ? "HTUT AI Chat ({$category} - {$responseType})" : "HTUT AI Chat ({$category})",
             referenceId: (string) $assistantMessage->id,
             metadata: [
                 'conversation_id' => $conversation->id,
                 'model' => $aiResult['model'],
+                'response_type' => $responseType,
                 'tokens_used' => $aiResult['tokens_used'],
                 'cost_usd' => $aiResult['cost'],
             ],
@@ -363,6 +372,7 @@ class AIChatController extends Controller
             'conversation_title_my' => $conversation->title_my,
             'user_message' => $this->formatMessage($userMessage),
             'assistant_message' => $this->formatMessage($assistantMessage),
+            'response_type' => $responseType,
             'points_deducted' => $pointCost,
             'points_remaining' => $customer->fresh()->points,
             'spend_result' => $spendResult,

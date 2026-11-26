@@ -25,6 +25,7 @@ class SendChatMessageRequest extends FormRequest
         return [
             'prompt' => ['required', 'string', 'max:5000'],
             'category' => ['nullable', 'string', 'in:general,health,education,astrology'],
+            'response_type' => ['nullable', 'string', 'in:short,normal,long'],
             'conversation_id' => ['nullable', 'integer', 'exists:chat_conversations,id'],
             'language' => ['nullable', 'string', 'in:my,en'],
             'model' => ['nullable', 'string', 'in:deepseek-chat,deepseek-reasoner,qwen-flash,qwen3-vl-flash'],
@@ -43,6 +44,7 @@ class SendChatMessageRequest extends FormRequest
         return [
             'prompt' => 'chat message',
             'category' => 'chat category',
+            'response_type' => 'astrology response type',
             'conversation_id' => 'conversation ID',
             'image' => 'uploaded image file',
             'image_url' => 'image URL',
