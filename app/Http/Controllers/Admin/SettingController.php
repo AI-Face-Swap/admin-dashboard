@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -28,6 +30,8 @@ class SettingController extends Controller
             'coinCosts' => $coinCosts,
             'footerSettings' => $footerSettings,
             'ecosystemVideoUrl' => (string) Setting::get('ecosystem', 'video_url', ''),
+            'ecosystemBannerImageUrl' => (string) Setting::get('ecosystem', 'banner_image_url', ''),
+            'ecosystemMembershipImageUrl' => (string) Setting::get('ecosystem', 'membership_image_url', ''),
         ]);
     }
 
@@ -52,6 +56,10 @@ class SettingController extends Controller
             'footer_settings.link_faq' => 'nullable|string',
             'footer_settings.copyright_text' => 'nullable|string',
             'ecosystem_video_url' => 'nullable|string|max:1000',
+            'ecosystem_banner_image_url' => 'nullable|string|max:1000',
+            'ecosystem_membership_image_url' => 'nullable|string|max:1000',
+            'ecosystem_banner_image' => 'nullable|image|mimes:jpg,jpeg,png,webp,gif|max:10240',
+            'ecosystem_membership_image' => 'nullable|image|mimes:jpg,jpeg,png,webp,gif|max:10240',
         ]);
 
         Setting::set('ai', 'coin_cost_image_generation', $validated['coin_costs']['image_generation']);
@@ -66,6 +74,22 @@ class SettingController extends Controller
 
         if (array_key_exists('ecosystem_video_url', $validated)) {
             Setting::set('ecosystem', 'video_url', trim((string) ($validated['ecosystem_video_url'] ?? '')));
+        }
+
+        if ($request->hasFile('ecosystem_banner_image')) {
+            $file = $request->file('ecosystem_banner_image');
+            $path = $file->storeAs('ecosystem', Str::uuid().'.'.$file->getClientOriginalExtension(), 'spaces');
+            Setting::set('ecosystem', 'banner_image_url', Storage::disk('spaces')->url($path));
+        } elseif (array_key_exists('ecosystem_banner_image_url', $validated)) {
+            Setting::set('ecosystem', 'banner_image_url', trim((string) ($validated['ecosystem_banner_image_url'] ?? '')));
+        }
+
+        if ($request->hasFile('ecosystem_membership_image')) {
+            $file = $request->file('ecosystem_membership_image');
+            $path = $file->storeAs('ecosystem', Str::uuid().'.'.$file->getClientOriginalExtension(), 'spaces');
+            Setting::set('ecosystem', 'membership_image_url', Storage::disk('spaces')->url($path));
+        } elseif (array_key_exists('ecosystem_membership_image_url', $validated)) {
+            Setting::set('ecosystem', 'membership_image_url', trim((string) ($validated['ecosystem_membership_image_url'] ?? '')));
         }
 
         // Clear config cache so changes take effect immediately
@@ -83,6 +107,8 @@ class SettingController extends Controller
             'coinCosts' => $coinCosts,
             'footerSettings' => Setting::group('footer'),
             'ecosystemVideoUrl' => (string) Setting::get('ecosystem', 'video_url', ''),
+            'ecosystemBannerImageUrl' => (string) Setting::get('ecosystem', 'banner_image_url', ''),
+            'ecosystemMembershipImageUrl' => (string) Setting::get('ecosystem', 'membership_image_url', ''),
             'flash' => ['success' => 'Settings updated successfully.'],
         ]);
     }

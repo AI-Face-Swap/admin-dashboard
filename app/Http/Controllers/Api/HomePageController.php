@@ -15,17 +15,21 @@ use Illuminate\Http\Request;
 class HomePageController extends Controller
 {
     /**
-     * Get Ecosystem Page Video Link.
+     * Get Ecosystem Page Media (Video, Banner Image, Membership Image).
      *
      * Public endpoint — no authentication required.
-     * Returns only the ecosystem video URL.
+     * Returns the ecosystem video URL, banner image URL, and membership image URL.
      */
     public function ecosystemPage(): JsonResponse
     {
         $videoUrl = Setting::get('ecosystem', 'video_url') ?: env('ECOSYSTEM_VIDEO_URL');
+        $bannerImageUrl = Setting::get('ecosystem', 'banner_image_url') ?: env('ECOSYSTEM_BANNER_IMAGE_URL');
+        $membershipImageUrl = Setting::get('ecosystem', 'membership_image_url') ?: env('ECOSYSTEM_MEMBERSHIP_IMAGE_URL');
 
         return response()->json([
             'video_url' => $videoUrl ?: null,
+            'banner_image_url' => $bannerImageUrl ?: null,
+            'membership_image_url' => $membershipImageUrl ?: null,
         ]);
     }
 

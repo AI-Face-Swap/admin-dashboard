@@ -33,15 +33,29 @@ type Props = {
     coinCosts: CoinCosts;
     footerSettings: FooterSettings;
     ecosystemVideoUrl?: string;
+    ecosystemBannerImageUrl?: string;
+    ecosystemMembershipImageUrl?: string;
 };
 
-export default function Index({ coinCosts, footerSettings, ecosystemVideoUrl = '' }: Props) {
+export default function Index({
+    coinCosts,
+    footerSettings,
+    ecosystemVideoUrl = '',
+    ecosystemBannerImageUrl = '',
+    ecosystemMembershipImageUrl = '',
+}: Props) {
     const { can } = usePermissions();
     const flash = usePage().props.flash as { success?: string } | undefined;
 
     const [costs, setCosts] = useState<CoinCosts>(coinCosts);
     const [footer, setFooter] = useState<FooterSettings>(footerSettings || {});
     const [ecoVideoUrl, setEcoVideoUrl] = useState<string>(ecosystemVideoUrl);
+    const [ecoBannerUrl, setEcoBannerUrl] = useState<string>(ecosystemBannerImageUrl);
+    const [ecoMembershipUrl, setEcoMembershipUrl] = useState<string>(ecosystemMembershipImageUrl);
+    const [ecoBannerFile, setEcoBannerFile] = useState<File | null>(null);
+    const [ecoMembershipFile, setEcoMembershipFile] = useState<File | null>(null);
+    const [ecoBannerPreview, setEcoBannerPreview] = useState<string>(ecosystemBannerImageUrl);
+    const [ecoMembershipPreview, setEcoMembershipPreview] = useState<string>(ecosystemMembershipImageUrl);
     const [saving, setSaving] = useState(false);
     const [hasChanges, setHasChanges] = useState(false);
 
@@ -68,12 +82,33 @@ export default function Index({ coinCosts, footerSettings, ecosystemVideoUrl = '
     const handleSave = () => {
         setSaving(true);
 
-        router.put(
+        router.post(
             '/admin/settings',
-            { coin_costs: costs, footer_settings: footer, ecosystem_video_url: ecoVideoUrl },
             {
+                _method: 'put',
+                coin_costs: costs,
+                footer_settings: footer,
+                ecosystem_video_url: ecoVideoUrl,
+                ecosystem_banner_image_url: ecoBannerUrl,
+                ecosystem_membership_image_url: ecoMembershipUrl,
+                ...(ecoBannerFile ? { ecosystem_banner_image: ecoBannerFile } : {}),
+                ...(ecoMembershipFile ? { ecosystem_membership_image: ecoMembershipFile } : {}),
+            },
+            {
+                forceFormData: true,
                 preserveScroll: true,
-                onSuccess: () => {
+                onSuccess: (page) => {
+                    const props = page.props as unknown as Props;
+                    if (typeof props.ecosystemBannerImageUrl === 'string') {
+                        setEcoBannerUrl(props.ecosystemBannerImageUrl);
+                        setEcoBannerPreview(props.ecosystemBannerImageUrl);
+                    }
+                    if (typeof props.ecosystemMembershipImageUrl === 'string') {
+                        setEcoMembershipUrl(props.ecosystemMembershipImageUrl);
+                        setEcoMembershipPreview(props.ecosystemMembershipImageUrl);
+                    }
+                    setEcoBannerFile(null);
+                    setEcoMembershipFile(null);
                     setHasChanges(false);
                 },
                 onFinish: () => setSaving(false),
@@ -85,6 +120,13 @@ export default function Index({ coinCosts, footerSettings, ecosystemVideoUrl = '
         setCosts(coinCosts);
         setFooter(footerSettings || {});
         setEcoVideoUrl(ecosystemVideoUrl);
+        setEcoBannerUrl(ecosystemBannerImageUrl);
+        setEcoMembershipUrl(ecosystemMembershipImageUrl);
+        setEcoBannerFile(null);
+        setEcoMembershipFile(null);
+        setEcoBannerPreview(ecosystemBannerImageUrl);
+        setEcoMembershipPreview(ecosystemMembershipImageUrl);
+        setHasChanges(false);
     };
 
     if (!can('settings.manage')) {
@@ -397,14 +439,14 @@ export default function Index({ coinCosts, footerSettings, ecosystemVideoUrl = '
                             </div>
                         </div>
 
-                        {/* Ecosystem Page Video URL */}
+                        {/* Ecosystem Page Media */}
                         <div className="space-y-4 border-t pt-6">
                             <div>
                                 <h2 className="text-base font-semibold">
-                                    Ecosystem Page Video
+                                    Ecosystem Page Media
                                 </h2>
                                 <p className="text-xs text-muted-foreground">
-                                    Video link returned by public endpoint{' '}
+                                    Video, banner image, and membership image returned by public endpoint{' '}
                                     <code>GET /api/v1/ecosystem-page</code>.
                                 </p>
                             </div>
@@ -421,6 +463,90 @@ export default function Index({ coinCosts, footerSettings, ecosystemVideoUrl = '
                                     }}
                                     placeholder="https://.../ecosystem-video.mp4"
                                 />
+                            </div>
+
+                            <div className="grid gap-4 md:grid-cols-2">
+                                <div className="space-y-2">
+                                    <Label htmlFor="ecosystem_banner_image_url">
+                                        Banner Image
+                                    </Label>
+                                    <Input
+                                        id="ecosystem_banner_image_url"
+                                        value={ecoBannerUrl}
+                                        onChange={(e) => {
+                                            setEcoBannerUrl(e.target.value);
+                                            setEcoBannerFile(null);
+                                            setEcoBannerPreview(e.target.value);
+                                            setHasChanges(true);
+                                        }}
+                                        placeholder="https://.../ecosystem-banner.jpg"
+                                    />
+                                    <Input
+                                        id="ecosystem_banner_image"
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={(e) => {
+                                            const file = e.target.files?.[0] || null;
+                                            setEcoBannerFile(file);
+                                            if (file) {
+                                                setEcoBannerPreview(URL.createObjectURL(file));
+                                            } else {
+                                                setEcoBannerPreview(ecoBannerUrl);
+                                            }
+                                            setHasChanges(true);
+                                        }}
+                                    />
+                                    {ecoBannerPreview && (
+                                        <div className="overflow-hidden rounded-md border bg-muted/30 p-2">
+                                            <img
+                                                src={ecoBannerPreview}
+                                                alt="Ecosystem Banner Preview"
+                                                className="max-h-36 w-full rounded object-contain"
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="ecosystem_membership_image_url">
+                                        Membership Image
+                                    </Label>
+                                    <Input
+                                        id="ecosystem_membership_image_url"
+                                        value={ecoMembershipUrl}
+                                        onChange={(e) => {
+                                            setEcoMembershipUrl(e.target.value);
+                                            setEcoMembershipFile(null);
+                                            setEcoMembershipPreview(e.target.value);
+                                            setHasChanges(true);
+                                        }}
+                                        placeholder="https://.../ecosystem-membership.jpg"
+                                    />
+                                    <Input
+                                        id="ecosystem_membership_image"
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={(e) => {
+                                            const file = e.target.files?.[0] || null;
+                                            setEcoMembershipFile(file);
+                                            if (file) {
+                                                setEcoMembershipPreview(URL.createObjectURL(file));
+                                            } else {
+                                                setEcoMembershipPreview(ecoMembershipUrl);
+                                            }
+                                            setHasChanges(true);
+                                        }}
+                                    />
+                                    {ecoMembershipPreview && (
+                                        <div className="overflow-hidden rounded-md border bg-muted/30 p-2">
+                                            <img
+                                                src={ecoMembershipPreview}
+                                                alt="Ecosystem Membership Preview"
+                                                className="max-h-36 w-full rounded object-contain"
+                                            />
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
 
