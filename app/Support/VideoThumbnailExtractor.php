@@ -62,7 +62,7 @@ class VideoThumbnailExtractor
     /**
      * Extract a single JPEG frame from a video stored on a Laravel filesystem disk.
      */
-    public function fromDisk(string $storagePath, string $disk, string $directory = 'templates/thumbnails'): ?string
+    public function fromDisk(string $storagePath, string $disk, string $directory = 'templates/thumbnails', ?string $targetDisk = null): ?string
     {
         if ($storagePath === '' || ! Storage::disk($disk)->exists($storagePath)) {
             return null;
@@ -101,7 +101,7 @@ class VideoThumbnailExtractor
                 fclose($writeStream);
             }
 
-            return $this->fromLocalFile($tempVideo, $disk, $directory);
+            return $this->fromLocalFile($tempVideo, $targetDisk ?? $disk, $directory);
         } catch (Throwable $e) {
             Log::warning('VideoThumbnailExtractor::fromDisk failed: '.$e->getMessage());
 

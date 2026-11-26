@@ -644,15 +644,25 @@ class SegmindProvider implements AIProviderInterface
             $contentType = (string) $response->header('Content-Type');
 
             // Determine extension from content type or URL
+            $urlExt = strtolower((string) pathinfo((string) parse_url($url, PHP_URL_PATH), PATHINFO_EXTENSION));
             $extension = match (true) {
                 str_contains($contentType, 'image/png') => 'png',
                 str_contains($contentType, 'image/jpeg') => 'jpg',
                 str_contains($contentType, 'image/webp') => 'webp',
                 str_contains($contentType, 'video/mp4') => 'mp4',
+                str_contains($contentType, 'video/webm') => 'webm',
+                str_contains($contentType, 'video/quicktime') => 'mov',
+                \App\Support\VideoStorage::isVideoExtension($urlExt) => $urlExt,
                 default => 'bin',
             };
 
-            $path = 'generations/'.Str::uuid().'.'.$extension;
+            $filename = Str::uuid().'.'.$extension;
+
+            if (\App\Support\VideoStorage::isVideoExtension($extension) || \App\Support\VideoStorage::isVideoMime($contentType)) {
+                return \App\Support\VideoStorage::putContents('generations', $filename, $body)['url'];
+            }
+
+            $path = 'generations/'.$filename;
 
             Storage::disk($this->storageDisk)->put($path, $body, 'public');
 
@@ -679,10 +689,18 @@ class SegmindProvider implements AIProviderInterface
             'image/jpeg' => 'jpg',
             'image/webp' => 'webp',
             'video/mp4' => 'mp4',
+            'video/webm' => 'webm',
+            'video/quicktime' => 'mov',
             default => $mime !== null && $mime !== '' ? Str::after($mime, '/') : 'bin',
         };
 
-        $path = 'generations/'.Str::uuid().'.'.$extension;
+        $filename = Str::uuid().'.'.$extension;
+
+        if (\App\Support\VideoStorage::isVideoExtension($extension) || \App\Support\VideoStorage::isVideoMime($mime)) {
+            return \App\Support\VideoStorage::putContents('generations', $filename, $decoded)['url'];
+        }
+
+        $path = 'generations/'.$filename;
 
         Storage::disk($this->storageDisk)->put($path, $decoded, 'public');
 

@@ -54,8 +54,7 @@ class HomeFeatureController extends Controller
 
         if ($request->hasFile('video_url')) {
             $file = $request->file('video_url');
-            $path = $file->storeAs('HomeFeature', Str::uuid().'.'.$file->getClientOriginalExtension(), 'spaces');
-            $data['video_url'] = Storage::disk('spaces')->url($path);
+            $data['video_url'] = \App\Support\VideoStorage::storeUploadedFile($file, 'HomeFeature')['url'];
         }
 
         if (! isset($data['is_active'])) {
@@ -109,8 +108,7 @@ class HomeFeatureController extends Controller
 
         if ($request->hasFile('video_url')) {
             $file = $request->file('video_url');
-            $path = $file->storeAs('HomeFeature', Str::uuid().'.'.$file->getClientOriginalExtension(), 'spaces');
-            $data['video_url'] = Storage::disk('spaces')->url($path);
+            $data['video_url'] = \App\Support\VideoStorage::storeUploadedFile($file, 'HomeFeature')['url'];
         }
 
         if (! isset($data['is_active'])) {

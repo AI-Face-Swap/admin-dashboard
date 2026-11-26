@@ -557,6 +557,14 @@ class AIImageToVideoController extends Controller
             /** @var UploadedFile $file */
             $file = $request->file($fileField);
 
+            if (
+                $directory === 'input-videos'
+                || \App\Support\VideoStorage::isVideoExtension($file->getClientOriginalExtension())
+                || \App\Support\VideoStorage::isVideoMime($file->getMimeType())
+            ) {
+                return \App\Support\VideoStorage::storeUploadedFile($file, $directory)['url'];
+            }
+
             $path = $file->storeAs(
                 $directory,
                 Str::uuid().'.'.$file->getClientOriginalExtension(),

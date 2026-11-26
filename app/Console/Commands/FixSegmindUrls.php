@@ -76,14 +76,20 @@ class FixSegmindUrls extends Command
                     str_contains($contentType, 'image/jpeg') => 'jpg',
                     str_contains($contentType, 'image/webp') => 'webp',
                     str_contains($contentType, 'video/mp4') => 'mp4',
+                    str_contains($contentType, 'video/webm') => 'webm',
+                    str_contains($contentType, 'video/quicktime') => 'mov',
                     default => 'bin',
                 };
 
-                $path = 'generations/'.Str::uuid().'.'.$extension;
+                $filename = Str::uuid().'.'.$extension;
 
-                Storage::disk('spaces')->put($path, $body, 'public');
-
-                $newUrl = Storage::disk('spaces')->url($path);
+                if (\App\Support\VideoStorage::isVideoExtension($extension) || \App\Support\VideoStorage::isVideoMime($contentType)) {
+                    $newUrl = \App\Support\VideoStorage::putContents('generations', $filename, $body)['url'];
+                } else {
+                    $path = 'generations/'.$filename;
+                    Storage::disk('spaces')->put($path, $body, 'public');
+                    $newUrl = Storage::disk('spaces')->url($path);
+                }
 
                 // Update the output_metadata
                 if (isset($output['url'])) {

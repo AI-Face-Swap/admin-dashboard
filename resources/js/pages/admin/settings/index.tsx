@@ -50,6 +50,7 @@ export default function Index({
     const [costs, setCosts] = useState<CoinCosts>(coinCosts);
     const [footer, setFooter] = useState<FooterSettings>(footerSettings || {});
     const [ecoVideoUrl, setEcoVideoUrl] = useState<string>(ecosystemVideoUrl);
+    const [ecoVideoFile, setEcoVideoFile] = useState<File | null>(null);
     const [ecoBannerUrl, setEcoBannerUrl] = useState<string>(ecosystemBannerImageUrl);
     const [ecoMembershipUrl, setEcoMembershipUrl] = useState<string>(ecosystemMembershipImageUrl);
     const [ecoBannerFile, setEcoBannerFile] = useState<File | null>(null);
@@ -91,6 +92,7 @@ export default function Index({
                 ecosystem_video_url: ecoVideoUrl,
                 ecosystem_banner_image_url: ecoBannerUrl,
                 ecosystem_membership_image_url: ecoMembershipUrl,
+                ...(ecoVideoFile ? { ecosystem_video: ecoVideoFile } : {}),
                 ...(ecoBannerFile ? { ecosystem_banner_image: ecoBannerFile } : {}),
                 ...(ecoMembershipFile ? { ecosystem_membership_image: ecoMembershipFile } : {}),
             },
@@ -99,6 +101,9 @@ export default function Index({
                 preserveScroll: true,
                 onSuccess: (page) => {
                     const props = page.props as unknown as Props;
+                    if (typeof props.ecosystemVideoUrl === 'string') {
+                        setEcoVideoUrl(props.ecosystemVideoUrl);
+                    }
                     if (typeof props.ecosystemBannerImageUrl === 'string') {
                         setEcoBannerUrl(props.ecosystemBannerImageUrl);
                         setEcoBannerPreview(props.ecosystemBannerImageUrl);
@@ -107,6 +112,7 @@ export default function Index({
                         setEcoMembershipUrl(props.ecosystemMembershipImageUrl);
                         setEcoMembershipPreview(props.ecosystemMembershipImageUrl);
                     }
+                    setEcoVideoFile(null);
                     setEcoBannerFile(null);
                     setEcoMembershipFile(null);
                     setHasChanges(false);
@@ -450,18 +456,29 @@ export default function Index({
                                     <code>GET /api/v1/ecosystem-page</code>.
                                 </p>
                             </div>
-                            <div className="space-y-1.5">
+                            <div className="space-y-2">
                                 <Label htmlFor="ecosystem_video_url">
-                                    Video URL
+                                    Video URL (or Upload to Cloudflare R2)
                                 </Label>
                                 <Input
                                     id="ecosystem_video_url"
                                     value={ecoVideoUrl}
                                     onChange={(e) => {
                                         setEcoVideoUrl(e.target.value);
+                                        setEcoVideoFile(null);
                                         setHasChanges(true);
                                     }}
-                                    placeholder="https://.../ecosystem-video.mp4"
+                                    placeholder="https://htutportal.com/htut-ai/ecosystem/..."
+                                />
+                                <Input
+                                    id="ecosystem_video"
+                                    type="file"
+                                    accept="video/mp4,video/webm,video/quicktime"
+                                    onChange={(e) => {
+                                        const file = e.target.files?.[0] || null;
+                                        setEcoVideoFile(file);
+                                        setHasChanges(true);
+                                    }}
                                 />
                             </div>
 

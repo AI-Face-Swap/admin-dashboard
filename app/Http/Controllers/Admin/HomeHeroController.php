@@ -46,8 +46,7 @@ class HomeHeroController extends Controller
         $video = $validated['video'] ?? null;
         if ($request->hasFile('video_file')) {
             $file = $request->file('video_file');
-            $path = $file->storeAs('HomeHero', Str::uuid().'.'.$file->getClientOriginalExtension(), 'spaces');
-            $video = Storage::disk('spaces')->url($path);
+            $video = \App\Support\VideoStorage::storeUploadedFile($file, 'HomeHero')['url'];
         }
 
         $images = array_values(array_filter($validated['images'] ?? [], fn ($img) => ! empty($img)));
@@ -96,8 +95,7 @@ class HomeHeroController extends Controller
         $video = $validated['video'] ?? $homeHero->video;
         if ($request->hasFile('video_file')) {
             $file = $request->file('video_file');
-            $path = $file->storeAs('HomeHero', Str::uuid().'.'.$file->getClientOriginalExtension(), 'spaces');
-            $video = Storage::disk('spaces')->url($path);
+            $video = \App\Support\VideoStorage::storeUploadedFile($file, 'HomeHero')['url'];
         }
 
         $images = array_values(array_filter($validated['images'] ?? [], fn ($img) => ! empty($img)));

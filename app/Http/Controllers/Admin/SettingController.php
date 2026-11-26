@@ -56,6 +56,7 @@ class SettingController extends Controller
             'footer_settings.link_faq' => 'nullable|string',
             'footer_settings.copyright_text' => 'nullable|string',
             'ecosystem_video_url' => 'nullable|string|max:1000',
+            'ecosystem_video' => 'nullable|file|mimes:mp4,webm,mov,m4v|max:102400',
             'ecosystem_banner_image_url' => 'nullable|string|max:1000',
             'ecosystem_membership_image_url' => 'nullable|string|max:1000',
             'ecosystem_banner_image' => 'nullable|image|mimes:jpg,jpeg,png,webp,gif|max:10240',
@@ -72,7 +73,11 @@ class SettingController extends Controller
             }
         }
 
-        if (array_key_exists('ecosystem_video_url', $validated)) {
+        if ($request->hasFile('ecosystem_video')) {
+            $file = $request->file('ecosystem_video');
+            $stored = \App\Support\VideoStorage::storeUploadedFile($file, 'ecosystem');
+            Setting::set('ecosystem', 'video_url', $stored['url']);
+        } elseif (array_key_exists('ecosystem_video_url', $validated)) {
             Setting::set('ecosystem', 'video_url', trim((string) ($validated['ecosystem_video_url'] ?? '')));
         }
 

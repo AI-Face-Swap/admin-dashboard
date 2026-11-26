@@ -65,6 +65,10 @@ class Slider extends Model
             return null;
         }
 
+        if (str_starts_with($this->file_path, 'http://') || str_starts_with($this->file_path, 'https://')) {
+            return $this->file_path;
+        }
+
         return Storage::disk('spaces')->url($this->file_path);
     }
 

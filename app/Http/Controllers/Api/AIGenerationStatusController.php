@@ -80,18 +80,12 @@ class AIGenerationStatusController extends Controller
         }
 
         $sourceUrl = $outputs[$index];
-        if (filter_var($sourceUrl, FILTER_VALIDATE_URL)) {
-            $sourcePath = ltrim((string) parse_url($sourceUrl, PHP_URL_PATH), '/');
-        } else {
-            $sourcePath = ltrim($sourceUrl, '/');
-        }
-
-        $disk = Storage::disk('spaces');
-        if ($disk->exists($sourcePath)) {
-            $ext = pathinfo($sourcePath, PATHINFO_EXTENSION);
+        $found = \App\Support\VideoStorage::findOnDisks($sourceUrl);
+        if ($found !== null) {
+            $ext = pathinfo($found['path'], PATHINFO_EXTENSION);
             $filename = "{$generation->operation}-{$generation->id}".($index > 0 ? "-{$index}" : '').'.'.($ext ?: 'png');
 
-            return $disk->download($sourcePath, $filename);
+            return Storage::disk($found['disk'])->download($found['path'], $filename);
         }
 
         if (filter_var($sourceUrl, FILTER_VALIDATE_URL)) {
@@ -120,19 +114,11 @@ class AIGenerationStatusController extends Controller
             abort(403, 'Unauthorized to delete this generation.');
         }
 
-        // Delete output files from DO Spaces if they exist
+        // Delete output files from storage (R2 or DO Spaces) if they exist
         if (! empty($generation->output_metadata)) {
             foreach ($generation->output_metadata as $sourceUrl) {
                 if (is_string($sourceUrl)) {
-                    if (filter_var($sourceUrl, FILTER_VALIDATE_URL)) {
-                        $sourcePath = ltrim((string) parse_url($sourceUrl, PHP_URL_PATH), '/');
-                    } else {
-                        $sourcePath = ltrim($sourceUrl, '/');
-                    }
-
-                    if (Storage::disk('spaces')->exists($sourcePath)) {
-                        Storage::disk('spaces')->delete($sourcePath);
-                    }
+                    \App\Support\VideoStorage::deleteUrlOrPath($sourceUrl);
                 }
             }
         }

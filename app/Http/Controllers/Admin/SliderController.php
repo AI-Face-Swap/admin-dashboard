@@ -59,11 +59,17 @@ class SliderController extends Controller
         ]);
 
         $file = $request->file('file');
-        $path = $file->storeAs(
-            'sliders',
-            Str::uuid().'.'.$file->getClientOriginalExtension(),
-            'spaces',
-        );
+        $isVideo = $validated['type'] === 'video'
+            || \App\Support\VideoStorage::isVideoExtension($file->getClientOriginalExtension())
+            || \App\Support\VideoStorage::isVideoMime($file->getMimeType());
+
+        $path = $isVideo
+            ? \App\Support\VideoStorage::storeUploadedFile($file, 'sliders')['url']
+            : $file->storeAs(
+                'sliders',
+                Str::uuid().'.'.$file->getClientOriginalExtension(),
+                'spaces',
+            );
 
         Slider::create([
             ...$validated,
@@ -120,19 +126,23 @@ class SliderController extends Controller
 
         // Replace file if a new one is uploaded
         if ($request->hasFile('file')) {
-            // Delete old file
+            // Delete old file from R2 or Spaces
             if ($slider->file_path) {
-                Storage::disk('spaces')->delete($slider->file_path);
+                \App\Support\VideoStorage::deleteUrlOrPath($slider->file_path);
             }
 
             $file = $request->file('file');
-            $path = $file->storeAs(
-                'sliders',
-                Str::uuid().'.'.$file->getClientOriginalExtension(),
-                'spaces',
-            );
+            $isVideo = $validated['type'] === 'video'
+                || \App\Support\VideoStorage::isVideoExtension($file->getClientOriginalExtension())
+                || \App\Support\VideoStorage::isVideoMime($file->getMimeType());
 
-            $data['file_path'] = $path;
+            $data['file_path'] = $isVideo
+                ? \App\Support\VideoStorage::storeUploadedFile($file, 'sliders')['url']
+                : $file->storeAs(
+                    'sliders',
+                    Str::uuid().'.'.$file->getClientOriginalExtension(),
+                    'spaces',
+                );
         }
 
         $slider->update($data);
@@ -146,9 +156,9 @@ class SliderController extends Controller
      */
     public function destroy(Slider $slider): RedirectResponse
     {
-        // Delete file from storage
+        // Delete file from storage (R2 or Spaces)
         if ($slider->file_path) {
-            Storage::disk('spaces')->delete($slider->file_path);
+            \App\Support\VideoStorage::deleteUrlOrPath($slider->file_path);
         }
 
         $slider->delete();

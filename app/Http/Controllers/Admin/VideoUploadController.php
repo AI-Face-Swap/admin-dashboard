@@ -52,7 +52,7 @@ class VideoUploadController extends Controller
     }
 
     /**
-     * Upload a video file to DigitalOcean Spaces and save its public URL.
+     * Upload a video file to Cloudflare R2 and save its public URL.
      */
     public function store(Request $request): RedirectResponse
     {
@@ -62,12 +62,10 @@ class VideoUploadController extends Controller
         ]);
 
         $file = $request->file('video');
-        $disk = (string) config('ai.providers.segmind.storage_disk', 'spaces');
-        $extension = $file->getClientOriginalExtension() ?: 'mp4';
-        $filename = Str::uuid().'.'.$extension;
-        $path = $file->storeAs('input-videos', $filename, $disk);
 
-        if ($path === false) {
+        try {
+            $stored = \App\Support\VideoStorage::storeUploadedFile($file, 'input-videos');
+        } catch (\Throwable $e) {
             return back()->withErrors(['video' => 'Failed to upload video to storage.']);
         }
 
@@ -75,13 +73,13 @@ class VideoUploadController extends Controller
             'user_id' => $request->user()?->id,
             'title' => filled($validated['title'] ?? null) ? trim((string) $validated['title']) : null,
             'original_filename' => $file->getClientOriginalName(),
-            'path' => $path,
-            'url' => Storage::disk($disk)->url($path),
+            'path' => $stored['path'],
+            'url' => $stored['url'],
             'mime_type' => $file->getClientMimeType(),
             'size_bytes' => $file->getSize() ?: 0,
         ]);
 
-        return to_route('admin.video-uploads.index')->with('success', 'Video uploaded to Spaces.');
+        return to_route('admin.video-uploads.index')->with('success', 'Video uploaded to Cloudflare R2.');
     }
 
     /**
@@ -89,11 +87,7 @@ class VideoUploadController extends Controller
      */
     public function destroy(UploadedVideo $videoUpload): RedirectResponse
     {
-        $disk = (string) config('ai.providers.segmind.storage_disk', 'spaces');
-
-        if ($videoUpload->path && Storage::disk($disk)->exists($videoUpload->path)) {
-            Storage::disk($disk)->delete($videoUpload->path);
-        }
+        \App\Support\VideoStorage::deleteUrlOrPath($videoUpload->url ?: $videoUpload->path);
 
         $videoUpload->delete();
 

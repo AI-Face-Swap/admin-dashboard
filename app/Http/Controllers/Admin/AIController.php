@@ -49,18 +49,12 @@ class AIController extends Controller
         }
 
         $sourceUrl = $outputs[$index];
-        if (filter_var($sourceUrl, FILTER_VALIDATE_URL)) {
-            $sourcePath = ltrim((string) parse_url($sourceUrl, PHP_URL_PATH), '/');
-        } else {
-            $sourcePath = ltrim($sourceUrl, '/');
-        }
-
-        $disk = Storage::disk('spaces');
-        if ($disk->exists($sourcePath)) {
-            $ext = pathinfo($sourcePath, PATHINFO_EXTENSION);
+        $found = \App\Support\VideoStorage::findOnDisks($sourceUrl);
+        if ($found !== null) {
+            $ext = pathinfo($found['path'], PATHINFO_EXTENSION);
             $filename = "{$generation->operation}-{$generation->id}".($index > 0 ? "-{$index}" : '').'.'.($ext ?: 'png');
 
-            return $disk->download($sourcePath, $filename);
+            return Storage::disk($found['disk'])->download($found['path'], $filename);
         }
 
         if (filter_var($sourceUrl, FILTER_VALIDATE_URL)) {

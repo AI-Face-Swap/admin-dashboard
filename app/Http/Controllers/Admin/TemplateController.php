@@ -134,16 +134,24 @@ class TemplateController extends Controller
             $modelName = $aiModel ? $aiModel->model_name : $modelName;
         }
 
-        $filePath = $request->file('file')->store('templates', $this->disk);
+        $uploadedFile = $request->file('file');
+        $isVideoFile = $validated['type'] === Template::TYPE_VIDEO
+            || \App\Support\VideoStorage::isVideoExtension($uploadedFile->getClientOriginalExtension())
+            || \App\Support\VideoStorage::isVideoMime($uploadedFile->getMimeType());
+        $filePath = $isVideoFile
+            ? \App\Support\VideoStorage::storeUploadedFile($uploadedFile, 'templates')['url']
+            : $uploadedFile->store('templates', $this->disk);
+
         $thumbnailPath = $request->file('thumbnail')?->store('templates/thumbnails', $this->disk);
         if ($thumbnailPath === null && $validated['type'] === Template::TYPE_VIDEO) {
-            $localFilePath = $request->file('file')->getRealPath();
+            $localFilePath = $uploadedFile->getRealPath();
             if ($localFilePath !== false) {
                 $thumbnailPath = app(VideoThumbnailExtractor::class)->fromLocalFile($localFilePath, $this->disk);
             }
         }
-        $referenceVideoPath = $request->file('reference_video')?->store('templates/references', $this->disk)
-            ?? ($validated['reference_video_url'] ?? null);
+        $referenceVideoPath = $request->hasFile('reference_video')
+            ? \App\Support\VideoStorage::storeUploadedFile($request->file('reference_video'), 'templates/references')['url']
+            : ($validated['reference_video_url'] ?? null);
         $referenceAudioPath = $request->file('reference_audio')?->store('templates/references', $this->disk)
             ?? ($validated['reference_audio_url'] ?? null);
 
@@ -337,7 +345,7 @@ class TemplateController extends Controller
         if ($request->boolean('clear_reference_video')) {
             $data['reference_video_path'] = null;
         } elseif ($request->hasFile('reference_video')) {
-            $data['reference_video_path'] = $request->file('reference_video')->store('templates/references', $this->disk);
+            $data['reference_video_path'] = \App\Support\VideoStorage::storeUploadedFile($request->file('reference_video'), 'templates/references')['url'];
         } elseif ($request->exists('reference_video_url')) {
             $data['reference_video_path'] = $validated['reference_video_url'] ?: null;
         }
@@ -349,7 +357,13 @@ class TemplateController extends Controller
         }
 
         if ($request->hasFile('file')) {
-            $data['file_path'] = $request->file('file')->store('templates', $this->disk);
+            $uploadedFile = $request->file('file');
+            $isVideoFile = $validated['type'] === Template::TYPE_VIDEO
+                || \App\Support\VideoStorage::isVideoExtension($uploadedFile->getClientOriginalExtension())
+                || \App\Support\VideoStorage::isVideoMime($uploadedFile->getMimeType());
+            $data['file_path'] = $isVideoFile
+                ? \App\Support\VideoStorage::storeUploadedFile($uploadedFile, 'templates')['url']
+                : $uploadedFile->store('templates', $this->disk);
         }
 
         if ($request->hasFile('thumbnail')) {
@@ -364,9 +378,12 @@ class TemplateController extends Controller
                     }
                 }
             } elseif (! $template->thumbnail_path && $template->file_path) {
-                $extractedThumb = app(VideoThumbnailExtractor::class)->fromDisk($template->file_path, $this->disk);
-                if ($extractedThumb !== null) {
-                    $data['thumbnail_path'] = $extractedThumb;
+                $found = \App\Support\VideoStorage::findOnDisks($template->file_path);
+                if ($found !== null) {
+                    $extractedThumb = app(VideoThumbnailExtractor::class)->fromDisk($found['path'], $found['disk'], 'templates/thumbnails', $this->disk);
+                    if ($extractedThumb !== null) {
+                        $data['thumbnail_path'] = $extractedThumb;
+                    }
                 }
             }
         }
@@ -382,10 +399,12 @@ class TemplateController extends Controller
      */
     public function destroy(Template $template): RedirectResponse
     {
-        Storage::disk($this->disk)->delete(array_filter([
-            $template->file_path,
-            $template->thumbnail_path,
-        ]));
+        \App\Support\VideoStorage::deleteUrlOrPath($template->file_path);
+        \App\Support\VideoStorage::deleteUrlOrPath($template->reference_video_path);
+
+        if ($template->thumbnail_path) {
+            Storage::disk($this->disk)->delete($template->thumbnail_path);
+        }
 
         $template->delete();
 
@@ -407,35 +426,33 @@ class TemplateController extends Controller
             return back()->with('error', 'No output found in generation.');
         }
 
-        // If it's a full URL, parse the path
-        if (filter_var($sourceUrl, FILTER_VALIDATE_URL)) {
-            $sourcePath = parse_url((string) $sourceUrl, PHP_URL_PATH);
-            $sourcePath = ltrim((string) $sourcePath, '/');
-        } else {
-            $sourcePath = ltrim($sourceUrl, '/');
-        }
-
-        if (str_starts_with($sourcePath, 'storage/') && ! Storage::disk($this->disk)->exists($sourcePath)) {
-            $sourcePath = substr($sourcePath, 8);
-        }
-
-        // Check if the file exists
-        if (! Storage::disk($this->disk)->exists($sourcePath)) {
+        $found = \App\Support\VideoStorage::findOnDisks((string) $sourceUrl);
+        if ($found === null) {
             return back()->with('error', 'Source file does not exist on storage.');
         }
 
+        $sourceDisk = $found['disk'];
+        $sourcePath = $found['path'];
+
         // Create new unique path for the template
         $extension = strtolower(pathinfo($sourcePath, PATHINFO_EXTENSION));
-        $isVideo = in_array($extension, ['mp4', 'webm', 'mov'])
+        $isVideo = \App\Support\VideoStorage::isVideoExtension($extension)
             || $generation->operation === AIGeneration::OPERATION_IMAGE_TO_VIDEO
             || $generation->operation === AIGeneration::OPERATION_VIDEO_FACE_SWAP;
 
         $type = $isVideo ? Template::TYPE_VIDEO : Template::TYPE_IMAGE;
         $defaultExtension = $isVideo ? ($extension ?: 'mp4') : ($extension ?: 'png');
-        $newPath = 'templates/'.Str::uuid().'.'.$defaultExtension;
 
-        // Copy file
-        Storage::disk($this->disk)->copy($sourcePath, $newPath);
+        if ($isVideo) {
+            $contents = Storage::disk($sourceDisk)->get($sourcePath);
+            if ($contents === null) {
+                return back()->with('error', 'Failed to read source video from storage.');
+            }
+            $newPath = \App\Support\VideoStorage::putContents('templates', Str::uuid().'.'.$defaultExtension, $contents)['url'];
+        } else {
+            $newPath = 'templates/'.Str::uuid().'.'.$defaultExtension;
+            Storage::disk($this->disk)->copy($sourcePath, $newPath);
+        }
 
         $input = $generation->input_metadata ?? [];
 

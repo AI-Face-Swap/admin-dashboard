@@ -40,8 +40,7 @@ class HomeShowcaseController extends Controller
 
         if ($request->hasFile('video_url')) {
             $file = $request->file('video_url');
-            $path = $file->storeAs('HomeShowcase', Str::uuid().'.'.$file->getClientOriginalExtension(), 'spaces');
-            $data['video_url'] = Storage::disk('spaces')->url($path);
+            $data['video_url'] = \App\Support\VideoStorage::storeUploadedFile($file, 'HomeShowcase')['url'];
         }
         if ($request->hasFile('image_fallback_url')) {
             $file = $request->file('image_fallback_url');
@@ -91,8 +90,7 @@ class HomeShowcaseController extends Controller
 
         if ($request->hasFile('video_url')) {
             $file = $request->file('video_url');
-            $path = $file->storeAs('HomeShowcase', Str::uuid().'.'.$file->getClientOriginalExtension(), 'spaces');
-            $data['video_url'] = Storage::disk('spaces')->url($path);
+            $data['video_url'] = \App\Support\VideoStorage::storeUploadedFile($file, 'HomeShowcase')['url'];
         }
         if ($request->hasFile('image_fallback_url')) {
             $file = $request->file('image_fallback_url');
