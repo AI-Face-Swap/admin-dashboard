@@ -945,42 +945,6 @@ export default function Index({
                                                 </ReactMarkdown>
                                             </div>
 
-                                            {msg.structured?.related_questions &&
-                                                msg.structured.related_questions
-                                                    .length > 0 && (
-                                                    <div className="mt-3 border-t pt-2.5">
-                                                        <p className="mb-1.5 text-[11px] font-medium text-muted-foreground">
-                                                            ဆက်မေးနိုင်သော
-                                                            မေးခွန်းများ
-                                                        </p>
-                                                        <div className="flex flex-wrap gap-1.5">
-                                                            {msg.structured.related_questions
-                                                                .slice(0, 3)
-                                                                .map(
-                                                                    (
-                                                                        q,
-                                                                        qIdx,
-                                                                    ) => (
-                                                                        <button
-                                                                            key={
-                                                                                qIdx
-                                                                            }
-                                                                            type="button"
-                                                                            onClick={() =>
-                                                                                handleSelectRelatedQuestion(
-                                                                                    q,
-                                                                                )
-                                                                            }
-                                                                            className="rounded-lg border bg-background px-2.5 py-1.5 text-left text-xs text-foreground transition-colors hover:border-primary hover:bg-primary/5 cursor-pointer"
-                                                                        >
-                                                                            {q}
-                                                                        </button>
-                                                                    ),
-                                                                )}
-                                                        </div>
-                                                    </div>
-                                                )}
-
                                             {msg.rag_sources &&
                                                 msg.rag_sources.length > 0 && (
                                                     <details className="mt-3 border-t pt-2.5 text-xs text-muted-foreground">
@@ -1042,21 +1006,57 @@ export default function Index({
 
                     {/* Footer Composer */}
                     <footer className="border-t p-3">
-                        {category === 'astrology' && (
-                            <div className="mb-2 flex flex-wrap gap-1.5">
-                                {QUICK_ASTROLOGY_PROMPTS.map((q) => (
-                                    <button
-                                        key={q}
-                                        type="button"
-                                        disabled={sending}
-                                        onClick={() => handleSend(q)}
-                                        className="rounded-full border bg-muted/40 px-2.5 py-1 text-[11px] text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground disabled:opacity-50 cursor-pointer"
-                                    >
-                                        {q}
-                                    </button>
-                                ))}
-                            </div>
-                        )}
+                        {(() => {
+                            if (sending) return null;
+                            const lastAssistant = [...messages]
+                                .reverse()
+                                .find((m) => m.role === 'assistant');
+                            const related =
+                                lastAssistant?.structured?.related_questions ??
+                                [];
+                            if (related.length > 0) {
+                                return (
+                                    <div className="mb-2.5 flex flex-col gap-1.5">
+                                        {related.slice(0, 3).map((q, idx) => (
+                                            <button
+                                                key={idx}
+                                                type="button"
+                                                onClick={() =>
+                                                    handleSelectRelatedQuestion(
+                                                        q,
+                                                    )
+                                                }
+                                                className="w-full rounded-lg border bg-muted/40 px-3 py-1.5 text-left text-xs text-foreground transition-colors hover:border-primary hover:bg-primary/5 cursor-pointer"
+                                            >
+                                                {q}
+                                            </button>
+                                        ))}
+                                    </div>
+                                );
+                            }
+                            if (category === 'astrology') {
+                                return (
+                                    <div className="mb-2 flex flex-wrap gap-1.5">
+                                        {QUICK_ASTROLOGY_PROMPTS.map((q) => (
+                                            <button
+                                                key={q}
+                                                type="button"
+                                                disabled={sending}
+                                                onClick={() =>
+                                                    handleSelectRelatedQuestion(
+                                                        q,
+                                                    )
+                                                }
+                                                className="rounded-full border bg-muted/40 px-2.5 py-1 text-[11px] text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground disabled:opacity-50 cursor-pointer"
+                                            >
+                                                {q}
+                                            </button>
+                                        ))}
+                                    </div>
+                                );
+                            }
+                            return null;
+                        })()}
 
                         <form
                             onSubmit={(e) => {
