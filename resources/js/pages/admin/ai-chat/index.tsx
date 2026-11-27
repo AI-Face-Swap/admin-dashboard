@@ -1016,7 +1016,7 @@ export default function Index({
                                 [];
                             if (related.length > 0) {
                                 return (
-                                    <div className="mb-2.5 flex flex-col gap-1.5">
+                                    <div className="mb-2.5 flex flex-col items-start gap-1.5">
                                         {related.slice(0, 3).map((q, idx) => (
                                             <button
                                                 key={idx}
@@ -1026,7 +1026,7 @@ export default function Index({
                                                         q,
                                                     )
                                                 }
-                                                className="w-full rounded-lg border bg-muted/40 px-3 py-1.5 text-left text-xs text-foreground transition-colors hover:border-primary hover:bg-primary/5 cursor-pointer"
+                                                className="w-fit max-w-full rounded-full border bg-muted/40 px-3.5 py-1.5 text-left text-xs text-foreground transition-colors hover:border-primary hover:bg-primary/5 cursor-pointer"
                                             >
                                                 {q}
                                             </button>
