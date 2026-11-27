@@ -435,6 +435,7 @@ class AIChatService
             return [
                 'content' => $normalized['content'],
                 'structured' => $normalized['structured'],
+                'rag_sources' => $ragMetadata['sources'] ?? [],
                 'tokens_used' => $completion->totalTokens,
                 'cost' => $completion->costUsd,
                 'duration_ms' => $durationMs,

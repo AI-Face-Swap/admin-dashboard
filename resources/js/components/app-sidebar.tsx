@@ -56,6 +56,12 @@ const mainNavItems: NavItem[] = [
         permission: 'ai.view',
     },
     {
+        title: 'AI Chat',
+        href: '/admin/ai-chat',
+        icon: MessageSquare,
+        permission: 'ai.view',
+    },
+    {
         title: 'Video Uploads',
         href: '/admin/video-uploads',
         icon: Video,

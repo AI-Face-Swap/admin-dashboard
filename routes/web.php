@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\AIController;
 use App\Http\Controllers\Admin\AIModelController;
 use App\Http\Controllers\Admin\APIPlaygroundController;
 use App\Http\Controllers\Admin\APIRequestLogController;
+use App\Http\Controllers\Admin\AdminAIChatController;
 use App\Http\Controllers\Admin\ApiDocsSettingsController;
 use App\Http\Controllers\Admin\ChatCategoryController;
 use App\Http\Controllers\Admin\CustomerController;
@@ -83,6 +84,13 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::patch('providers/{provider}/toggle', [ProviderController::class, 'toggle'])->middleware('permission:providers.manage')->name('providers.toggle');
 
     Route::get('ai', [AIController::class, 'index'])->middleware('permission:ai.view')->name('ai.index');
+    Route::middleware('permission:ai.view')->prefix('ai-chat')->name('ai-chat.')->group(function () {
+        Route::get('/', [AdminAIChatController::class, 'index'])->name('index');
+        Route::post('/calculate-dob', [AdminAIChatController::class, 'calculateDob'])->name('calculate-dob');
+        Route::get('/conversations/{conversation}', [AdminAIChatController::class, 'show'])->name('conversations.show');
+        Route::post('/send', [AdminAIChatController::class, 'send'])->name('send');
+        Route::delete('/conversations/{conversation}', [AdminAIChatController::class, 'destroy'])->name('conversations.destroy');
+    });
     Route::post('ai/templates/{slug}/generate', [AITemplateGenerationController::class, 'store'])->middleware('permission:ai.view')->name('ai.templates.generate');
     Route::post('ai/template-generate', [AITemplateGenerationController::class, 'store'])->middleware('permission:ai.view')->name('ai.template-generate');
     Route::post('ai/images', [AIImageGenerationController::class, 'store'])->middleware('permission:ai.view')->name('ai.images');
