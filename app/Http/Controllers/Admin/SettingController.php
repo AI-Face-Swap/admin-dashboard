@@ -141,9 +141,9 @@ class SettingController extends Controller
             'image_generation' => (int) Setting::get('ai', 'coin_cost_image_generation', 5),
             'image_to_video_480p' => (int) Setting::get('ai', 'coin_cost_image_to_video_480p', 10),
             'image_to_video_720p' => (int) Setting::get('ai', 'coin_cost_image_to_video_720p', 20),
-            'astrology_short' => (int) Setting::get('ai', 'point_cost_astrology_short', config('ai.point_costs.astrology_short', 3)),
-            'astrology_normal' => (int) Setting::get('ai', 'point_cost_astrology_normal', config('ai.point_costs.astrology_normal', 5)),
-            'astrology_long' => (int) Setting::get('ai', 'point_cost_astrology_long', config('ai.point_costs.astrology_long', 10)),
+            'astrology_short' => (int) Setting::get('ai', 'point_cost_astrology_short', config('ai.point_costs.astrology_short', 10)),
+            'astrology_normal' => (int) Setting::get('ai', 'point_cost_astrology_normal', config('ai.point_costs.astrology_normal', 50)),
+            'astrology_long' => (int) Setting::get('ai', 'point_cost_astrology_long', config('ai.point_costs.astrology_long', 100)),
         ];
     }
 

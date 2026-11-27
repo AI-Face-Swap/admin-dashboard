@@ -57,6 +57,7 @@ type ChatMessage = {
     structured?: {
         sections?: { title: string; description: string }[];
         checklist?: { item: string; detail: string }[];
+        related_questions?: string[];
     } | null;
     rag_sources?: RagSource[];
     model?: string | null;
@@ -64,6 +65,41 @@ type ChatMessage = {
     duration_ms?: number | null;
     created_at?: string | null;
 };
+
+function parseFlexibleDob(raw: string): string | null {
+    const trimmed = raw.trim();
+    const isoMatch = trimmed.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+    if (isoMatch) {
+        const [, y, m, d] = isoMatch;
+        const mm = m.padStart(2, '0');
+        const dd = d.padStart(2, '0');
+        const date = new Date(`${y}-${mm}-${dd}T00:00:00`);
+        if (
+            !Number.isNaN(date.getTime()) &&
+            date.getFullYear() === Number(y) &&
+            date.getMonth() + 1 === Number(m) &&
+            date.getDate() === Number(d)
+        ) {
+            return `${y}-${mm}-${dd}`;
+        }
+    }
+    const dmyMatch = trimmed.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
+    if (dmyMatch) {
+        const [, d, m, y] = dmyMatch;
+        const mm = m.padStart(2, '0');
+        const dd = d.padStart(2, '0');
+        const date = new Date(`${y}-${mm}-${dd}T00:00:00`);
+        if (
+            !Number.isNaN(date.getTime()) &&
+            date.getFullYear() === Number(y) &&
+            date.getMonth() + 1 === Number(m) &&
+            date.getDate() === Number(d)
+        ) {
+            return `${y}-${mm}-${dd}`;
+        }
+    }
+    return null;
+}
 
 type CategoryKey = 'astrology' | 'general' | 'health' | 'education';
 type ResponseType = 'short' | 'normal' | 'long';
@@ -115,6 +151,8 @@ export default function Index({
     const [copiedId, setCopiedId] = useState<number | null>(null);
 
     const messagesEndRef = useRef<HTMLDivElement | null>(null);
+    const promptInputRef = useRef<HTMLTextAreaElement | null>(null);
+    const nativeDatePickerRef = useRef<HTMLInputElement | null>(null);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -138,14 +176,22 @@ export default function Index({
 
     const handleBirthdayChange = async (value: string) => {
         setClientBirthday(value);
-        if (!value) {
+        if (!value.trim()) {
             setAstrology(null);
             return;
+        }
+        const parsedIso = parseFlexibleDob(value);
+        if (!parsedIso) {
+            setAstrology(null);
+            return;
+        }
+        if (parsedIso !== value) {
+            setClientBirthday(parsedIso);
         }
         setCalculatingDob(true);
         try {
             const res = await axios.post('/admin/ai-chat/calculate-dob', {
-                birthday: value,
+                birthday: parsedIso,
             });
             setAstrology(res.data.astrology ?? null);
         } catch {
@@ -154,6 +200,11 @@ export default function Index({
         } finally {
             setCalculatingDob(false);
         }
+    };
+
+    const handleSelectRelatedQuestion = (question: string) => {
+        setPrompt(question);
+        promptInputRef.current?.focus();
     };
 
     const handleNewClient = () => {
@@ -384,7 +435,9 @@ export default function Index({
                                             htmlFor="client-dob"
                                             className="flex items-center justify-between text-xs"
                                         >
-                                            <span>Date of Birth</span>
+                                            <span>
+                                                Date of Birth (YYYY-MM-DD)
+                                            </span>
                                             {calculatingDob && (
                                                 <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
                                                     <Loader2 className="h-3 w-3 animate-spin" />
@@ -392,17 +445,79 @@ export default function Index({
                                                 </span>
                                             )}
                                         </Label>
-                                        <Input
-                                            id="client-dob"
-                                            type="date"
-                                            value={clientBirthday}
-                                            onChange={(e) =>
-                                                handleBirthdayChange(
-                                                    e.target.value,
-                                                )
-                                            }
-                                            className="h-9 text-sm"
-                                        />
+                                        <div className="relative flex items-center gap-1.5">
+                                            <Input
+                                                id="client-dob"
+                                                type="text"
+                                                inputMode="numeric"
+                                                value={clientBirthday}
+                                                onChange={(e) =>
+                                                    handleBirthdayChange(
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                onPaste={(e) => {
+                                                    const pasted =
+                                                        e.clipboardData.getData(
+                                                            'text',
+                                                        );
+                                                    const parsed =
+                                                        parseFlexibleDob(
+                                                            pasted,
+                                                        );
+                                                    if (parsed) {
+                                                        e.preventDefault();
+                                                        handleBirthdayChange(
+                                                            parsed,
+                                                        );
+                                                    }
+                                                }}
+                                                placeholder="2007-07-16"
+                                                className="h-9 flex-1 font-mono text-sm"
+                                            />
+                                            <input
+                                                ref={nativeDatePickerRef}
+                                                type="date"
+                                                value={
+                                                    parseFlexibleDob(
+                                                        clientBirthday,
+                                                    ) ?? ''
+                                                }
+                                                onChange={(e) =>
+                                                    handleBirthdayChange(
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                className="sr-only"
+                                                tabIndex={-1}
+                                            />
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="icon"
+                                                className="h-9 w-9 shrink-0"
+                                                title="Pick from calendar"
+                                                onClick={() => {
+                                                    const el =
+                                                        nativeDatePickerRef.current;
+                                                    if (!el) return;
+                                                    if (
+                                                        typeof el.showPicker ===
+                                                        'function'
+                                                    ) {
+                                                        el.showPicker();
+                                                    } else {
+                                                        el.click();
+                                                    }
+                                                }}
+                                            >
+                                                <Calendar className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                        <p className="text-[11px] text-muted-foreground">
+                                            Copy-paste ရသည် (e.g. 2007-07-16
+                                            သို့ 16/07/2007)
+                                        </p>
                                     </div>
 
                                     {astrology && (
@@ -450,38 +565,74 @@ export default function Index({
                                 </div>
                             )}
 
-                            {/* Response Length */}
+                            {/* Response Length (Radio) */}
                             {category === 'astrology' && (
-                                <div className="space-y-1.5 border-t pt-3">
+                                <div className="space-y-2 border-t pt-3">
                                     <Label className="text-xs">
-                                        Response Length
+                                        ဟောစာတမ်း အမျိုးအစား
                                     </Label>
-                                    <div className="grid grid-cols-3 gap-1.5">
+                                    <div
+                                        role="radiogroup"
+                                        className="space-y-1.5"
+                                    >
                                         {(
                                             [
-                                                { key: 'short', label: 'Short' },
+                                                {
+                                                    key: 'short',
+                                                    label: 'လိုရင်းတိုရှင်း',
+                                                    points: 10,
+                                                },
                                                 {
                                                     key: 'normal',
-                                                    label: 'Normal',
+                                                    label: 'အပြည့်အစုံ',
+                                                    points: 50,
                                                 },
-                                                { key: 'long', label: 'Long' },
+                                                {
+                                                    key: 'long',
+                                                    label: 'အသေးစိတ်',
+                                                    points: 100,
+                                                },
                                             ] as const
-                                        ).map((opt) => (
-                                            <button
-                                                key={opt.key}
-                                                type="button"
-                                                onClick={() =>
-                                                    setResponseType(opt.key)
-                                                }
-                                                className={`rounded-lg border py-1.5 text-xs font-medium transition-colors cursor-pointer ${
-                                                    responseType === opt.key
-                                                        ? 'border-primary bg-primary/10 text-primary'
-                                                        : 'border-border text-muted-foreground hover:bg-muted'
-                                                }`}
-                                            >
-                                                {opt.label}
-                                            </button>
-                                        ))}
+                                        ).map((opt) => {
+                                            const checked =
+                                                responseType === opt.key;
+                                            return (
+                                                <label
+                                                    key={opt.key}
+                                                    className={`flex items-center justify-between rounded-lg border px-3 py-2 text-xs transition-colors cursor-pointer ${
+                                                        checked
+                                                            ? 'border-primary bg-primary/10 text-primary'
+                                                            : 'border-border text-muted-foreground hover:bg-muted'
+                                                    }`}
+                                                >
+                                                    <span className="flex items-center gap-2 font-medium">
+                                                        <input
+                                                            type="radio"
+                                                            name="admin-astrology-response-type"
+                                                            value={opt.key}
+                                                            checked={checked}
+                                                            onChange={() =>
+                                                                setResponseType(
+                                                                    opt.key,
+                                                                )
+                                                            }
+                                                            className="accent-primary"
+                                                        />
+                                                        {opt.label}
+                                                    </span>
+                                                    <Badge
+                                                        variant={
+                                                            checked
+                                                                ? 'default'
+                                                                : 'secondary'
+                                                        }
+                                                        className="px-1.5 py-0 text-[10px]"
+                                                    >
+                                                        {opt.points} pts
+                                                    </Badge>
+                                                </label>
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             )}
@@ -794,6 +945,42 @@ export default function Index({
                                                 </ReactMarkdown>
                                             </div>
 
+                                            {msg.structured?.related_questions &&
+                                                msg.structured.related_questions
+                                                    .length > 0 && (
+                                                    <div className="mt-3 border-t pt-2.5">
+                                                        <p className="mb-1.5 text-[11px] font-medium text-muted-foreground">
+                                                            ဆက်မေးနိုင်သော
+                                                            မေးခွန်းများ
+                                                        </p>
+                                                        <div className="flex flex-wrap gap-1.5">
+                                                            {msg.structured.related_questions
+                                                                .slice(0, 3)
+                                                                .map(
+                                                                    (
+                                                                        q,
+                                                                        qIdx,
+                                                                    ) => (
+                                                                        <button
+                                                                            key={
+                                                                                qIdx
+                                                                            }
+                                                                            type="button"
+                                                                            onClick={() =>
+                                                                                handleSelectRelatedQuestion(
+                                                                                    q,
+                                                                                )
+                                                                            }
+                                                                            className="rounded-lg border bg-background px-2.5 py-1.5 text-left text-xs text-foreground transition-colors hover:border-primary hover:bg-primary/5 cursor-pointer"
+                                                                        >
+                                                                            {q}
+                                                                        </button>
+                                                                    ),
+                                                                )}
+                                                        </div>
+                                                    </div>
+                                                )}
+
                                             {msg.rag_sources &&
                                                 msg.rag_sources.length > 0 && (
                                                     <details className="mt-3 border-t pt-2.5 text-xs text-muted-foreground">
@@ -879,6 +1066,7 @@ export default function Index({
                             className="flex items-end gap-2"
                         >
                             <textarea
+                                ref={promptInputRef}
                                 value={prompt}
                                 onChange={(e) => setPrompt(e.target.value)}
                                 onKeyDown={(e) => {

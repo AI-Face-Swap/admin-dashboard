@@ -235,9 +235,9 @@ class AIChatService
         if ($normalizedCategory === 'astrology') {
             $type = AstrologySkill::normalizeResponseType($responseType);
             $defaultCost = match ($type) {
-                AstrologySkill::TYPE_SHORT => 3,
-                AstrologySkill::TYPE_LONG => 10,
-                default => 5,
+                AstrologySkill::TYPE_SHORT => 10,
+                AstrologySkill::TYPE_LONG => 100,
+                default => 50,
             };
 
             return (int) Setting::get(

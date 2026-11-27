@@ -93,7 +93,9 @@ PROMPT;
             }
         }
 
-        $content = $this->stripCitationMarkers((string) ($parsed['content'] ?? ($language === 'my' ? 'အချက်အလက်များကို အောက်တွင် ဖော်ပြပေးထားပါသည်။' : 'Here are the details:')));
+        $rawContentStr = (string) ($parsed['content'] ?? ($language === 'my' ? 'အချက်အလက်များကို အောက်တွင် ဖော်ပြပေးထားပါသည်။' : 'Here are the details:'));
+        [$cleanContent, $relatedQuestions] = $this->extractRelatedQuestions($rawContentStr);
+        $content = $this->stripCitationMarkers($cleanContent);
 
         $structured = is_array($parsed['structured'] ?? null) ? $parsed['structured'] : [];
         $sections = [];
@@ -125,8 +127,39 @@ PROMPT;
             'structured' => [
                 'sections' => $sections,
                 'checklist' => $checklist,
+                'related_questions' => $relatedQuestions,
             ],
         ];
+    }
+
+    /**
+     * Extract [RELATED_QUESTIONS]...[/RELATED_QUESTIONS] block from the reply
+     * and return [cleanContent, relatedQuestions].
+     *
+     * @return array{0: string, 1: list<string>}
+     */
+    protected function extractRelatedQuestions(string $text): array
+    {
+        if (preg_match('/\[RELATED_QUESTIONS\]\s*([\s\S]*?)\s*\[\/RELATED_QUESTIONS\]/u', $text, $matches) !== 1) {
+            return [$text, []];
+        }
+
+        $cleanContent = trim(str_replace($matches[0], '', $text));
+        $lines = preg_split('/\R+/u', trim($matches[1])) ?: [];
+
+        $questions = [];
+        foreach ($lines as $line) {
+            $item = trim((string) preg_replace('/^\s*(?:[-*•]|\d+[.)])\s*/u', '', $line));
+            $item = trim($item, " \t\n\r\0\x0B\"'");
+            if ($item !== '') {
+                $questions[] = $item;
+            }
+            if (count($questions) >= 3) {
+                break;
+            }
+        }
+
+        return [$cleanContent, $questions];
     }
 
     /**

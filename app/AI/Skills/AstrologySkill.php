@@ -100,24 +100,34 @@ class AstrologySkill extends BaseChatSkill
         $targetLang = $language === 'my' ? 'natural Myanmar Unicode' : 'English';
         $wordLang = $language === 'my' ? 'Burmese words' : 'words';
 
+        $relatedSpec = <<<RELATED
+
+At the very end of your response, suggest exactly 3 short, relevant follow-up astrology questions in {$targetLang} that the user might ask next, wrapped strictly in this block:
+[RELATED_QUESTIONS]
+1. First follow-up question
+2. Second follow-up question
+3. Third follow-up question
+[/RELATED_QUESTIONS]
+RELATED;
+
         return match ($type) {
             self::TYPE_SHORT => <<<PROMPT
 Format your reply in clean, natural Markdown in {$targetLang} (like ChatGPT):
 - Use short headings, **bold** key points, and concise bullet points where helpful.
 - Do NOT return JSON or wrap the reply in code fences.
-- Keep the entire response concise and under 100 {$wordLang}.
+- Keep the main response concise and under 100 {$wordLang}.{$relatedSpec}
 PROMPT,
             self::TYPE_LONG => <<<PROMPT
 Format your reply in clean, rich Markdown in {$targetLang} (like ChatGPT):
 - Use clear emoji headings (e.g. Overall Destiny & Mahabote, Career & Finance, Love & Relationships, Health & Energy, Auspicious Guidance / Remedies), **bold** highlights, bullet points, and Markdown tables when useful.
 - Do NOT return JSON or wrap the reply in code fences.
-- Keep the entire response thorough, well-structured, and up to 600 {$wordLang}.
+- Keep the main response thorough, well-structured, and up to 600 {$wordLang}.{$relatedSpec}
 PROMPT,
             default => <<<PROMPT
 Format your reply in clean, well-structured Markdown in {$targetLang} (like ChatGPT):
 - Use clear headings with emojis, **bold** key points, bullet points, and Markdown tables when helpful.
 - Do NOT return JSON or wrap the reply in code fences.
-- Keep the entire response rich, easy to read, and under 250 {$wordLang}.
+- Keep the main response rich, easy to read, and under 250 {$wordLang}.{$relatedSpec}
 PROMPT,
         };
     }

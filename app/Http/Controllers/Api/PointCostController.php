@@ -39,9 +39,9 @@ class PointCostController extends Controller
             ];
         }
 
-        $astrologyShort = (int) Setting::get('ai', 'point_cost_astrology_short', config('ai.point_costs.astrology_short', 3));
-        $astrologyNormal = (int) Setting::get('ai', 'point_cost_astrology_normal', config('ai.point_costs.astrology_normal', 5));
-        $astrologyLong = (int) Setting::get('ai', 'point_cost_astrology_long', config('ai.point_costs.astrology_long', 10));
+        $astrologyShort = (int) Setting::get('ai', 'point_cost_astrology_short', config('ai.point_costs.astrology_short', 10));
+        $astrologyNormal = (int) Setting::get('ai', 'point_cost_astrology_normal', config('ai.point_costs.astrology_normal', 50));
+        $astrologyLong = (int) Setting::get('ai', 'point_cost_astrology_long', config('ai.point_costs.astrology_long', 100));
 
         return response()->json([
             'image_generation' => (int) Setting::get('ai', 'point_cost_image_generation', Setting::get('ai', 'coin_cost_image_generation', config('ai.point_costs.image_generation', config('ai.coin_costs.image_generation', 5)))),
