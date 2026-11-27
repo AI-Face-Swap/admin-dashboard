@@ -79,17 +79,11 @@ PROMPT;
         if (is_array($rawResponse)) {
             $parsed = $rawResponse;
         } elseif (is_string($rawResponse)) {
-            // Strip potential markdown code block markers
+            // Strip potential outer markdown/json code block wrappers
             $cleaned = trim($rawResponse);
-            if (str_starts_with($cleaned, '```json')) {
-                $cleaned = substr($cleaned, 7);
-            } elseif (str_starts_with($cleaned, '```')) {
-                $cleaned = substr($cleaned, 3);
+            if (preg_match('/^```(?:json|markdown|md)?\s*\R([\s\S]*?)\R```$/u', $cleaned, $matches) === 1) {
+                $cleaned = trim($matches[1]);
             }
-            if (str_ends_with($cleaned, '```')) {
-                $cleaned = substr($cleaned, 0, -3);
-            }
-            $cleaned = trim($cleaned);
 
             $decoded = json_decode($cleaned, true);
             if (is_array($decoded)) {

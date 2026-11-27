@@ -102,49 +102,22 @@ class AstrologySkill extends BaseChatSkill
 
         return match ($type) {
             self::TYPE_SHORT => <<<PROMPT
-Return strictly raw JSON (no markdown):
-{
-  "content": "A concise 1-to-2 sentence astrology highlight in {$targetLang}.",
-  "structured": {
-    "sections": [
-      {"title": "Section Title with Emoji", "description": "Brief 1-to-2 sentence key insight."}
-    ],
-    "checklist": [
-      {"item": "Quick Tip", "detail": "Short actionable guidance"}
-    ]
-  }
-}
-Structure guidelines: Provide exactly 1 brief section and 1 to 2 short checklist items. Keep the entire response concise and under 100 {$wordLang}.
+Format your reply in clean, natural Markdown in {$targetLang} (like ChatGPT):
+- Use short headings, **bold** key points, and concise bullet points where helpful.
+- Do NOT return JSON or wrap the reply in code fences.
+- Keep the entire response concise and under 100 {$wordLang}.
 PROMPT,
             self::TYPE_LONG => <<<PROMPT
-Return strictly raw JSON (no markdown):
-{
-  "content": "A detailed, deeply personalized astrology overview in {$targetLang} (3 to 4 sentences).",
-  "structured": {
-    "sections": [
-      {"title": "Section Title with Emoji", "description": "Thorough 3-to-4 sentence astrological analysis."}
-    ],
-    "checklist": [
-      {"item": "Key Guidance or Remedy", "detail": "Detailed actionable recommendation"}
-    ]
-  }
-}
-Structure guidelines: Provide 4 to 5 comprehensive sections (such as Overall Destiny & Mahabote, Career & Finance, Love & Relationships, Health & Energy, and Auspicious Guidance / Remedies) and 4 to 6 actionable checklist items. Keep the entire response thorough, well-structured, and up to 600 {$wordLang}.
+Format your reply in clean, rich Markdown in {$targetLang} (like ChatGPT):
+- Use clear emoji headings (e.g. Overall Destiny & Mahabote, Career & Finance, Love & Relationships, Health & Energy, Auspicious Guidance / Remedies), **bold** highlights, bullet points, and Markdown tables when useful.
+- Do NOT return JSON or wrap the reply in code fences.
+- Keep the entire response thorough, well-structured, and up to 600 {$wordLang}.
 PROMPT,
             default => <<<PROMPT
-Return strictly raw JSON (no markdown):
-{
-  "content": "A clear, engaging overview in {$targetLang} (2 to 3 sentences).",
-  "structured": {
-    "sections": [
-      {"title": "Section Title with Emoji", "description": "Concise 2-to-3 sentence explanation."}
-    ],
-    "checklist": [
-      {"item": "Key Point", "detail": "Actionable recommendation"}
-    ]
-  }
-}
-Structure guidelines: Provide 2 to 3 informative sections and 2 to 4 checklist items. Keep the entire response rich, well-formatted, and under 250 {$wordLang}.
+Format your reply in clean, well-structured Markdown in {$targetLang} (like ChatGPT):
+- Use clear headings with emojis, **bold** key points, bullet points, and Markdown tables when helpful.
+- Do NOT return JSON or wrap the reply in code fences.
+- Keep the entire response rich, easy to read, and under 250 {$wordLang}.
 PROMPT,
         };
     }

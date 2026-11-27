@@ -88,17 +88,7 @@ class RagAstrologyChatTest extends TestCase
                 'id' => 'oc-req-123',
                 'choices' => [[
                     'message' => [
-                        'content' => json_encode([
-                            'content' => 'တနင်္လာသားအတွက် ၂၀၂၆ ခုနှစ်သည် စီးပွားတက်မည့်နှစ်ဖြစ်သည်။ [1]',
-                            'structured' => [
-                                'sections' => [
-                                    ['title' => '🌟 ကံဇာတာ', 'description' => 'စီးပွားရေး တိုးတက်မည်။ [1]'],
-                                ],
-                                'checklist' => [
-                                    ['item' => 'ယတြာ', 'detail' => 'အစိမ်းရောင် ဝတ်ဆင်ပါ။ [1]'],
-                                ],
-                            ],
-                        ]),
+                        'content' => "### 🌟 ကံဇာတာ\n\n**တနင်္လာသား** အတွက် ၂၀၂၆ ခုနှစ်သည် စီးပွားတက်မည့်နှစ်ဖြစ်သည်။ [1]\n\n- အစိမ်းရောင် ဝတ်ဆင်ပါ။ [1]",
                     ],
                 ]],
                 'usage' => ['prompt_tokens' => 120, 'completion_tokens' => 80, 'total_tokens' => 200],
@@ -115,8 +105,10 @@ class RagAstrologyChatTest extends TestCase
 
         $this->assertSame('deepseek-v4.1-flash', $result['model']);
         $this->assertSame('astrology', $result['category']);
+        $this->assertStringContainsString('**တနင်္လာသား**', $result['content']);
         $this->assertStringNotContainsString('[1]', $result['content']);
-        $this->assertStringNotContainsString('[1]', $result['structured']['sections'][0]['description']);
+        $this->assertSame([], $result['structured']['sections']);
+        $this->assertSame([], $result['structured']['checklist']);
 
         Http::assertSent(function (Request $req) {
             if ($req->url() !== 'https://opencode.test/v1/chat/completions') {

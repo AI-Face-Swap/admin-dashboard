@@ -55,7 +55,6 @@ class OpenCodeChatTransport implements ChatTransportInterface
         $payload = [
             'model' => $model,
             'messages' => $messages,
-            'response_format' => ['type' => 'json_object'],
         ];
 
         $response = Http::baseUrl($baseUrl)
