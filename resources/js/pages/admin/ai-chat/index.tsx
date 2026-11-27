@@ -1001,11 +1001,7 @@ export default function Index({
                                     : 'HTUT AI အဖြေထုတ်ပေးနေပါသည်...'}
                             </div>
                         )}
-                        <div ref={messagesEndRef} />
-                    </div>
 
-                    {/* Footer Composer */}
-                    <footer className="border-t p-3">
                         {(() => {
                             if (sending) return null;
                             const lastAssistant = [...messages]
@@ -1014,49 +1010,46 @@ export default function Index({
                             const related =
                                 lastAssistant?.structured?.related_questions ??
                                 [];
-                            if (related.length > 0) {
-                                return (
-                                    <div className="mb-2.5 flex flex-col items-start gap-1.5">
-                                        {related.slice(0, 3).map((q, idx) => (
-                                            <button
-                                                key={idx}
-                                                type="button"
-                                                onClick={() =>
-                                                    handleSelectRelatedQuestion(
-                                                        q,
-                                                    )
-                                                }
-                                                className="w-fit max-w-full rounded-full border bg-muted/40 px-3.5 py-1.5 text-left text-xs text-foreground transition-colors hover:border-primary hover:bg-primary/5 cursor-pointer"
-                                            >
-                                                {q}
-                                            </button>
-                                        ))}
-                                    </div>
-                                );
-                            }
-                            if (category === 'astrology') {
-                                return (
-                                    <div className="mb-2 flex flex-wrap gap-1.5">
-                                        {QUICK_ASTROLOGY_PROMPTS.map((q) => (
-                                            <button
-                                                key={q}
-                                                type="button"
-                                                disabled={sending}
-                                                onClick={() =>
-                                                    handleSelectRelatedQuestion(
-                                                        q,
-                                                    )
-                                                }
-                                                className="rounded-full border bg-muted/40 px-2.5 py-1 text-[11px] text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground disabled:opacity-50 cursor-pointer"
-                                            >
-                                                {q}
-                                            </button>
-                                        ))}
-                                    </div>
-                                );
-                            }
-                            return null;
+                            if (related.length === 0) return null;
+                            return (
+                                <div className="flex flex-col items-start gap-1.5 pt-1">
+                                    {related.slice(0, 3).map((q, idx) => (
+                                        <button
+                                            key={idx}
+                                            type="button"
+                                            onClick={() =>
+                                                handleSelectRelatedQuestion(q)
+                                            }
+                                            className="w-fit max-w-full rounded-full border bg-muted/40 px-3.5 py-1.5 text-left text-xs text-foreground transition-colors hover:border-primary hover:bg-primary/5 cursor-pointer"
+                                        >
+                                            {q}
+                                        </button>
+                                    ))}
+                                </div>
+                            );
                         })()}
+                        <div ref={messagesEndRef} />
+                    </div>
+
+                    {/* Footer Composer */}
+                    <footer className="border-t p-3">
+                        {category === 'astrology' && messages.length === 0 && (
+                            <div className="mb-2 flex flex-wrap gap-1.5">
+                                {QUICK_ASTROLOGY_PROMPTS.map((q) => (
+                                    <button
+                                        key={q}
+                                        type="button"
+                                        disabled={sending}
+                                        onClick={() =>
+                                            handleSelectRelatedQuestion(q)
+                                        }
+                                        className="rounded-full border bg-muted/40 px-2.5 py-1 text-[11px] text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground disabled:opacity-50 cursor-pointer"
+                                    >
+                                        {q}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
 
                         <form
                             onSubmit={(e) => {
