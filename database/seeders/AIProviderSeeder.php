@@ -28,5 +28,18 @@ class AIProviderSeeder extends Seeder
                 ],
             ],
         );
+
+        AIProvider::updateOrCreate(
+            ['slug' => 'opencode-go'],
+            [
+                'name' => 'OpenCode Go',
+                'config' => [
+                    'base_url' => config('ai.providers.opencode_go.base_url', 'https://opencode.ai/inference/go/openai/v1'),
+                    'operations' => [
+                        'astrology-chat' => config('ai.providers.opencode_go.model', 'deepseek-v4.1-flash'),
+                    ],
+                ],
+            ],
+        );
     }
 }

@@ -59,6 +59,13 @@ return [
             'poll_timeout_seconds' => (int) env('SEGMIND_POLL_TIMEOUT_SECONDS', 5400),
         ],
 
+        'opencode_go' => [
+            'base_url' => env('RAG_CHAT_URL', 'https://opencode.ai/inference/go/openai/v1'),
+            'api_key' => env('RAG_CHAT_API_KEY'),
+            'model' => env('RAG_CHAT_MODEL', 'deepseek-v4.1-flash'),
+            'session_header' => env('RAG_CHAT_SESSION_HEADER', 'x-opencode-session'),
+        ],
+
     ],
 
 ];

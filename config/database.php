@@ -99,6 +99,21 @@ return [
             'sslmode' => env('DB_SSLMODE', 'prefer'),
         ],
 
+        'openwebui' => [
+            'driver' => 'pgsql',
+            'url' => env('OPENWEBUI_DB_URL'),
+            'host' => env('OPENWEBUI_DB_HOST', '127.0.0.1'),
+            'port' => env('OPENWEBUI_DB_PORT', '5432'),
+            'database' => env('OPENWEBUI_DB_DATABASE', 'openwebui'),
+            'username' => env('OPENWEBUI_DB_USERNAME', 'postgres'),
+            'password' => env('OPENWEBUI_DB_PASSWORD', ''),
+            'charset' => 'utf8',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'search_path' => 'public',
+            'sslmode' => env('OPENWEBUI_DB_SSLMODE', 'prefer'),
+        ],
+
         'sqlsrv' => [
             'driver' => 'sqlsrv',
             'url' => env('DB_URL'),

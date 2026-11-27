@@ -26,7 +26,13 @@ interface ChatSkillInterface
      *
      * @param  array<int, array{role: string, content: string}>  $history
      */
-    public function buildPrompt(string $userMessage, array $history = [], string $language = 'my', ?string $responseType = null): string;
+    public function buildPrompt(
+        string $userMessage,
+        array $history = [],
+        string $language = 'my',
+        ?string $responseType = null,
+        ?string $ragContext = null,
+    ): string;
 
     /**
      * Normalize the parsed LLM response into the format expected by the frontend.

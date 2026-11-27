@@ -736,6 +736,20 @@ class AIModelSeeder extends Seeder
                 'sort_order' => 4,
                 'description' => 'Multimodal vision-language chat model for image + text inquiries.',
             ],
+            [
+                'generation_type_slug' => 'chat',
+                'provider_name' => 'opencode-go',
+                'model_name' => 'deepseek-v4.1-flash',
+                'name' => 'DeepSeek V4.1 Flash (OpenCode Go RAG)',
+                'coin_cost' => 5,
+                'resolution_costs' => null,
+                'duration_costs' => null,
+                'is_active' => true,
+                'is_default' => false,
+                'docs_link' => 'https://opencode.ai',
+                'sort_order' => 5,
+                'description' => 'OpenCode Go DeepSeek V4.1 Flash model powered by HTUT Astrology RAG knowledge base.',
+            ],
         ];
 
         foreach ($models as $item) {

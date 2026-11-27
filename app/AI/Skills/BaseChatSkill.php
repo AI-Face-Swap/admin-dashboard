@@ -9,8 +9,13 @@ abstract class BaseChatSkill implements ChatSkillInterface
      *
      * @param  array<int, array{role: string, content: string}>  $history
      */
-    public function buildPrompt(string $userMessage, array $history = [], string $language = 'my', ?string $responseType = null): string
-    {
+    public function buildPrompt(
+        string $userMessage,
+        array $history = [],
+        string $language = 'my',
+        ?string $responseType = null,
+        ?string $ragContext = null,
+    ): string {
         $systemInstructions = $this->systemPrompt($language, $responseType);
 
         // Keep conversation history balanced (last 4 messages) to maintain natural conversational context
@@ -26,9 +31,18 @@ abstract class BaseChatSkill implements ChatSkillInterface
             $historyText = "Conversation Context:\n".implode("\n", $historyLines)."\n\n";
         }
 
+        $contextBlock = '';
+        if ($ragContext !== null && trim($ragContext) !== '') {
+            $contextBlock = "Knowledge Base Context:\n"
+                ."Use the verified reference context below as your primary source. "
+                ."Quote numbers, ages, dates, and names accurately as written in the context; never distort them. "
+                ."Do not add citation markers such as [1] to the answer.\n"
+                ."<context>\n{$ragContext}\n</context>\n\n";
+        }
+
         $jsonFormatSpec = $this->jsonFormatSpec($language, $responseType);
 
-        return "{$systemInstructions}\n\n{$historyText}Question:\n{$userMessage}\n\n{$jsonFormatSpec}";
+        return "{$systemInstructions}\n\n{$contextBlock}{$historyText}Question:\n{$userMessage}\n\n{$jsonFormatSpec}";
     }
 
     /**
@@ -85,7 +99,7 @@ PROMPT;
             }
         }
 
-        $content = (string) ($parsed['content'] ?? ($language === 'my' ? 'အချက်အလက်များကို အောက်တွင် ဖော်ပြပေးထားပါသည်။' : 'Here are the details:'));
+        $content = $this->stripCitationMarkers((string) ($parsed['content'] ?? ($language === 'my' ? 'အချက်အလက်များကို အောက်တွင် ဖော်ပြပေးထားပါသည်။' : 'Here are the details:')));
 
         $structured = is_array($parsed['structured'] ?? null) ? $parsed['structured'] : [];
         $sections = [];
@@ -93,8 +107,8 @@ PROMPT;
             foreach ($structured['sections'] as $sec) {
                 if (is_array($sec) && ! empty($sec['title'])) {
                     $sections[] = [
-                        'title' => (string) $sec['title'],
-                        'description' => (string) ($sec['description'] ?? ''),
+                        'title' => $this->stripCitationMarkers((string) $sec['title']),
+                        'description' => $this->stripCitationMarkers((string) ($sec['description'] ?? '')),
                     ];
                 }
             }
@@ -105,8 +119,8 @@ PROMPT;
             foreach ($structured['checklist'] as $item) {
                 if (is_array($item) && ! empty($item['item'])) {
                     $checklist[] = [
-                        'item' => (string) $item['item'],
-                        'detail' => (string) ($item['detail'] ?? ''),
+                        'item' => $this->stripCitationMarkers((string) $item['item']),
+                        'detail' => $this->stripCitationMarkers((string) ($item['detail'] ?? '')),
                     ];
                 }
             }
@@ -119,6 +133,14 @@ PROMPT;
                 'checklist' => $checklist,
             ],
         ];
+    }
+
+    /**
+     * Strip [1]-style citation markers the model may include from RAG context.
+     */
+    protected function stripCitationMarkers(string $text): string
+    {
+        return trim((string) preg_replace('/[ \t]*\[\d+\]/u', '', $text));
     }
 
     protected function getLanguageName(string $lang): string

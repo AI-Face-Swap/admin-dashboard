@@ -3,16 +3,17 @@
 namespace App\AI\Services;
 
 use App\AI\Exceptions\AIGenerationFailedException;
+use App\AI\Factories\ChatTransportFactory;
 use App\AI\Skills\AstrologySkill;
 use App\AI\Skills\ChatSkillFactory;
+use App\AI\Transports\OpenCodeChatTransport;
 use App\Models\AIGeneration;
 use App\Models\AIModel;
 use App\Models\AIProvider;
 use App\Models\Customer;
 use App\Models\Setting;
 use App\Models\User;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
+use App\Services\Rag\RagContextRetriever;
 use Throwable;
 
 class AIChatService
@@ -20,6 +21,8 @@ class AIChatService
     public const MODEL_DEEPSEEK_CHAT = 'deepseek-chat';
 
     public const MODEL_DEEPSEEK_REASONER = 'deepseek-reasoner';
+
+    public const MODEL_DEEPSEEK_V4_1_FLASH = 'deepseek-v4.1-flash';
 
     public const MODEL_QWEN_FLASH = 'qwen-flash';
 
@@ -33,6 +36,7 @@ class AIChatService
     public const SUPPORTED_MODELS = [
         self::MODEL_DEEPSEEK_CHAT,
         self::MODEL_DEEPSEEK_REASONER,
+        self::MODEL_DEEPSEEK_V4_1_FLASH,
         self::MODEL_QWEN_FLASH,
         self::MODEL_QWEN3_VL_FLASH,
     ];
@@ -46,10 +50,22 @@ class AIChatService
         'general' => self::MODEL_DEEPSEEK_CHAT,
         'health' => self::MODEL_DEEPSEEK_REASONER,
         'education' => self::MODEL_DEEPSEEK_REASONER,
-        'astrology' => self::MODEL_DEEPSEEK_CHAT,
+        'astrology' => self::MODEL_DEEPSEEK_V4_1_FLASH,
     ];
 
     public const DEFAULT_BASE_URL = 'https://api.segmind.com/v1';
+
+    private readonly ChatTransportFactory $transportFactory;
+
+    private readonly RagContextRetriever $ragRetriever;
+
+    public function __construct(
+        ?ChatTransportFactory $transportFactory = null,
+        ?RagContextRetriever $ragRetriever = null,
+    ) {
+        $this->transportFactory = $transportFactory ?? app(ChatTransportFactory::class);
+        $this->ragRetriever = $ragRetriever ?? app(RagContextRetriever::class);
+    }
 
     /**
      * Resolve which chat model to use given the category, optional explicit model override, and optional image URL.
@@ -59,9 +75,14 @@ class AIChatService
         $normalizedCategory = strtolower(trim($category)) ?: 'general';
         $normalizedModel = $requestedModel ? strtolower(trim($requestedModel)) : null;
 
-        // If an image is attached, automatically use the multimodal vision model unless another vision model was specified
+        // If an image is attached, automatically use the multimodal vision model
         if (! empty($imageUrl)) {
             return self::MODEL_QWEN3_VL_FLASH;
+        }
+
+        // Astrology text chat always uses the configured OpenCode Go RAG model
+        if ($normalizedCategory === 'astrology') {
+            return (string) config('ai.providers.opencode_go.model', self::MODEL_DEEPSEEK_V4_1_FLASH);
         }
 
         // If caller explicitly requested a supported chat model, honor it
@@ -69,9 +90,6 @@ class AIChatService
             return $normalizedModel;
         }
 
-        // Category-based default routing:
-        // general -> deepseek-chat
-        // health / education -> deepseek-reasoner
         return self::CATEGORY_DEFAULT_MODELS[$normalizedCategory] ?? self::DEFAULT_MODEL;
     }
 
@@ -126,6 +144,19 @@ class AIChatService
                 'default_categories' => ['health', 'education'],
                 'docs_link' => 'https://www.segmind.com/models/deepseek-reasoner',
                 'description' => 'DeepSeek R1 671B reasoning model with step-by-step chain-of-thought for healthcare and education.',
+            ],
+            self::MODEL_DEEPSEEK_V4_1_FLASH => [
+                'name' => 'DeepSeek V4.1 Flash (OpenCode Go RAG)',
+                'model_name' => self::MODEL_DEEPSEEK_V4_1_FLASH,
+                'type' => 'chat',
+                'provider_name' => OpenCodeChatTransport::SLUG,
+                'point_cost' => $defaultPointCost,
+                'is_default' => false,
+                'supports_vision' => false,
+                'supports_reasoning' => false,
+                'default_categories' => ['astrology'],
+                'docs_link' => 'https://opencode.ai',
+                'description' => 'OpenCode Go DeepSeek V4.1 Flash powered by HTUT Astrology RAG knowledge base.',
             ],
             self::MODEL_QWEN_FLASH => [
                 'name' => 'Qwen Flash',
@@ -220,51 +251,7 @@ class AIChatService
     }
 
     /**
-     * Build the request payload tailored to the selected Segmind LLM endpoint.
-     *
-     * @return array<string, mixed>
-     */
-    protected function buildModelPayload(string $selectedModel, string $fullPrompt, ?string $imageUrl = null, ?string $responseType = null): array
-    {
-        $payload = [
-            'prompt' => $fullPrompt,
-            'response_format' => ['type' => 'json_object'],
-        ];
-
-        // Qwen models support max_tokens and image input; DeepSeek models strictly accept prompt + response_format
-        if (in_array($selectedModel, [self::MODEL_QWEN_FLASH, self::MODEL_QWEN3_VL_FLASH], true)) {
-            $defaultMaxTokens = (int) config('ai.chat_max_tokens', 650);
-            $payload['max_tokens'] = match ($responseType) {
-                AstrologySkill::TYPE_SHORT => min($defaultMaxTokens, 350),
-                AstrologySkill::TYPE_LONG => max($defaultMaxTokens, 1500),
-                default => $defaultMaxTokens,
-            };
-            if ($imageUrl) {
-                $payload['image'] = $imageUrl;
-            }
-        }
-
-        return $payload;
-    }
-
-    /**
-     * Calculate estimated USD token cost based on the selected model's Segmind token rates.
-     */
-    protected function calculateCostUsd(string $selectedModel, int $promptTokens, int $completionTokens): string
-    {
-        [$inputRatePerToken, $outputRatePerToken] = match ($selectedModel) {
-            self::MODEL_DEEPSEEK_CHAT => [0.0000018, 0.0000018],      // $1.80 / 1M input & output
-            self::MODEL_DEEPSEEK_REASONER => [0.0000160, 0.0000160],  // $16.00 / 1M input & output
-            default => [0.000000063, 0.000000500],                    // $0.063 / 1M input, $0.50 / 1M output
-        };
-
-        $calculatedCost = ($promptTokens * $inputRatePerToken) + ($completionTokens * $outputRatePerToken);
-
-        return number_format($calculatedCost, 7, '.', '');
-    }
-
-    /**
-     * Process a chat question using the appropriate agent skill and Segmind LLM.
+     * Process a chat question synchronously.
      *
      * @param  array<int, array{role: string, content: string}>  $history
      * @return array{content: string, structured: array{sections: array<int, array{title: string, description: string}>, checklist: array<int, array{item: string, detail: string}>}, tokens_used: int|null, cost: string|null, duration_ms: int, model: string, category: string}
@@ -281,20 +268,105 @@ class AIChatService
         ?string $imageUrl = null,
         ?string $responseType = null,
     ): array {
+        return $this->executeCompletion(
+            message: $message,
+            category: $category,
+            history: $history,
+            language: $language,
+            requester: $requester,
+            model: $model,
+            imageUrl: $imageUrl,
+            responseType: $responseType,
+            onChunk: null,
+            stream: false,
+        );
+    }
+
+    /**
+     * Stream a chat response chunk-by-chunk using a callback.
+     * Errors are propagated directly without silent provider fallback.
+     *
+     * @param  array<int, array{role: string, content: string}>  $history
+     * @param  callable(string): void|null  $onChunk
+     * @return array{content: string, structured: array{sections: array<int, array{title: string, description: string}>, checklist: array<int, array{item: string, detail: string}>}, tokens_used: int|null, cost: string|null, duration_ms: int, model: string, category: string}
+     *
+     * @throws AIGenerationFailedException
+     */
+    public function streamChat(
+        string $message,
+        string $category = 'general',
+        array $history = [],
+        string $language = 'my',
+        User|Customer|null $requester = null,
+        ?string $model = null,
+        ?callable $onChunk = null,
+        ?string $imageUrl = null,
+        ?string $responseType = null,
+    ): array {
+        return $this->executeCompletion(
+            message: $message,
+            category: $category,
+            history: $history,
+            language: $language,
+            requester: $requester,
+            model: $model,
+            imageUrl: $imageUrl,
+            responseType: $responseType,
+            onChunk: $onChunk,
+            stream: true,
+        );
+    }
+
+    /**
+     * Unified chat execution pipeline shared by sync and streaming endpoints.
+     *
+     * @param  array<int, array{role: string, content: string}>  $history
+     * @param  callable(string): void|null  $onChunk
+     * @return array{content: string, structured: array{sections: array<int, array{title: string, description: string}>, checklist: array<int, array{item: string, detail: string}>}, tokens_used: int|null, cost: string|null, duration_ms: int, model: string, category: string}
+     *
+     * @throws AIGenerationFailedException
+     */
+    private function executeCompletion(
+        string $message,
+        string $category,
+        array $history,
+        string $language,
+        User|Customer|null $requester,
+        ?string $model,
+        ?string $imageUrl,
+        ?string $responseType,
+        ?callable $onChunk,
+        bool $stream,
+    ): array {
         $sanitizedMessage = mb_substr(trim($message), 0, 5000);
         $skill = ChatSkillFactory::make($category);
         $resolvedResponseType = $skill->category() === 'astrology'
             ? AstrologySkill::normalizeResponseType($responseType)
             : null;
-        $fullPrompt = $skill->buildPrompt($sanitizedMessage, $history, $language, $resolvedResponseType);
 
+        $transport = $this->transportFactory->forCategory($skill->category(), $imageUrl);
+        $usesRag = $transport instanceof OpenCodeChatTransport;
         $selectedModel = $this->resolveModel($skill->category(), $model, $imageUrl);
-
-        $apiKey = (string) config('ai.providers.segmind.api_key');
-        $endpoint = rtrim(config('ai.providers.segmind.base_url_v1', self::DEFAULT_BASE_URL), '/').'/'.$selectedModel;
-
         $pointCost = $this->resolvePointCost($skill->category(), $resolvedResponseType);
-        $provider = AIProvider::where('slug', 'segmind')->first();
+
+        $provider = AIProvider::query()->where('slug', $transport->providerSlug())->first();
+        if (! $provider && $transport->providerSlug() !== 'segmind') {
+            $provider = AIProvider::query()->where('slug', 'segmind')->first();
+        }
+
+        $inputMetadata = [
+            'provider' => $transport->providerSlug(),
+            'model' => $selectedModel,
+            'category' => $skill->category(),
+            'response_type' => $resolvedResponseType,
+            'language' => $language,
+            'prompt' => $sanitizedMessage,
+            'image_url' => $imageUrl,
+            'rag_enabled' => $usesRag,
+        ];
+        if ($stream) {
+            $inputMetadata['stream'] = true;
+        }
 
         $generation = AIGeneration::create([
             'user_id' => $requester instanceof User ? $requester->id : null,
@@ -303,72 +375,68 @@ class AIChatService
             'operation' => AIGeneration::OPERATION_CHAT,
             'status' => AIGeneration::STATUS_PROCESSING,
             'coins_spent' => $pointCost,
-            'input_metadata' => [
-                'model' => $selectedModel,
-                'category' => $skill->category(),
-                'response_type' => $resolvedResponseType,
-                'language' => $language,
-                'prompt' => $sanitizedMessage,
-                'image_url' => $imageUrl,
-            ],
+            'input_metadata' => $inputMetadata,
         ]);
 
         $startedAt = hrtime(true);
 
         try {
-            $payload = $this->buildModelPayload($selectedModel, $fullPrompt, $imageUrl, $resolvedResponseType);
+            $ragContext = null;
+            $ragMetadata = null;
 
-            $response = Http::withHeaders([
-                'x-api-key' => $apiKey,
-                'Content-Type' => 'application/json',
-                'Accept' => 'application/json',
-                'Accept-Encoding' => 'identity',
-            ])->withOptions([
-                'decode_content' => false,
-            ])->timeout(90)->post($endpoint, $payload);
-
-            $durationMs = (int) round((hrtime(true) - $startedAt) / 1e6);
-
-            if (! $response->successful()) {
-                $errorBody = $response->json() ?? $response->body();
-                Log::error('Segmind LLM Chat request failed', [
-                    'status' => $response->status(),
-                    'endpoint' => $endpoint,
-                    'error' => $errorBody,
-                ]);
-
-                throw new AIGenerationFailedException(
-                    "Segmind LLM request failed with HTTP {$response->status()}: ".json_encode($errorBody),
-                    null,
-                    is_array($errorBody) ? $errorBody : ['body' => $errorBody],
-                );
+            if ($usesRag) {
+                $ragResult = $this->ragRetriever->retrieve($sanitizedMessage, $history);
+                $ragContext = $ragResult['context'];
+                $ragMetadata = [
+                    'collection' => $ragResult['collection'],
+                    'duration_ms' => $ragResult['duration_ms'],
+                    'sources_count' => count($ragResult['sources']),
+                    'sources' => $ragResult['sources'],
+                ];
             }
 
-            $responseData = $response->json();
-            $rawContent = $responseData['choices'][0]['message']['content'] ?? '';
-            $usage = $responseData['usage'] ?? [];
-            $totalTokens = (int) ($usage['total_tokens'] ?? 0);
-            $promptTokens = (int) ($usage['prompt_tokens'] ?? 0);
-            $completionTokens = (int) ($usage['completion_tokens'] ?? 0);
+            $fullPrompt = $skill->buildPrompt(
+                userMessage: $sanitizedMessage,
+                history: $history,
+                language: $language,
+                responseType: $resolvedResponseType,
+                ragContext: $ragContext,
+            );
 
-            $costStr = $this->calculateCostUsd($selectedModel, $promptTokens, $completionTokens);
-            $normalized = $skill->formatResponse($rawContent, $language);
+            $completion = $transport->complete(
+                model: $selectedModel,
+                fullPrompt: $fullPrompt,
+                imageUrl: $imageUrl,
+                responseType: $resolvedResponseType,
+            );
+
+            $durationMs = (int) round((hrtime(true) - $startedAt) / 1e6);
+            $normalized = $skill->formatResponse($completion->rawContent, $language);
+
+            if ($onChunk && ! empty($normalized['content'])) {
+                $this->emitChunks($normalized['content'], $onChunk);
+            }
+
+            $outputMetadata = $normalized;
+            if ($ragMetadata !== null) {
+                $outputMetadata['rag'] = $ragMetadata;
+            }
 
             $generation->update([
                 'status' => AIGeneration::STATUS_COMPLETED,
-                'request_id' => $responseData['id'] ?? null,
+                'request_id' => $completion->requestId,
                 'duration_ms' => $durationMs,
-                'cost' => $costStr,
+                'cost' => $completion->costUsd,
                 'currency' => 'USD',
-                'output_metadata' => $normalized,
-                'raw_response' => $responseData,
+                'output_metadata' => $outputMetadata,
+                'raw_response' => $completion->rawResponse,
             ]);
 
             return [
                 'content' => $normalized['content'],
                 'structured' => $normalized['structured'],
-                'tokens_used' => $totalTokens,
-                'cost' => $costStr,
+                'tokens_used' => $completion->totalTokens,
+                'cost' => $completion->costUsd,
                 'duration_ms' => $durationMs,
                 'model' => $selectedModel,
                 'category' => $skill->category(),
@@ -390,179 +458,29 @@ class AIChatService
     }
 
     /**
-     * Stream a chat response chunk-by-chunk using a callback, falling back to full response if streaming is unsupported.
+     * Stream clean conversational text word-by-word to the SSE callback.
      *
-     * @param  callable(string): void|null  $onChunk
-     * @return array{content: string, structured: array{sections: array<int, array{title: string, description: string}>, checklist: array<int, array{item: string, detail: string}>}, tokens_used: int|null, cost: string|null, duration_ms: int, model: string, category: string}
+     * @param  callable(string): void  $onChunk
      */
-    public function streamChat(
-        string $message,
-        string $category = 'general',
-        array $history = [],
-        string $language = 'my',
-        User|Customer|null $requester = null,
-        ?string $model = null,
-        ?callable $onChunk = null,
-        ?string $imageUrl = null,
-        ?string $responseType = null,
-    ): array {
-        $sanitizedMessage = mb_substr(trim($message), 0, 5000);
-
-        if (app()->environment('testing')) {
-            $result = $this->chat($sanitizedMessage, $category, $history, $language, $requester, $model, $imageUrl, $responseType);
-            if ($onChunk) {
-                $words = preg_split('/(\s+)/u', $result['content'], -1, PREG_SPLIT_DELIM_CAPTURE);
-                if (is_array($words)) {
-                    foreach ($words as $w) {
-                        if ($w !== '') {
-                            $onChunk($w);
-                        }
-                    }
-                }
-            }
-
-            return $result;
+    private function emitChunks(string $content, callable $onChunk): void
+    {
+        $words = preg_split('/(\s+)/u', $content, -1, PREG_SPLIT_DELIM_CAPTURE);
+        if (! is_array($words)) {
+            return;
         }
 
-        $skill = ChatSkillFactory::make($category);
-        $resolvedResponseType = $skill->category() === 'astrology'
-            ? AstrologySkill::normalizeResponseType($responseType)
-            : null;
-        $fullPrompt = $skill->buildPrompt($sanitizedMessage, $history, $language, $resolvedResponseType);
+        $isTesting = app()->environment('testing');
 
-        $selectedModel = $this->resolveModel($skill->category(), $model, $imageUrl);
-
-        $apiKey = (string) config('ai.providers.segmind.api_key');
-        $endpoint = rtrim(config('ai.providers.segmind.base_url_v1', self::DEFAULT_BASE_URL), '/').'/'.$selectedModel;
-        $pointCost = $this->resolvePointCost($skill->category(), $resolvedResponseType);
-        $provider = AIProvider::where('slug', 'segmind')->first();
-
-        $generation = AIGeneration::create([
-            'user_id' => $requester instanceof User ? $requester->id : null,
-            'customer_id' => $requester instanceof Customer ? $requester->id : null,
-            'provider_id' => $provider?->id ?? 1,
-            'operation' => AIGeneration::OPERATION_CHAT,
-            'status' => AIGeneration::STATUS_PROCESSING,
-            'coins_spent' => $pointCost,
-            'input_metadata' => [
-                'model' => $selectedModel,
-                'category' => $skill->category(),
-                'response_type' => $resolvedResponseType,
-                'language' => $language,
-                'prompt' => $sanitizedMessage,
-                'image_url' => $imageUrl,
-                'stream' => true,
-            ],
-        ]);
-
-        $startedAt = hrtime(true);
-        $accumulatedContent = '';
-
-        try {
-            $payload = $this->buildModelPayload($selectedModel, $fullPrompt, $imageUrl, $resolvedResponseType);
-
-            // Segmind generates chat completions via HTTP synchronously.
-            // We fetch the completion and stream tokens word-by-word via $onChunk to deliver smooth real-time SSE streaming.
-            $response = Http::withHeaders([
-                'x-api-key' => $apiKey,
-                'Content-Type' => 'application/json',
-                'Accept' => 'application/json',
-                'Accept-Encoding' => 'identity',
-            ])->withOptions([
-                'decode_content' => false,
-            ])->timeout(90)->post($endpoint, $payload);
-
-            if (! $response->successful()) {
-                $errorBody = $response->json() ?? $response->body();
-                Log::error('Segmind LLM Chat request failed', [
-                    'status' => $response->status(),
-                    'endpoint' => $endpoint,
-                    'error' => $errorBody,
-                ]);
-
-                throw new AIGenerationFailedException(
-                    "Segmind LLM request failed with HTTP {$response->status()}: ".json_encode($errorBody),
-                    null,
-                    is_array($errorBody) ? $errorBody : ['body' => $errorBody],
-                );
+        foreach ($words as $word) {
+            if (! $isTesting && connection_aborted()) {
+                break;
             }
-
-            $responseData = $response->json();
-            $rawContent = $responseData['choices'][0]['message']['content'] ?? '';
-            $usage = $responseData['usage'] ?? [];
-            $totalTokens = (int) ($usage['total_tokens'] ?? 0);
-            $promptTokens = (int) ($usage['prompt_tokens'] ?? 0);
-            $completionTokens = (int) ($usage['completion_tokens'] ?? 0);
-            $costStr = $this->calculateCostUsd($selectedModel, $promptTokens, $completionTokens);
-
-            $durationMs = (int) round((hrtime(true) - $startedAt) / 1e6);
-            $normalized = $skill->formatResponse($rawContent, $language);
-
-            // Stream clean human conversational text progressively to the client — NEVER raw JSON syntax!
-            if ($onChunk && ! empty($normalized['content'])) {
-                $words = preg_split('/(\s+)/u', $normalized['content'], -1, PREG_SPLIT_DELIM_CAPTURE);
-                if (is_array($words)) {
-                    foreach ($words as $w) {
-                        if (connection_aborted()) {
-                            break;
-                        }
-                        if ($w !== '') {
-                            $onChunk($w);
-                            usleep(20000); // 20ms smooth typewriter effect
-                        }
-                    }
+            if ($word !== '') {
+                $onChunk($word);
+                if (! $isTesting) {
+                    usleep(20000);
                 }
             }
-
-            $generation->update([
-                'status' => AIGeneration::STATUS_COMPLETED,
-                'request_id' => $responseData['id'] ?? null,
-                'duration_ms' => $durationMs,
-                'cost' => $costStr,
-                'currency' => 'USD',
-                'output_metadata' => $normalized,
-                'raw_response' => $responseData,
-            ]);
-
-            return [
-                'content' => $normalized['content'],
-                'structured' => $normalized['structured'],
-                'tokens_used' => $totalTokens,
-                'cost' => $costStr,
-                'duration_ms' => $durationMs,
-                'model' => $selectedModel,
-                'category' => $skill->category(),
-            ];
-        } catch (Throwable $e) {
-            Log::warning('Streaming chat failed, falling back to sync: '.$e->getMessage());
-
-            if (! empty($accumulatedContent)) {
-                $durationMs = (int) round((hrtime(true) - $startedAt) / 1e6);
-                $normalized = $skill->formatResponse($accumulatedContent, $language);
-                $generation->update([
-                    'status' => AIGeneration::STATUS_COMPLETED,
-                    'duration_ms' => $durationMs,
-                    'output_metadata' => $normalized,
-                ]);
-
-                return [
-                    'content' => $normalized['content'],
-                    'structured' => $normalized['structured'],
-                    'tokens_used' => null,
-                    'cost' => null,
-                    'duration_ms' => $durationMs,
-                    'model' => $selectedModel,
-                    'category' => $skill->category(),
-                ];
-            }
-
-            $generation->delete();
-            $fallbackResult = $this->chat($sanitizedMessage, $category, $history, $language, $requester, $model, $imageUrl, $responseType);
-            if ($onChunk) {
-                $onChunk($fallbackResult['content']);
-            }
-
-            return $fallbackResult;
         }
     }
 }

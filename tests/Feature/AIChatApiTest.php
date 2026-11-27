@@ -516,12 +516,14 @@ class AIChatApiTest extends TestCase
             ->assertJsonPath('category_defaults.general', 'deepseek-chat')
             ->assertJsonPath('category_defaults.health', 'deepseek-reasoner')
             ->assertJsonPath('category_defaults.education', 'deepseek-reasoner')
-            ->assertJsonCount(4, 'data');
+            ->assertJsonPath('category_defaults.astrology', 'deepseek-v4.1-flash')
+            ->assertJsonCount(5, 'data');
 
         $modelNames = array_column($response->json('data'), 'model_name');
         $this->assertEquals([
             'deepseek-chat',
             'deepseek-reasoner',
+            'deepseek-v4.1-flash',
             'qwen-flash',
             'qwen3-vl-flash',
         ], $modelNames);
@@ -529,7 +531,7 @@ class AIChatApiTest extends TestCase
         // Also verify /api/v1/ai-models?type=chat works via seeded DB records
         $aiModelsResponse = $this->getJson('/api/v1/ai-models?type=chat');
         $aiModelsResponse->assertStatus(200)
-            ->assertJsonCount(4, 'data');
+            ->assertJsonCount(5, 'data');
     }
 
     public function test_astrology_skill_returns_different_default_prompts_for_short_normal_and_long(): void
@@ -569,8 +571,31 @@ class AIChatApiTest extends TestCase
 
         Sanctum::actingAs($customer);
 
+        config()->set('services.rag.collection', 'test-astrology-collection');
+        config()->set('services.rag.embedding.driver', 'openai');
+        config()->set('services.rag.embedding.url', 'https://embedding.test/v1');
+        config()->set('services.rag.embedding.key', 'emb-key');
+        config()->set('services.rag.embedding.model', '@cf/baai/bge-m3');
+        config()->set('ai.providers.opencode_go.base_url', 'https://opencode.test/v1');
+        config()->set('ai.providers.opencode_go.api_key', 'oc-test-key');
+        config()->set('ai.providers.opencode_go.model', 'deepseek-v4.1-flash');
+
+        $this->mock(\App\Services\Rag\VectorSearch::class, function ($mock) {
+            $mock->shouldReceive('search')->andReturn(collect([
+                [
+                    'id' => 'chunk-1',
+                    'text' => 'Auspicious guidance for Monday-born individuals.',
+                    'metadata' => ['name' => 'mahabote.pdf'],
+                    'score' => 0.91,
+                ],
+            ]));
+        });
+
         Http::fake([
-            'https://api.segmind.com/v1/*' => Http::response([
+            'https://embedding.test/v1/embeddings' => Http::response([
+                'data' => [['embedding' => [0.1, 0.2, 0.3]]],
+            ], 200),
+            'https://opencode.test/v1/chat/completions' => Http::response([
                 'id' => 'chatcmpl-astro-tiers',
                 'choices' => [
                     [
@@ -654,10 +679,10 @@ class AIChatApiTest extends TestCase
             'coins_spent' => 10,
         ]);
 
-        // Verify different prompts were sent to Segmind
-        Http::assertSent(fn (Request $req) => str_contains((string) ($req['prompt'] ?? ''), 'under 100 words'));
-        Http::assertSent(fn (Request $req) => str_contains((string) ($req['prompt'] ?? ''), 'under 250 words'));
-        Http::assertSent(fn (Request $req) => str_contains((string) ($req['prompt'] ?? ''), 'up to 600 words'));
+        // Verify different prompts were sent to OpenCode Go
+        Http::assertSent(fn (Request $req) => str_contains((string) ($req['messages'][0]['content'] ?? ''), 'under 100 words'));
+        Http::assertSent(fn (Request $req) => str_contains((string) ($req['messages'][0]['content'] ?? ''), 'under 250 words'));
+        Http::assertSent(fn (Request $req) => str_contains((string) ($req['messages'][0]['content'] ?? ''), 'up to 600 words'));
     }
 
     public function test_astrology_long_requires_10_points_and_rejects_invalid_response_type(): void

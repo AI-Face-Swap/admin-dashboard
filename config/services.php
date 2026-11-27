@@ -70,4 +70,29 @@ return [
         'project_id' => env('FIREBASE_PROJECT_ID'),
     ],
 
+    /*
+    | Read-only RAG client for Open WebUI's pgvector knowledge base (used by Astrology chat).
+    | The embedding model must match the model Open WebUI used to index the collection.
+    */
+    'rag' => [
+        'collection' => env('RAG_COLLECTION'),
+        'top_k' => (int) env('RAG_TOP_K', 10),
+        'vector_length' => (int) env('RAG_VECTOR_LENGTH', 1536),
+        'max_chunk_chars' => (int) env('RAG_MAX_CHUNK_CHARS', 1500),
+
+        'embedding' => [
+            'driver' => env('RAG_EMBEDDING_DRIVER', 'openai'),
+            'url' => env('RAG_EMBEDDING_URL'),
+            'key' => env('RAG_EMBEDDING_API_KEY'),
+            'model' => env('RAG_EMBEDDING_MODEL'),
+        ],
+
+        'chat' => [
+            'url' => env('RAG_CHAT_URL'),
+            'key' => env('RAG_CHAT_API_KEY'),
+            'model' => env('RAG_CHAT_MODEL', 'deepseek-v4.1-flash'),
+            'session_header' => env('RAG_CHAT_SESSION_HEADER', 'x-opencode-session'),
+        ],
+    ],
+
 ];
