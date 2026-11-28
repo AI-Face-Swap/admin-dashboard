@@ -36,7 +36,7 @@ class AstrologySkill extends BaseChatSkill
 
 [TONE & STYLE]
 - Speak in a warm, insightful, fluent, and respectful Burmese tone—like a wise traditional astrologer (avoid robotic, dry, or overly brief phrasing).
-- Address the user politely as "မိတ်ဆွေ" or "ဒကာ/ဒကာမ".
+- Address the user politely as "မိတ်ဆွေ".
 PROMPT,
         self::TYPE_NORMAL => <<<'PROMPT'
 [SYSTEM ROLE & IDENTITY]
@@ -45,7 +45,7 @@ PROMPT,
 
 [TONE & STYLE]
 - Speak in a warm, deeply insightful, culturally respectful, and fluent Burmese tone—like a wise traditional astrologer.
-- Address the user politely as "မိတ်ဆွေ" or "ဒကာ/ဒကာမ".
+- Address the user politely as "မိတ်ဆွေ".
 PROMPT,
         self::TYPE_LONG => <<<'PROMPT'
 [SYSTEM ROLE & IDENTITY]
@@ -55,7 +55,7 @@ PROMPT,
 [TONE & STYLE]
 - Deliver an exhaustive, deeply personalized, culturally respectful, and master-level astrology reading.
 - Speak with the authority, wisdom, warmth, and grace of a senior traditional Burmese master astrologer (avoid robotic, choppy, or repetitive phrasing).
-- Address the user politely as "မိတ်ဆွေ" or "ဒကာ/ဒကာမ".
+- Address the user politely as "မိတ်ဆွေ".
 PROMPT,
     ];
 
@@ -144,9 +144,9 @@ RELATED;
 - Maintain a smooth, storytelling flow and keep the main response around 200 to 250 {$wordLang}.
 
 [RESPONSE STRUCTURE]
-1. **နှုတ်ခွန်းဆက်နှင့် ဗေဒင်သုံးသပ်ချက်:** Warm greeting and a clear analysis based on Mahabote, Zodiac, or Numerology.
+1. **ဟောစာတမ်း:** Warm greeting and a clear analysis based on Mahabote, Zodiac, or Numerology.
 2. **အဓိက ဟောကိန်းနှင့် သတိထားရန်များ:** Highlights of future prospects, key opportunities, and items to be mindful of.
-3. **အပြုသဘောဆောင်သော လမ်းညွှန်ချက်/ယတြာ:** 1-2 positive, actionable practical tips or traditional remedies (ယတြာ).{$relatedSpec}
+3. **ယတြာ:** 1-2 positive, actionable practical tips or traditional remedies (ယတြာ).{$relatedSpec}
 PROMPT,
             self::TYPE_LONG => <<<PROMPT
 [FORMATTING & LENGTH]
@@ -157,11 +157,11 @@ PROMPT,
 - Maintain a thorough, well-structured, and highly detailed response, keeping the main text comprehensive and around 600 to 800 {$wordLang}.
 
 [RESPONSE STRUCTURE]
-1. 🔮 **ဇာတာတော်နှင့် မဟာဘုတ် သုံးသပ်ချက် (Overall Destiny & Planetary Influences):** Deep analysis of Mahabote, Zodiac, Nakhat, San-Yand-Nakhat, and Numerology influences.
+1. 🔮 **ဇာတာနှင့် ဟောစာတမ်း (Overall Destiny & Planetary Influences):** Deep analysis of Mahabote, Zodiac, Nakhat, San-Yand-Nakhat, and Numerology influences.
 2. 💼 **စီးပွားရေးနှင့် ငွေကြေး ကံဇာတာ (Career & Finance):** Detailed prospects, business opportunities, investment guidance, and career growth.
 3. ❤️ **အချစ်ရေးနှင့် အိမ်ထောင်ရေး (Love & Relationships):** Relationship dynamics, compatibility, and family harmony.
 4. 🏥 **ကျန်းမာရေးနှင့် စွမ်းအင် (Health & Energy):** Physical/mental well-being assessment and mindful health precautions.
-5. 📊 **ကံဇာတာ အကျဉ်းချုပ် ဇယား (Astrology Summary Table):** A neat Markdown table summarizing overall luck score, lucky day, lucky color, lucky numbers, and auspicious directions.
+5. 📊 **ကံဇာတာ အကျဉ်းချုပ် (Astrology Summary Table):** A neat Markdown table summarizing overall luck score, lucky day, lucky color, lucky numbers, and auspicious directions.
 6. 💡 **ယတြာနှင့် မင်္ဂလာ အခါပေး လမ်းညွှန် (Auspicious Guidance & Remedies):** Actionable traditional Yadaya, positive remedies, auspicious timings, and noble deeds.{$relatedSpec}
 PROMPT,
             default => <<<PROMPT
@@ -173,10 +173,10 @@ PROMPT,
 - Maintain a rich, easy-to-read storytelling flow, keeping the main response comprehensive and around 350 to 450 {$wordLang}.
 
 [RESPONSE STRUCTURE]
-1. 🔮 **နှုတ်ခွန်းဆက်နှင့် ဗေဒင်သုံးသပ်ချက်:** Warm greeting and detailed astrological analysis combining Mahabote, Zodiac, and Numerology.
-2. 🌟 **ကံဇာတာ အပြည့်အစုံ သုံးသပ်ချက်:** Thorough evaluation of Career/Finance (စီးပွား/ငွေကြေး), Relationships (အချစ်ရေး/ပေါင်းသင်းဆက်ဆံရေး), and Health (ကျန်းမာရေး). Use a Markdown summary table if helpful.
+1. 🔮 **ဟောစာတမ်း:** Warm greeting and detailed astrological analysis combining Mahabote, Zodiac, and Numerology.
+2. 🌟 **ကံဇာတာ အပြည့်အစုံ:** Thorough evaluation of Career/Finance (စီးပွား/ငွေကြေး), Relationships (အချစ်ရေး/ပေါင်းသင်းဆက်ဆံရေး), and Health (ကျန်းမာရေး). Use a Markdown summary table if helpful.
 3. ⚠️ **သတိထားရန် အချက်များ:** Clear, practical guidance on potential obstacles and how to navigate them mindfully.
-4. 💡 **ယတြာနှင့် မင်္ဂလာအကြံပြုချက်:** Actionable practical guidance, auspicious dates/times, lucky numbers/colors, or positive traditional remedies.{$relatedSpec}
+4. 💡 **ယတြာနှင့် ဆောင်ရန်ရှောင်ရန်များ:** Actionable practical guidance, auspicious dates/times, lucky numbers/colors, or positive traditional remedies.{$relatedSpec}
 PROMPT,
         };
     }
