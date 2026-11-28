@@ -552,9 +552,9 @@ class AIChatApiTest extends TestCase
         $normalFull = $astrology->buildPrompt('My fortune today', [], 'en', 'normal');
         $longFull = $astrology->buildPrompt('My fortune today', [], 'en', 'long');
 
-        $this->assertStringContainsString('under 100 words', $shortFull);
-        $this->assertStringContainsString('under 250 words', $normalFull);
-        $this->assertStringContainsString('up to 600 words', $longFull);
+        $this->assertStringContainsString('200 to 250 words', $shortFull);
+        $this->assertStringContainsString('350 to 450 words', $normalFull);
+        $this->assertStringContainsString('600 to 800 words', $longFull);
 
         // Custom admin-configured prompt overrides built-in default
         Setting::set('ai', 'astrology_prompt_short', 'Custom short astrology advisor prompt.');
@@ -680,9 +680,9 @@ class AIChatApiTest extends TestCase
         ]);
 
         // Verify different prompts were sent to OpenCode Go
-        Http::assertSent(fn (Request $req) => str_contains((string) ($req['messages'][0]['content'] ?? ''), 'under 100 words'));
-        Http::assertSent(fn (Request $req) => str_contains((string) ($req['messages'][0]['content'] ?? ''), 'under 250 words'));
-        Http::assertSent(fn (Request $req) => str_contains((string) ($req['messages'][0]['content'] ?? ''), 'up to 600 words'));
+        Http::assertSent(fn (Request $req) => str_contains((string) ($req['messages'][0]['content'] ?? ''), '200 to 250 words'));
+        Http::assertSent(fn (Request $req) => str_contains((string) ($req['messages'][0]['content'] ?? ''), '350 to 450 words'));
+        Http::assertSent(fn (Request $req) => str_contains((string) ($req['messages'][0]['content'] ?? ''), '600 to 800 words'));
     }
 
     public function test_astrology_long_requires_10_points_and_rejects_invalid_response_type(): void
